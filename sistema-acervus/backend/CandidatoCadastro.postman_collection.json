@@ -1,0 +1,68 @@
+{
+  "info": {
+    "_postman_id": "b2347d30-bf24-4ec8-85b7-9f4dfba2722e",
+    "name": "Cadastro Candidato com Comprovante",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Cadastrar Candidato (multipart)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "cpf", "value": "123.456.789-00", "type": "text" },
+            { "key": "rg", "value": "1234567", "type": "text" },
+            { "key": "org_emissor", "value": "SSP", "type": "text" },
+            { "key": "uf_rg", "value": "BA", "type": "text" },
+            { "key": "pais_origem", "value": "Brasil", "type": "text" },
+            { "key": "uf", "value": "BA", "type": "text" },
+            { "key": "nome_completo", "value": "Fernanda Peixoto", "type": "text" },
+            { "key": "nome_social", "value": "", "type": "text" },
+            { "key": "data_nascimento", "value": "1988-09-26", "type": "text" },
+            { "key": "nacionalidade", "value": "Brasileira", "type": "text" },
+            { "key": "estrangeiro", "value": "false", "type": "text" },
+            { "key": "sexo", "value": "F", "type": "text" },
+            { "key": "raca", "value": "Parda", "type": "text" },
+            { "key": "genero", "value": "Feminino", "type": "text" },
+            { "key": "estado_civil", "value": "Solteira", "type": "text" },
+            { "key": "telefone", "value": "7130000000", "type": "text" },
+            { "key": "celular", "value": "71999999999", "type": "text" },
+            { "key": "email", "value": "fernanda@email.com", "type": "text" },
+            { "key": "senha", "value": "senha123", "type": "text" },
+            { "key": "pcd", "value": "false", "type": "text" },
+            { "key": "observacao", "value": "", "type": "text" },
+            { "key": "id_regime_contratacao", "value": "1", "type": "text" },
+
+            { "key": "formacao[cd_nivel_formacao]", "value": "2", "type": "text" },
+            { "key": "formacao[cd_status_curso]", "value": "1", "type": "text" },
+            { "key": "formacao[semestre_ano]", "value": "2025.1", "type": "text" },
+            { "key": "formacao[cd_turno]", "value": "3", "type": "text" },
+            { "key": "formacao[cd_modalidade_ensino]", "value": "1", "type": "text" },
+            { "key": "formacao[cd_curso]", "value": "", "type": "text" },
+            { "key": "formacao[ds_curso]", "value": "Engenharia de Software", "type": "text" },
+            { "key": "formacao[cd_instituicao_ensino]", "value": "", "type": "text" },
+            { "key": "formacao[ds_instituicao]", "value": "Universidade Customi", "type": "text" },
+            { "key": "formacao[ra_matricula]", "value": "2025123456", "type": "text" },
+
+            {
+              "key": "comprovante",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://localhost:3000/candidato/cadastrar",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["candidato", "cadastrar"]
+        }
+      },
+      "response": []
+    }
+  ]
+}

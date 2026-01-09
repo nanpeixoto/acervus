@@ -1,0 +1,187 @@
+openapi: 3.0.0
+
+# Referência para informações da API
+info:
+  $ref: './info/info.yaml'
+
+# Servidores
+servers:
+  - url: https://api.ciderh.com.br/v1
+    description: Servidor de Produção
+  - url: https://api-staging.ciderh.com.br/v1
+    description: Servidor de Testes
+
+# Segurança global
+security:
+  - bearerAuth: []
+
+# Paths organizados por módulo
+paths:
+  # Modelo
+  /modelo/cadastrar:
+    $ref: './paths/modelo.yaml#/cadastrar'
+  /modelo/alterar/{id_modelo}:
+    $ref: './paths/modelo.yaml#/alterar'
+  /modelo/listar:
+    $ref: './paths/modelo.yaml#/listar'
+    
+  # Tipo de Modelo
+  /tipomodelo/cadastrar:
+    $ref: './paths/tipo-modelo.yaml#/cadastrar'
+  /tipomodelo/listar:
+    $ref: './paths/tipo-modelo.yaml#/listar'
+  /tipomodelo/alterar/{id_tipo_modelo}:
+    $ref: './paths/tipo-modelo.yaml#/alterar'
+    
+  # Signatário
+  /signatario/cadastrar:
+    $ref: './paths/signatario.yaml#/cadastrar'
+  /signatario/instituicao/listar/{cd_instituicao_ensino}:
+    $ref: './paths/signatario.yaml#/listarPorInstituicao'
+  /signatario/alterar/{cd_signatario}:
+    $ref: './paths/signatario.yaml#/alterar'
+    
+  # Instituição
+  /instituicao/cadastrar:
+    $ref: './paths/instituicao.yaml#/cadastrar'
+  /instituicao/editar/{id}:
+    $ref: './paths/instituicao.yaml#/editar'
+  /instituicao/buscar:
+    $ref: './paths/instituicao.yaml#/buscar'
+    
+  # Endereço
+  /endereco/cadastrar:
+    $ref: './paths/endereco.yaml#/cadastrar'
+  /endereco/instituicao/listar/{cd_instituicao_ensino}:
+    $ref: './paths/endereco.yaml#/listarPorInstituicao'
+  /endereco/alterar/{id_endereco}:
+    $ref: './paths/endereco.yaml#/alterar'
+    
+  # Orientador
+  /orientador/cadastrar:
+    $ref: './paths/orientador.yaml#/cadastrar'
+  /orientador/instituicao/listar/{cd_instituicao_ensino}:
+    $ref: './paths/orientador.yaml#/listarPorInstituicao'
+  /orientador/alterar/{id_orientador}:
+    $ref: './paths/orientador.yaml#/alterar'
+    
+  # Representante Legal
+  /representantelegal/cadastrar:
+    $ref: './paths/representante-legal.yaml#/cadastrar'
+  /representantelegal/instituicao/listar/{cd_instituicao_ensino}:
+    $ref: './paths/representante-legal.yaml#/listarPorInstituicao'
+  /representantelegal/alterar/{id_representante_legal}:
+    $ref: './paths/representante-legal.yaml#/alterar'
+    
+  # Usuário Instituição
+  /usuarioInstituicao/cadastrar:
+    $ref: './paths/usuario-instituicao.yaml#/cadastrar'
+  /usuarioInstituicao/instituicao/listar/{cd_instituicao_ensino}:
+    $ref: './paths/usuario-instituicao.yaml#/listarPorInstituicao'
+  /usuarioInstituicao/alterar/{id_usuario_instituicao}:
+    $ref: './paths/usuario-instituicao.yaml#/alterar'
+    
+  # Cidade
+  /cidade/cidades:
+    $ref: './paths/cidade.yaml#/listar'
+
+# Components organizados
+components:
+  # Esquemas de segurança
+  securitySchemes:
+    $ref: './components/security/security.yaml#/securitySchemes'
+    
+  # Parâmetros comuns
+  parameters:
+    $ref: './components/parameters/common.yaml#/parameters'
+    
+  # Respostas comuns
+  responses:
+    $ref: './components/responses/common.yaml#/responses'
+    
+  # Schemas organizados por módulo
+  schemas:
+    # Common
+    ErrorResponse:
+      $ref: './components/schemas/common.yaml#/ErrorResponse'
+    PaginationInfo:
+      $ref: './components/schemas/common.yaml#/PaginationInfo'
+      
+    # Modelo
+    ModeloCadastro:
+      $ref: './components/schemas/modelo.yaml#/ModeloCadastro'
+    ModeloEdicao:
+      $ref: './components/schemas/modelo.yaml#/ModeloEdicao'
+    Modelo:
+      $ref: './components/schemas/modelo.yaml#/Modelo'
+      
+    # Tipo de Modelo
+    TipoModeloCadastro:
+      $ref: './components/schemas/tipo-modelo.yaml#/TipoModeloCadastro'
+    TipoModeloEdicao:
+      $ref: './components/schemas/tipo-modelo.yaml#/TipoModeloEdicao'
+    TipoModelo:
+      $ref: './components/schemas/tipo-modelo.yaml#/TipoModelo'
+      
+    # Signatário
+    SignatarioCadastro:
+      $ref: './components/schemas/signatario.yaml#/SignatarioCadastro'
+    SignatarioEdicao:
+      $ref: './components/schemas/signatario.yaml#/SignatarioEdicao'
+    Signatario:
+      $ref: './components/schemas/signatario.yaml#/Signatario'
+      
+    # Instituição
+    InstituicaoCadastro:
+      $ref: './components/schemas/instituicao.yaml#/InstituicaoCadastro'
+    InstituicaoEdicao:
+      $ref: './components/schemas/instituicao.yaml#/InstituicaoEdicao'
+    Instituicao:
+      $ref: './components/schemas/instituicao.yaml#/Instituicao'
+    InstituicaoResumo:
+      $ref: './components/schemas/instituicao.yaml#/InstituicaoResumo'
+      
+    # Endereço
+    EnderecoCadastro:
+      $ref: './components/schemas/endereco.yaml#/EnderecoCadastro'
+    EnderecoEdicao:
+      $ref: './components/schemas/endereco.yaml#/EnderecoEdicao'
+    Endereco:
+      $ref: './components/schemas/endereco.yaml#/Endereco'
+      
+    # Orientador
+    OrientadorCadastro:
+      $ref: './components/schemas/orientador.yaml#/OrientadorCadastro'
+    OrientadorEdicao:
+      $ref: './components/schemas/orientador.yaml#/OrientadorEdicao'
+    Orientador:
+      $ref: './components/schemas/orientador.yaml#/Orientador'
+      
+    # Representante Legal
+    RepresentanteLegalCadastro:
+      $ref: './components/schemas/representante-legal.yaml#/RepresentanteLegalCadastro'
+    RepresentanteLegalEdicao:
+      $ref: './components/schemas/representante-legal.yaml#/RepresentanteLegalEdicao'
+    RepresentanteLegal:
+      $ref: './components/schemas/representante-legal.yaml#/RepresentanteLegal'
+      
+    # Usuário Instituição
+    UsuarioInstituicaoCadastro:
+      $ref: './components/schemas/usuario-instituicao.yaml#/UsuarioInstituicaoCadastro'
+    UsuarioInstituicaoEdicao:
+      $ref: './components/schemas/usuario-instituicao.yaml#/UsuarioInstituicaoEdicao'
+    UsuarioInstituicao:
+      $ref: './components/schemas/usuario-instituicao.yaml#/UsuarioInstituicao'
+      
+    # Cidade
+    Cidade:
+      $ref: './components/schemas/cidade.yaml#/Cidade'
+
+# Tags
+tags:
+  $ref: './tags/tags.yaml#/tags'
+
+# Documentação externa
+externalDocs:
+  description: Documentação adicional do projeto
+  url: https://docs.ciderh.com.br

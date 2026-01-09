@@ -1,0 +1,1942 @@
+openapi: 3.0.0
+info:
+  title: API CIDE RH - Sistema de Gestão de Instituições de Ensino
+  version: 1.0.0
+  description: |
+    API completa para gerenciamento de instituições de ensino, incluindo cadastro de instituições, 
+    endereços, orientadores, representantes legais e usuários.
+    
+    ## Autenticação
+    Esta API utiliza autenticação JWT Bearer Token. Inclua o token no header Authorization.
+    
+    ## Paginação
+    Muitos endpoints suportam paginação através dos parâmetros `page` e `limit`.
+    
+    ## Códigos de Resposta
+    - **200**: Sucesso
+    - **201**: Criado com sucesso
+    - **400**: Dados inválidos ou campos obrigatórios faltando
+    - **401**: Não autorizado (token inválido/ausente)
+    - **404**: Recurso não encontrado
+    - **409**: Conflito (ex: CNPJ já cadastrado)
+    - **500**: Erro interno do servidor
+  contact:
+    name: Equipe CIDE RH
+    email: suporte@ciderh.com.br
+
+servers:
+  - url: https://api.ciderh.com.br/v1
+    description: Servidor de Produção
+  - url: https://api-staging.ciderh.com.br/v1
+    description: Servidor de Testes
+
+security:
+  - bearerAuth: []
+
+paths:
+  /signatario/cadastrar:
+    post:
+      tags:
+        - Signatário
+      summary: Cadastrar signatário
+      description: |
+        Cadastra um novo signatário vinculado a uma instituição de ensino.
+        Não é permitido o cadastro de dois signatários com o mesmo CPF dentro da mesma instituição.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignatarioCadastro'
+            example:
+              nome: "Maria Silva"
+              cpf: "12345678900"
+              email: "maria.silva@example.com"
+              celular: "71999998888"
+              data_nascimento: "1985-07-15"
+              descricao: "Diretora Acadêmica"
+              ativo: true
+              cd_instituicao_ensino: 123
+      responses:
+        '201':
+          description: Signatário cadastrado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Signatário cadastrado com sucesso!"
+                  cd_signatario:
+                    type: integer
+                    example: 1001
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: CPF já cadastrado para esta instituição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                erro: "Já existe um signatário com este CPF para esta instituição."
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /signatario/instituicao/listar/{cd_instituicao_ensino}:
+    get:
+      tags:
+        - Signatário
+      summary: Listar signatários de uma instituição
+      description: Lista todos os signatários vinculados a uma instituição específica.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cd_instituicao_ensino
+          in: path
+          required: true
+          description: Código da instituição de ensino
+          schema:
+            type: integer
+            example: 123
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Lista de signatários retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dados:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Signatario'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /signatario/alterar/{cd_signatario}:
+    put:
+      tags:
+        - Signatário
+      summary: Alterar dados de um signatário
+      description: |
+        Altera os dados de um signatário existente.
+        Não é permitido que dois signatários da mesma instituição tenham o mesmo CPF.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cd_signatario
+          in: path
+          required: true
+          description: Código do signatário a ser alterado
+          schema:
+            type: integer
+            example: 1001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignatarioEdicao'
+            example:
+              nome: "Maria Silva Oliveira"
+              cpf: "12345678900"
+              email: "maria.oliveira@example.com"
+              celular: "71999998888"
+              data_nascimento: "1985-07-15"
+              descricao: "Diretora Pedagógica"
+              ativo: true
+              cd_instituicao_ensino: 123
+      responses:
+        '200':
+          description: Signatário atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Signatário atualizado com sucesso!"
+                  cd_signatario:
+                    type: integer
+                    example: 1001
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Já existe outro signatário com este CPF para esta instituição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                erro: "Já existe um signatário com este CPF para esta instituição."
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # INSTITUIÇÃO ENDPOINTS
+  /instituicao/cadastrar:
+    post:
+      tags:
+        - Instituição
+      summary: Cadastrar nova instituição de ensino
+      description: |
+        Cadastra uma nova instituição de ensino no sistema. 
+        CNPJ, razão social e nome fantasia são campos obrigatórios.
+        O sistema verifica se o CNPJ já existe antes de cadastrar.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstituicaoCadastro'
+            examples:
+              universidade:
+                summary: Exemplo de Universidade
+                value:
+                  cnpj: "12.345.678/0001-90"
+                  razao_social: "Universidade Federal do Rio de Janeiro"
+                  nome_fantasia: "UFRJ"
+                  sigla: "UFRJ"
+                  site: "https://www.ufrj.br"
+                  tipo_ie: "Universidade"
+                  nivel_ie: "Superior"
+                  ie_formadora: true
+                  isento: false
+                  tipo_inscricao: "Municipal"
+                  numero_inscricao: "123456789"
+                  mantenedora: "Governo Federal"
+                  campus: "Campus Cidade Universitária"
+                  telefone: "(21) 2598-9999"
+                  celular: "(21) 99999-9999"
+                  observacao: "Principal universidade federal do Rio de Janeiro"
+                  aguardar_ie_para_assinar: "Aguardar ie para Assinar"
+                  acesso_contratos: "Acesso a Contratos"
+      responses:
+        '201':
+          description: Instituição cadastrada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Instituição inserida com sucesso!"
+                  cd_instituicao_ensino:
+                    type: integer
+                    example: 123
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: CNPJ já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                erro: "CNPJ já cadastrado."
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /instituicao/editar/{id}:
+    put:
+      tags:
+        - Instituição
+      summary: Editar dados de uma instituição
+      description: |
+        Edita os dados de uma instituição existente.
+        Permite atualização parcial dos campos.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da instituição a ser editada
+          schema:
+            type: integer
+            example: 123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstituicaoEdicao'
+      responses:
+        '200':
+          description: Instituição editada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem:
+                    type: string
+                    example: "Instituição editada com sucesso!"
+                  instituicao:
+                    $ref: '#/components/schemas/Instituicao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /instituicao/buscar:
+    get:
+      tags:
+        - Instituição
+      summary: Buscar instituições com filtros
+      description: |
+        Busca instituições com possibilidade de filtros por nome (razão social ou nome fantasia) 
+        e CNPJ, com suporte a paginação.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: nome
+          in: query
+          description: Nome ou parte do nome da instituição (busca em razão social e nome fantasia)
+          schema:
+            type: string
+            example: "Federal"
+        - name: cnpj
+          in: query
+          description: CNPJ da instituição (com ou sem máscara)
+          schema:
+            type: string
+            example: "12.345.678/0001-90"
+      responses:
+        '200':
+          description: Lista de instituições retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dados:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InstituicaoResumo'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ENDEREÇO ENDPOINTS
+  /endereco/cadastrar:
+    post:
+      tags:
+        - Endereço
+      summary: Cadastrar endereço para instituição
+      description: |
+        Cadastra um novo endereço para uma instituição de ensino.
+        Verifica se já existe um endereço principal e ativo antes de cadastrar.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnderecoCadastro'
+            example:
+              cep: "21941-901"
+              logradouro: "Cidade Universitária"
+              numero: "S/N"
+              bairro: "Ilha do Fundão"
+              cidade: "Rio de Janeiro"
+              uf: "RJ"
+              complemento: "Prédio da Reitoria"
+              telefone: "(21) 2598-9999"
+              codigo_ibge: "3304557"
+              ativo: true
+              principal: true
+              cd_instituicao_ensino: 123
+      responses:
+        '201':
+          description: Endereço cadastrado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Endereço inserido com sucesso!"
+                  id_endereco:
+                    type: integer
+                    example: 456
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Já existe um endereço principal e ativo para esta instituição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                erro: "Já existe um endereço ativo e principal para esta instituição de ensino."
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /endereco/instituicao/listar/{cd_instituicao_ensino}:
+    get:
+      tags:
+        - Endereço
+      summary: Listar endereços de uma instituição
+      description: Lista todos os endereços de uma instituição específica, ordenados por principal e data de criação.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cd_instituicao_ensino
+          in: path
+          required: true
+          description: Código da instituição de ensino
+          schema:
+            type: integer
+            example: 123
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Lista de endereços retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dados:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Endereco'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /endereco/alterar/{id_endereco}:
+    put:
+      tags:
+        - Endereço
+      summary: Alterar dados de um endereço
+      description: |
+        Altera os dados de um endereço existente.
+        Verifica se não há conflito com endereços principais ativos.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_endereco
+          in: path
+          required: true
+          description: ID do endereço a ser alterado
+          schema:
+            type: integer
+            example: 456
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnderecoEdicao'
+      responses:
+        '200':
+          description: Endereço atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Endereço atualizado com sucesso!"
+                  id_endereco:
+                    type: integer
+                    example: 456
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflito com endereço principal existente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ORIENTADOR ENDPOINTS
+  /orientador/cadastrar:
+    post:
+      tags:
+        - Orientador
+      summary: Cadastrar orientador
+      description: Cadastra um novo orientador vinculado a uma instituição de ensino.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrientadorCadastro'
+            example:
+              nome: "Dr. João Silva"
+              data_nascimento: "1975-03-15"
+              cargo: "Professor Titular"
+              email: "joao.silva@ufrj.br"
+              graduacao: "Doutorado em Engenharia"
+              ativo: true
+              cd_instituicao_ensino: 123
+      responses:
+        '201':
+          description: Orientador cadastrado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Orientador cadastrado com sucesso!"
+                  id_orientador:
+                    type: integer
+                    example: 789
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /orientador/instituicao/listar/{cd_instituicao_ensino}:
+    get:
+      tags:
+        - Orientador
+      summary: Listar orientadores de uma instituição
+      description: Lista todos os orientadores vinculados a uma instituição específica.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cd_instituicao_ensino
+          in: path
+          required: true
+          description: Código da instituição de ensino
+          schema:
+            type: integer
+            example: 123
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Lista de orientadores retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dados:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Orientador'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /orientador/alterar/{id_orientador}:
+    put:
+      tags:
+        - Orientador
+      summary: Alterar dados de um orientador
+      description: Altera os dados de um orientador existente.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_orientador
+          in: path
+          required: true
+          description: ID do orientador a ser alterado
+          schema:
+            type: integer
+            example: 789
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrientadorEdicao'
+      responses:
+        '200':
+          description: Orientador atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Orientador atualizado com sucesso!"
+                  id_orientador:
+                    type: integer
+                    example: 789
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # REPRESENTANTE LEGAL ENDPOINTS
+  /representantelegal/cadastrar:
+    post:
+      tags:
+        - Representante Legal
+      summary: Cadastrar representante legal
+      description: |
+        Cadastra um novo representante legal para uma instituição.
+        Verifica se já existe um representante principal ativo antes de cadastrar.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepresentanteLegalCadastro'
+            example:
+              nome: "Maria Santos"
+              data_nascimento: "1970-08-20"
+              rg: "12.345.678-9"
+              cpf: "123.456.789-00"
+              email: "maria.santos@ufrj.br"
+              celular: "(21) 99999-9999"
+              telefone: "(21) 2598-9999"
+              cargo: "Reitora"
+              nacionalidade: "Brasileira"
+              observacoes: "Responsável pela gestão institucional"
+              ativo: true
+              principal: true
+              cd_instituicao_ensino: 123
+      responses:
+        '201':
+          description: Representante legal cadastrado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Representante legal cadastrado com sucesso!"
+                  id_representante_legal:
+                    type: integer
+                    example: 321
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Já existe um representante legal ativo e principal para esta instituição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /representantelegal/instituicao/listar/{cd_instituicao_ensino}:
+    get:
+      tags:
+        - Representante Legal
+      summary: Listar representantes legais de uma instituição
+      description: Lista todos os representantes legais de uma instituição, ordenados por principal e data de criação.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cd_instituicao_ensino
+          in: path
+          required: true
+          description: Código da instituição de ensino
+          schema:
+            type: integer
+            example: 123
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Lista de representantes legais retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dados:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RepresentanteLegal'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /representantelegal/alterar/{id_representante_legal}:
+    put:
+      tags:
+        - Representante Legal
+      summary: Alterar dados de um representante legal
+      description: |
+        Altera os dados de um representante legal existente.
+        Verifica se não há conflito com representantes principais ativos.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_representante_legal
+          in: path
+          required: true
+          description: ID do representante legal a ser alterado
+          schema:
+            type: integer
+            example: 321
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepresentanteLegalEdicao'
+      responses:
+        '200':
+          description: Representante legal atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Representante legal atualizado com sucesso!"
+                  id_representante_legal:
+                    type: integer
+                    example: 321
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Já existe outro representante legal ativo e principal para esta instituição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # USUÁRIO INSTITUIÇÃO ENDPOINTS
+  /usuarioInstituicao/cadastrar:
+    post:
+      tags:
+        - Usuário Instituição
+      summary: Cadastrar usuário e/ou vínculo com instituição
+      description: |
+        Cadastra um novo usuário e/ou cria vínculo com uma instituição.
+        
+        **Cenários de uso:**
+        1. **Criar novo usuário + vínculo**: Não informar `cd_usuario`, fornecer `nome`, `email` e `senha`
+        2. **Apenas criar vínculo**: Informar `cd_usuario` de usuário existente
+        
+        O perfil é fixo como 'IE' (Instituição de Ensino).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioInstituicaoCadastro'
+            examples:
+              novo_usuario:
+                summary: Criar novo usuário + vínculo
+                value:
+                  nome: "Ana Costa"
+                  email: "ana.costa@email.com"
+                  senha: "senhaSegura123"
+                  cd_instituicao_ensino: 123
+                  bloqueado: false
+                  recebe_email: true
+              apenas_vinculo:
+                summary: Apenas criar vínculo
+                value:
+                  cd_usuario: 456
+                  cd_instituicao_ensino: 123
+                  bloqueado: false
+                  recebe_email: true
+      responses:
+        '201':
+          description: Usuário e vínculo criados com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usuário e vínculo criados com sucesso!"
+                  cd_usuario:
+                    type: integer
+                    example: 456
+                  id_usuario_instituicao:
+                    type: integer
+                    example: 789
+        '400':
+          description: Campos obrigatórios não fornecidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                sem_instituicao:
+                  summary: Código da instituição obrigatório
+                  value:
+                    erro: "Código da Instituição de Ensino é obrigatório."
+                campos_usuario:
+                  summary: Campos para novo usuário
+                  value:
+                    erro: "Nome, Email e Senha são obrigatórios para criação de novo usuário."
+        '409':
+          description: E-mail/login já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                erro: "Já existe um usuário cadastrado com este e-mail/login."
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /usuarioInstituicao/instituicao/listar/{cd_instituicao_ensino}:
+    get:
+      tags:
+        - Usuário Instituição
+      summary: Listar usuários de uma instituição
+      description: |
+        Lista todos os usuários vinculados a uma instituição específica,
+        incluindo informações do usuário e do vínculo.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cd_instituicao_ensino
+          in: path
+          required: true
+          description: Código da instituição de ensino
+          schema:
+            type: integer
+            example: 123
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Lista de usuários da instituição retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dados:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UsuarioInstituicao'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /usuarioInstituicao/alterar/{id_usuario_instituicao}:
+    put:
+      tags:
+        - Usuário Instituição
+      summary: Alterar dados do usuário e vínculo
+      description: |
+        Altera os dados do usuário (nome e email) e as configurações do vínculo
+        com a instituição (bloqueado e recebe_email).
+        
+        **Nota**: Esta operação atualiza tanto a tabela de usuários quanto
+        a tabela de vínculos em uma transação.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_usuario_instituicao
+          in: path
+          required: true
+          description: ID do vínculo usuário-instituição
+          schema:
+            type: integer
+            example: 789
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioInstituicaoEdicao'
+            example:
+              nome: "Ana Costa Silva"
+              email: "ana.silva@email.com"
+              bloqueado: false
+              recebe_email: true
+      responses:
+        '200':
+          description: Usuário e vínculo atualizados com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usuário e vínculo atualizados com sucesso!"
+                  id_usuario_instituicao:
+                    type: integer
+                    example: 789
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Vínculo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                erro: "Vínculo não encontrado."
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # CIDADE ENDPOINTS
+  /cidade/cidades:
+    get:
+      tags:
+        - Cidade
+      summary: Listar cidades
+      description: |
+        Lista cidades com possibilidade de filtros por nome e UF.
+        Suporta paginação e busca com acentos ignorados.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: nome
+          in: query
+          description: Nome ou parte do nome da cidade
+          schema:
+            type: string
+            example: "Rio"
+        - name: uf
+          in: query
+          description: Unidade Federativa (sigla do estado)
+          schema:
+            type: string
+            example: "RJ"
+            pattern: "^[A-Z]{2}$"
+      responses:
+        '200':
+          description: Lista de cidades retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dados:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Cidade'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT token obtido através do endpoint de login"
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Número da página (padrão: 1)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+        example: 1
+    
+    Limit:
+      name: limit
+      in: query
+      description: Número de registros por página (padrão: 50, máximo: 100)
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+        example: 20
+
+  responses:
+    BadRequest:
+      description: Dados inválidos ou campos obrigatórios faltando
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            erro: "Campos obrigatórios não fornecidos: CNPJ, Razão Social. Por favor, forneça todos os campos obrigatórios."
+
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            erro: "Recurso não encontrado."
+
+    InternalServerError:
+      description: Erro interno do servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            erro: "Erro interno do servidor."
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        erro:
+          type: string
+          description: Descrição do erro ocorrido
+          example: "Mensagem de erro detalhada"
+      required:
+        - erro
+
+    PaginationInfo:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          description: Página atual
+          example: 1
+        totalPages:
+          type: integer
+          description: Total de páginas
+          example: 5
+        totalItems:
+          type: integer
+          description: Total de itens
+          example: 100
+        hasNextPage:
+          type: boolean
+          description: Se há próxima página
+          example: true
+        hasPrevPage:
+          type: boolean
+          description: Se há página anterior
+          example: false
+        limit:
+          type: integer
+          description: Limite de itens por página
+          example: 20
+
+    # INSTITUIÇÃO SCHEMAS
+    InstituicaoCadastro:
+      type: object
+      required:
+        - cnpj
+        - razao_social
+        - nome_fantasia
+      properties:
+        cnpj:
+          type: string
+          description: CNPJ da instituição (com ou sem máscara)
+          example: "12.345.678/0001-90"
+          pattern: "^[0-9]{2}[\.]?[0-9]{3}[\.]?[0-9]{3}[\/]?[0-9]{4}[-]?[0-9]{2}$"
+        razao_social:
+          type: string
+          description: Razão social da instituição
+          example: "Universidade Federal do Rio de Janeiro"
+          maxLength: 255
+        nome_fantasia:
+          type: string
+          description: Nome fantasia da instituição
+          example: "UFRJ"
+          maxLength: 255
+        sigla:
+          type: string
+          description: Sigla da instituição
+          example: "UFRJ"
+          maxLength: 20
+        site:
+          type: string
+          format: uri
+          description: Site oficial da instituição
+          example: "https://www.ufrj.br"
+        tipo_ie:
+          type: string
+          description: Tipo da instituição de ensino
+          example: "Universidade"
+          enum: ["Universidade", "Faculdade", "Centro Universitário", "Instituto", "Escola Técnica"]
+        nivel_ie:
+          type: string
+          description: Nível de ensino
+          example: "Superior"
+          enum: ["Fundamental", "Médio", "Técnico", "Superior", "Pós-graduação"]
+        ie_formadora:
+          type: boolean
+          description: Se é uma instituição formadora
+          example: true
+        isento:
+          type: boolean
+          description: Se é isenta de inscrição
+          example: false
+        tipo_inscricao:
+          type: string
+          description: Tipo de inscrição
+          example: "Municipal"
+          enum: ["Municipal", "Estadual", "Federal"]
+        numero_inscricao:
+          type: string
+          description: Número da inscrição
+          example: "123456789"
+        mantenedora:
+          type: string
+          description: Mantenedora da instituição
+          example: "Governo Federal"
+        campus:
+          type: string
+          description: Campus da instituição
+          example: "Campus Cidade Universitária"
+        telefone:
+          type: string
+          description: Telefone principal
+          example: "(21) 2598-9999"
+          pattern: "^\\([0-9]{2}\\) [0-9]{4,5}-[0-9]{4}$"
+        celular:
+          type: string
+          description: Celular de contato
+          example: "(21) 99999-9999"
+          pattern: "^\\([0-9]{2}\\) [0-9]{4,5}-[0-9]{4}$"
+        observacao:
+          type: string
+          description: Observações adicionais
+          example: "Observações gerais sobre a instituição"
+
+          aguardar_ie_para_assinar:
+  type: boolean
+  description: Se é necessário aguardar a IE para assinatura
+  example: false
+
+acesso_contratos:
+  type: boolean
+  description: Se a instituição possui acesso ao módulo de contratos
+  example: true
+
+    InstituicaoEdicao:
+      type: object
+      required:
+        - razao_social
+        - nome_fantasia
+        - telefone
+        - logradouro
+        - numero
+        - bairro
+        - cidade
+        - uf
+        - representante_legal
+      properties:
+        razao_social:
+          type: string
+          example: "Universidade Federal do Rio de Janeiro"
+        nome_fantasia:
+          type: string
+          example: "UFRJ"
+        cnpj:
+          type: string
+          example: "12.345.678/0001-90"
+        email_principal:
+          type: string
+          format: email
+          example: "contato@ufrj.br"
+        mantenedora:
+          type: string
+          example: "Governo Federal"
+        campus:
+          type: string
+          example: "Campus Cidade Universitária"
+        telefone:
+          type: string
+          example: "(21) 2598-9999"
+        celular:
+          type: string
+          example: "(21) 99999-9999"
+        unidade:
+          type: string
+          example: "Reitoria"
+        cep:
+          type: string
+          example: "21941-901"
+        logradouro:
+          type: string
+          example: "Cidade Universitária"
+        numero:
+          type: string
+          example: "S/N"
+        bairro:
+          type: string
+          example: "Ilha do Fundão"
+        cidade:
+          type: string
+          example: "Rio de Janeiro"
+        uf:
+          type: string
+          example: "RJ"
+          pattern: "^[A-Z]{2}$"
+        representante_legal:
+          type: string
+          example: "João Silva - Reitor"
+        cpf:
+          type: string
+          example: "123.456.789-00"
+        procedimento:
+          type: string
+          example: "Procedimento padrão"
+        nome_modelo:
+          type: string
+          example: "Modelo UFRJ"
+
+    Instituicao:
+      type: object
+      properties:
+        cd_instituicao_ensino:
+          type: integer
+          example: 123
+        cnpj:
+          type: string
+          example: "12.345.678/0001-90"
+        razao_social:
+          type: string
+          example: "Universidade Federal do Rio de Janeiro"
+        nome_fantasia:
+          type: string
+          example: "UFRJ"
+        sigla:
+          type: string
+          example: "UFRJ"
+        site:
+          type: string
+          example: "https://www.ufrj.br"
+        tipo_ie:
+          type: string
+          example: "Universidade"
+        nivel_ie:
+          type: string
+          example: "Superior"
+        ie_formadora:
+          type: boolean
+          example: true
+        isento:
+          type: boolean
+          example: false
+        tipo_inscricao:
+          type: string
+          example: "Municipal"
+        numero_inscricao:
+          type: string
+          example: "123456789"
+        mantenedora:
+          type: string
+          example: "Governo Federal"
+        campus:
+          type: string
+          example: "Campus Cidade Universitária"
+        telefone:
+          type: string
+          example: "(21) 2598-9999"
+        celular:
+          type: string
+          example: "(21) 99999-9999"
+        observacao:
+          type: string
+          example: "Observações gerais"
+        data_criacao:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        criado_por:
+          type: integer
+          example: 1
+
+    InstituicaoResumo:
+      type: object
+      properties:
+        cd_ie:
+          type: integer
+          example: 123
+        id_externo_legado:
+          type: string
+          example: "LEG123"
+        razao_social:
+          type: string
+          example: "Universidade Federal do Rio de Janeiro"
+        nome_fantasia:
+          type: string
+          example: "UFRJ"
+        cnpj:
+          type: string
+          example: "12.345.678/0001-90"
+        email_principal:
+          type: string
+          example: "contato@ufrj.br"
+        telefone:
+          type: string
+          example: "(21) 2598-9999"
+        cidade:
+          type: string
+          example: "Rio de Janeiro"
+        uf:
+          type: string
+          example: "RJ"
+        aguardar_ie_para_assinar:
+        type: boolean
+        example: false
+
+      acesso_contratos:
+        type: boolean
+        example: true
+
+
+    # ENDEREÇO SCHEMAS
+    EnderecoCadastro:
+      type: object
+      required:
+        - cep
+        - logradouro
+        - bairro
+        - cidade
+        - uf
+        - cd_instituicao_ensino
+      properties:
+        cep:
+          type: string
+          description: CEP do endereço
+          example: "21941-901"
+          pattern: "^[0-9]{5}-?[0-9]{3}$"
+        logradouro:
+          type: string
+          description: Logradouro/Rua
+          example: "Cidade Universitária"
+          maxLength: 255
+        numero:
+          type: string
+          description: Número do endereço
+          example: "S/N"
+          maxLength: 20
+        bairro:
+          type: string
+          description: Bairro
+          example: "Ilha do Fundão"
+          maxLength: 100
+        cidade:
+          type: string
+          description: Cidade
+          example: "Rio de Janeiro"
+          maxLength: 100
+        uf:
+          type: string
+          description: Unidade Federativa
+          example: "RJ"
+          pattern: "^[A-Z]{2}$"
+        complemento:
+          type: string
+          description: Complemento do endereço
+          example: "Prédio da Reitoria"
+          maxLength: 255
+        telefone:
+          type: string
+          description: Telefone do endereço
+          example: "(21) 2598-9999"
+          pattern: "^\\([0-9]{2}\\) [0-9]{4,5}-[0-9]{4}$"
+        codigo_ibge:
+          type: string
+          description: Código IBGE da cidade
+          example: "3304557"
+          pattern: "^[0-9]{7}$"
+        ativo:
+          type: boolean
+          default: true
+          description: Se o endereço está ativo
+        principal:
+          type: boolean
+          default: false
+          description: Se é o endereço principal da instituição
+        cd_instituicao_ensino:
+          type: integer
+          description: Código da instituição de ensino
+          example: 123
+
+    EnderecoEdicao:
+      type: object
+      required:
+        - cep
+        - logradouro
+        - bairro
+        - cidade
+        - cd_instituicao_ensino
+      properties:
+        cep:
+          type: string
+          example: "21941-901"
+        logradouro:
+          type: string
+          example: "Cidade Universitária"
+        numero:
+          type: string
+          example: "S/N"
+        bairro:
+          type: string
+          example: "Ilha do Fundão"
+        cidade:
+          type: string
+          example: "Rio de Janeiro"
+        complemento:
+          type: string
+          example: "Prédio da Reitoria"
+        telefone:
+          type: string
+          example: "(21) 2598-9999"
+        codigo_ibge:
+          type: string
+          example: "3304557"
+        ativo:
+          type: boolean
+          example: true
+        principal:
+          type: boolean
+          example: false
+        cd_instituicao_ensino:
+          type: integer
+          example: 123
+
+    Endereco:
+      type: object
+      properties:
+        id_endereco:
+          type: integer
+          example: 456
+        cep:
+          type: string
+          example: "21941-901"
+        logradouro:
+          type: string
+          example: "Cidade Universitária"
+        numero:
+          type: string
+          example: "S/N"
+        bairro:
+          type: string
+          example: "Ilha do Fundão"
+        cidade:
+          type: string
+          example: "Rio de Janeiro"
+        uf:
+          type: string
+          example: "RJ"
+        complemento:
+          type: string
+          example: "Prédio da Reitoria"
+        telefone:
+          type: string
+          example: "(21) 2598-9999"
+        codigo_ibge:
+          type: string
+          example: "3304557"
+        ativo:
+          type: boolean
+          example: true
+        principal:
+          type: boolean
+          example: true
+        cd_instituicao_ensino:
+          type: integer
+          example: 123
+        criado_por:
+          type: integer
+          example: 1
+        data_criacao:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        data_alteracao:
+          type: string
+          format: date-time
+          example: "2024-01-20T14:45:00Z"
+        alterado_por:
+          type: integer
+          example: 2
+
+    # ORIENTADOR SCHEMAS
+    OrientadorCadastro:
+      type: object
+      required:
+        - nome
+        - cd_instituicao_ensino
+      properties:
+        nome:
+          type: string
+          description: Nome completo do orientador
+          example: "Dr. João Silva"
+          maxLength: 255
+        data_nascimento:
+          type: string
+          format: date
+          description: Data de nascimento
+          example: "1975-03-15"
+        cargo:
+          type: string
+          description: Cargo do orientador
+          example: "Professor Titular"
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          description: E-mail do orientador
+          example: "joao.silva@ufrj.br"
+          maxLength: 255
+        graduacao:
+          type: string
+          description: Graduação/Titulação
+          example: "Doutorado em Engenharia"
+          maxLength: 255
+        ativo:
+          type: boolean
+          default: true
+          description: Status do orientador
+        cd_instituicao_ensino:
+          type: integer
+          description: Código da instituição de ensino
+          example: 123
+
+    OrientadorEdicao:
+      type: object
+      required:
+        - nome
+        - cd_instituicao_ensino
+      properties:
+        nome:
+          type: string
+          example: "Dr. João Silva"
+        data_nascimento:
+          type: string
+          format: date
+          example: "1975-03-15"
+        cargo:
+          type: string
+          example: "Professor Titular"
+        email:
+          type: string
+          format: email
+          example: "joao.silva@ufrj.br"
+        graduacao:
+          type: string
+          example: "Doutorado em Engenharia"
+        ativo:
+          type: boolean
+          example: true
+        cd_instituicao_ensino:
+          type: integer
+          example: 123
+
+    Orientador:
+      type: object
+      properties:
+        id_orientador:
+          type: integer
+          example: 789
+        nome:
+          type: string
+          example: "Dr. João Silva"
+        data_nascimento:
+          type: string
+          format: date
+          example: "1975-03-15"
+        cargo:
+          type: string
+          example: "Professor Titular"
+        email:
+          type: string
+          example: "joao.silva@ufrj.br"
+        graduacao:
+          type: string
+          example: "Doutorado em Engenharia"
+        ativo:
+          type: boolean
+          example: true
+        cd_instituicao_ensino:
+          type: integer
+          example: 123
+        data_criacao:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        criado_por:
+          type: integer
+          example: 1
+        data_alteracao:
+          type: string
+          format: date-time
+          example: "2024-01-20T14:45:00Z"
+        alterado_por:
+          type: integer
+          example: 2
+
+    # REPRESENTANTE LEGAL SCHEMAS
+    RepresentanteLegalCadastro:
+      type: object
+      required:
+        - nome
+        - cd_instituicao_ensino
+      properties:
+        nome:
+          type: string
+          description: Nome completo do representante
+          example: "Maria Santos"
+          maxLength: 255
+        data_nascimento:
+          type: string
+          format: date
+          description: Data de nascimento
+          example: "1970-08-20"
+        rg:
+          type: string
+          description: Número do RG
+          example: "12.345.678-9"
+          maxLength: 20
+        cpf:
+          type: string
+          description: Número do CPF
+          example: "123.456.789-00"
+          pattern: "^[0-9]{3}[\.]?[0-9]{3}[\.]?[0-9]{3}[-]?[0-9]{2}$"
+        email:
+          type: string
+          format: email
+          description: E-mail do representante
+          example: "maria.santos@ufrj.br"
+          maxLength: 255
+        celular:
+          type: string
+          description: Número do celular
+          example: "(21) 99999-9999"
+          pattern: "^\\([0-9]{2}\\) [0-9]{4,5}-[0-9]{4}$"
+        telefone:
+          type: string
+          description: Número do telefone
+          example: "(21) 2598-9999"
+          pattern: "^\\([0-9]{2}\\) [0-9]{4,5}-[0-9]{4}$"
+        cargo:
+          type: string
+          description: Cargo do representante
+          example: "Reitora"
+          maxLength: 100
+        nacionalidade:
+          type: string
+          description: Nacionalidade
+          example: "Brasileira"
+          maxLength: 50
+        observacoes:
+          type: string
+          description: Observações sobre o representante
+          example: "Responsável pela gestão institucional"
+        ativo:
+          type: boolean
+          default: true
+          description: Status do representante
+        principal:
+          type: boolean
+          default: false
+          description: Se é o representante principal
+        cd_instituicao_ensino:
+          type: integer
+          description: Código da instituição de ensino
+          example: 123
+
+    RepresentanteLegalEdicao:
+      type: object
+      required:
+        - nome
+        - cd_instituicao_ensino
+      properties:
+        nome:
+          type: string
+          example: "Maria Santos"
+        data_nascimento:
+          type: string
+          format: date
+          example: "1970-08-20"
+        rg:
+          type: string
+          example: "12.345.678-9"
+        cpf:
+          type: string
+          example: "123.456.789-00"
+        email:
+          type: string
+          format: email
+          example: "maria.santos@ufrj.br"
+        celular:
+          type: string
+          example: "(21) 99999-9999"
+        telefone:
+          type: string
+          example: "(21) 2598-9999"
+        cargo:
+          type: string
+          example: "Reitora"
+        nacionalidade:
+          type: string
+          example: "Brasileira"
+        observacoes:
+          type: string
+          example: "Responsável pela gestão institucional"
+        ativo:
+          type: boolean
+          example: true
+        principal:
+          type: boolean
+          example: false
+        cd_instituicao_ensino:
+          type: integer
+          example: 123
+
+    RepresentanteLegal:
+      type: object
+      properties:
+        id_representante_legal:
+          type: integer
+          example: 321
+        nome:
+          type: string
+          example: "Maria Santos"
+        data_nascimento:
+          type: string
+          format: date
+          example: "1970-08-20"
+        rg:
+          type: string
+          example: "12.345.678-9"
+        cpf:
+          type: string
+          example: "123.456.789-00"
+        email:
+          type: string
+          example: "maria.santos@ufrj.br"
+        celular:
+          type: string
+          example: "(21) 99999-9999"
+        telefone:
+          type: string
+          example: "(21) 2598-9999"
+        cargo:
+          type: string
+          example: "Reitora"
+        nacionalidade:
+          type: string
+          example: "Brasileira"
+        observacoes:
+          type: string
+          example: "Responsável pela gestão institucional"
+        ativo:
+          type: boolean
+          example: true
+        principal:
+          type: boolean
+          example: true
+        cd_instituicao_ensino:
+          type: integer
+          example: 123
+        data_criacao:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        criado_por:
+          type: integer
+          example: 1
+        data_alteracao:
+          type: string
+          format: date-time
+          example: "2024-01-20T14:45:00Z"
+        alterado_por:
+          type: integer
+          example: 2
+
+    # USUÁRIO INSTITUIÇÃO SCHEMAS
+    UsuarioInstituicaoCadastro:
+      type: object
+      required:
+        - cd_instituicao_ensino
+      properties:
+        cd_usuario:
+          type: integer
+          description: |
+            ID do usuário existente. Se informado, apenas cria o vínculo.
+            Se não informado, cria novo usuário + vínculo.
+          example: 456
+        nome:
+          type: string
+          description: Nome do usuário (obrigatório se for criar novo usuário)
+          example: "Ana Costa"
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          description: E-mail do usuário (obrigatório se for criar novo usuário)
+          example: "ana.costa@email.com"
+          maxLength: 255
+        senha:
+          type: string
+          description: Senha do usuário (obrigatório se for criar novo usuário)
+          example: "senhaSegura123"
+          minLength: 6
+        cd_instituicao_ensino:
+          type: integer
+          description: Código da instituição de ensino
+          example: 123
+        bloqueado:
+          type: boolean
+          default: false
+          description: Se o usuário está bloqueado na instituição
+        recebe_email:
+          type: boolean
+          default: true
+          description: Se o usuário recebe emails da instituição
+
+    UsuarioInstituicaoEdicao:
+      type: object
+      required:
+        - nome
+        - email
+      properties:
+        nome:
+          type: string
+          description: Nome do usuário
+          example: "Ana Costa Silva"
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          description: E-mail do usuário
+          example: "ana.silva@email.com"
+          maxLength: 255
+        bloqueado:
+          type: boolean
+          description: Se o usuário está bloqueado na instituição
+          example: false
+        recebe_email:
+          type: boolean
+          description: Se o usuário recebe emails da instituição
+          example: true
+
+    UsuarioInstituicao:
+      type: object
+      properties:
+        cd_usuario:
+          type: integer
+          description: Código do usuário
+          example: 456
+        nome:
+          type: string
+          description: Nome do usuário
+          example: "Ana Costa"
+        email:
+          type: string
+          format: email
+          description: E-mail do usuário
+          example: "ana.costa@email.com"
+        perfil:
+          type: string
+          description: Perfil do usuário na instituição
+          example: "IE"
+          enum: ["IE"]
+        bloqueado:
+          type: boolean
+          description: Se o usuário está bloqueado
+          example: false
+        recebe_email:
+          type: boolean
+          description: Se recebe emails da instituição
+          example: true
+        data_criacao:
+          type: string
+          format: date-time
+          description: Data de criação do vínculo
+          example: "2024-01-15T10:30:00Z"
+        data_alteracao:
+          type: string
+          format: date-time
+          description: Data da última alteração
+          example: "2024-01-20T14:45:00Z"
+        criado_por:
+          type: integer
+          description: ID do usuário que criou o vínculo
+          example: 1
+        alterado_por:
+          type: integer
+          description: ID do usuário que fez a última alteração
+          example: 2
+
+    # CIDADE SCHEMA
+    Cidade:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Código da cidade
+          example: 3304557
+        nome:
+          type: string
+          description: Nome da cidade
+          example: "Rio de Janeiro"
+        uf:
+          type: string
+          description: Unidade Federativa
+          example: "RJ"
+          pattern: "^[A-Z]{2}$"
+
+tags:
+  - name: Instituição
+    description: Operações relacionadas ao cadastro e gestão de instituições de ensino
+  - name: Endereço
+    description: Operações relacionadas aos endereços das instituições
+  - name: Orientador
+    description: Operações relacionadas aos orientadores das instituições
+  - name: Representante Legal
+    description: Operações relacionadas aos representantes legais das instituições
+  - name: Usuário Instituição
+    description: Operações relacionadas aos usuários vinculados às instituições
+  - name: Cidade
+    description: Operações relacionadas à consulta de cidades
+
+externalDocs:
+  description: Documentação adicional do projeto
+  url: https://docs.ciderh.com.br

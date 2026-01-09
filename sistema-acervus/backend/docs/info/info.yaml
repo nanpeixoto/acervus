@@ -1,0 +1,23 @@
+title: API CIDE RH - Sistema de Gestão de Instituições de Ensino
+version: 1.0.0
+description: |
+  API completa para gerenciamento de instituições de ensino, incluindo cadastro de instituições, 
+  endereços, orientadores, representantes legais e usuários.
+  
+  ## Autenticação
+  Esta API utiliza autenticação JWT Bearer Token. Inclua o token no header Authorization.
+  
+  ## Paginação
+  Muitos endpoints suportam paginação através dos parâmetros `page` e `limit`.
+  
+  ## Códigos de Resposta
+  - **200**: Sucesso
+  - **201**: Criado com sucesso
+  - **400**: Dados inválidos ou campos obrigatórios faltando
+  - **401**: Não autorizado (token inválido/ausente)
+  - **404**: Recurso não encontrado
+  - **409**: Conflito (ex: CNPJ já cadastrado)
+  - **500**: Erro interno do servidor
+contact:
+  name: Equipe CIDE RH
+  email: suporte@ciderh.com.br

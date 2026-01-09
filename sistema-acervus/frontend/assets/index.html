@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CKEditor 4 + Flutter WebView</title>
+</head>
+<body>
+  <h2>CKEditor 4 + Flutter WebView</h2>
+  <textarea name="editor" id="editor">Conteúdo inicial</textarea>
+
+  <!-- CKEditor local -->
+  <script src="ckeditorfull.js"></script>
+  <script>
+    CKEDITOR.replace('editor', {
+      removePlugins: 'exportpdf' 
+    });
+
+    setInterval(() => {
+      const warning = document.querySelector('.cke_notification_warning');
+      if (warning) warning.remove();
+    }, 500);
+  </script>
+</body>
+</html>
