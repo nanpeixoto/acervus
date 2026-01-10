@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sistema_estagio/models/_auxiliares/assunto.dart';
+import 'package:sistema_estagio/models/_auxiliares/estado_conservacao.dart';
+import 'package:sistema_estagio/models/_auxiliares/material.dart';
 import 'package:sistema_estagio/models/_auxiliares/subtipo_obra.dart';
 import 'package:sistema_estagio/models/_pessoas/formacao/idioma.dart';
 import 'package:sistema_estagio/services/_auxiliares/assunto_service.dart';
+import 'package:sistema_estagio/services/_auxiliares/estado_conservacao_service.dart';
+import 'package:sistema_estagio/services/_auxiliares/material_service.dart';
 import 'package:sistema_estagio/services/_auxiliares/subtipo_obra_service.dar.dart';
 import 'package:sistema_estagio/services/_pessoas/formacao/idioma_service.dart';
 import 'package:sistema_estagio/services/obra_service.dart';
@@ -67,6 +71,12 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
   List<Assunto> _assuntos = [];
   bool _loadingAssuntos = false;
 
+  List<Materiais> _materiais = [];
+  bool _loadingMateriais = false;
+
+  List<EstadoConservacao> _estadosConservacao = [];
+  bool _loadingEstadosConservacao = false;
+
   List<Idioma> _idiomas = [];
 
   bool _loadingIdiomas = false;
@@ -81,6 +91,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
     _loadAssuntos();
 
     _loadIdiomas();
+
+    _loadMateriais();
+
+    _loadEstadosConservacao();
 
     if (_isEdicao) {
       _carregarObra();
@@ -131,6 +145,56 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       AppUtils.showErrorSnackBar(context, 'Erro ao carregar Assuntos');
     } finally {
       setState(() => _loadingAssuntos = false);
+    }
+  }
+
+  Future<void> _loadMateriais() async {
+    setState(() => _loadingMateriais = true);
+
+    try {
+      final result = await MateriaisService.listarMateriais(
+        page: 1,
+        limit: 999,
+        ativo: true,
+      );
+
+      setState(() {
+        _materiais = List<Materiais>.from(result['materiais'] ?? []);
+
+        // segurança: evita value fora da lista
+        if (cdMaterial != null && !_materiais.any((m) => m.id == cdMaterial)) {
+          cdMaterial = null;
+        }
+      });
+    } catch (e) {
+      AppUtils.showErrorSnackBar(context, 'Erro ao carregar materiais');
+    } finally {
+      setState(() => _loadingMateriais = false);
+    }
+  }
+
+  Future<void> _loadEstadosConservacao() async {
+    setState(() => _loadingEstadosConservacao = true);
+
+    try {
+      final result = await EstadoConservacaoService.listar(
+        page: 1,
+        limit: 999,
+        ativo: true,
+      );
+
+      setState(() {
+        _estadosConservacao = List<EstadoConservacao>.from(result['estados'] ?? []);
+
+        // segurança: evita value fora da lista
+        if (cdEstadoConservacao != null && !_estadosConservacao.any((e) => e.id == cdEstadoConservacao)) {
+          cdEstadoConservacao = null;
+        }
+      });
+    } catch (e) {
+      AppUtils.showErrorSnackBar(context, 'Erro ao carregar estados de conservação');
+    } finally {
+      setState(() => _loadingEstadosConservacao = false);
     }
   }
 
@@ -422,9 +486,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(
-                  child: _dropdown('Material *', cdMaterial,
-                      (v) => setState(() => cdMaterial = v))),
+              Expanded(child: _dropdownMaterial()),
               const SizedBox(width: 12),
               Expanded(
                   child: _dropdown('Localização *', cdEstantePrateleira,
@@ -438,9 +500,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(
-                  child: _dropdown('Estado de Conservação', cdEstadoConservacao,
-                      (v) => setState(() => cdEstadoConservacao = v))),
+              Expanded(child: _dropdownEstadoConservacao()),
               const SizedBox(width: 12),
               Expanded(
                   child: _dropdown('Editora', cdEditora,
@@ -498,6 +558,81 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       ),
       items: const [],
       onChanged: onChanged,
+    );
+  }
+
+  Widget _dropdownMaterial() {
+    if (_loadingMateriais) {
+      return const LinearProgressIndicator(minHeight: 2);
+    }
+
+    if (_materiais.isEmpty) {
+      return const Text(
+        'Nenhum material disponível',
+        style: TextStyle(color: Colors.grey),
+      );
+    }
+
+    return DropdownButtonFormField<int>(
+      value: cdMaterial,
+      isExpanded: true,
+      dropdownColor: Colors.white,
+      style: const TextStyle(color: Colors.black),
+      decoration: const InputDecoration(
+        labelText: 'Material *',
+        border: OutlineInputBorder(),
+        isDense: true,
+      ),
+      items: _materiais
+          .map(
+            (m) => DropdownMenuItem<int>(
+              value: m.id,
+              child: Text(
+                m.descricao,
+                style: const TextStyle(color: Colors.black),
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (v) => setState(() => cdMaterial = v),
+      validator: (v) => v == null ? 'Material é obrigatório' : null,
+    );
+  }
+  Widget _dropdownEstadoConservacao() {
+    if (_loadingEstadosConservacao) {
+      return const LinearProgressIndicator(minHeight: 2);
+    }
+
+    if (_estadosConservacao.isEmpty) {
+      return const Text(
+        'Nenhum estado de conservação disponível',
+        style: TextStyle(color: Colors.grey),
+      );
+    }
+
+    return DropdownButtonFormField<int>(
+      value: cdEstadoConservacao,
+      isExpanded: true,
+      dropdownColor: Colors.white,
+      style: const TextStyle(color: Colors.black),
+      decoration: const InputDecoration(
+        labelText: 'Estado de Conservação *',
+        border: OutlineInputBorder(),
+        isDense: true,
+      ),
+      items: _estadosConservacao
+          .map(
+            (e) => DropdownMenuItem<int>(
+              value: e.id,
+              child: Text(
+                e.descricao,
+                style: const TextStyle(color: Colors.black),
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (v) => setState(() => cdEstadoConservacao = v),
+      validator: (v) => v == null ? 'Estado de Conservação é obrigatório' : null,
     );
   }
 
