@@ -67,7 +67,7 @@ router.post('/login', async (req, res) => {
     console.error('Erro ao autenticar:', err);
     return res
       .status(500)
-      .json({ erro: 'Erro ao autenticar. Tente novamente mais tarde.' });
+      .json({ erro: 'Erro ao autenticar. Tente novamente mais tarde.', motivo: err.message });
   }
 });
 
