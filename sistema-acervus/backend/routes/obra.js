@@ -4,6 +4,8 @@ const pool = require('../db');
 const { verificarToken, tokenOpcional } = require('../auth');
 const logger = require('../utils/logger');
 const { paginarConsulta } = require('../helpers/paginador');
+const path = require('path');
+const fs = require('fs');
  
  
  
@@ -215,7 +217,9 @@ router.get('/galeria/arquivo/:id', tokenOpcional, async (req, res) => {
     return res.sendFile(filePath);
   } catch (err) {
     console.error('Erro ao obter arquivo da galeria:', err);
-    return res.status(500).json({ erro: 'Erro ao obter arquivo.' });
+   // console.log();
+    logger.error('Erro ao obter arquivo da galeria: ' + err.stack, 'obras');
+    return res.status(500).json({ erro: 'Erro ao obter arquivo.', motivo: err.message });
   }
 });
 
@@ -321,8 +325,7 @@ router.put('/galeria/editar/:id', verificarToken, async (req, res) => {
     ds_imagem,
     extensao,
     imagem_base64,
-    sts_principal,
-    rotacao,
+    sts_principal
   } = req.body || {};
 
   const updates = [];
@@ -337,9 +340,7 @@ router.put('/galeria/editar/:id', verificarToken, async (req, res) => {
   if (ds_imagem !== undefined) pushUpdate('ds_imagem', ds_imagem || null);
   if (extensao !== undefined) pushUpdate('extensao', extensao || null);
   if (sts_principal !== undefined) pushUpdate('sts_principal', !!sts_principal);
-  if (rotacao !== undefined && rotacao !== null && !Number.isNaN(Number(rotacao))) {
-    pushUpdate('rotacao', Number(rotacao));
-  }
+  
 
   if (imagem_base64) {
     const buffer = decodeBase64(imagem_base64);
@@ -363,8 +364,7 @@ router.put('/galeria/editar/:id', verificarToken, async (req, res) => {
       ds_imagem,
       sts_principal,
       nome,
-      extensao,
-      CASE WHEN imagem IS NOT NULL THEN encode(imagem, 'base64') END AS imagem_base64
+      extensao 
   `;
 
   values.push(id);
@@ -378,7 +378,7 @@ router.put('/galeria/editar/:id', verificarToken, async (req, res) => {
   } catch (err) {
     console.error('Erro ao atualizar imagem da galeria:', err);
     logger.error('Erro ao atualizar imagem da galeria: ' + err.stack, 'obras');
-    return res.status(500).json({ erro: 'Erro ao atualizar imagem da galeria.' });
+    return res.status(500).json({ erro: 'Erro ao atualizar imagem da galeria.', motivo: err.message } );
   }
 });
 
