@@ -23,7 +23,7 @@ class Materiais {
   // ===============================
   factory Materiais.fromJson(Map<String, dynamic> json) {
     return Materiais(
-      id: json['cd_Materiais'],
+      id: json['cd_material'] ?? json['cd_Materiais'],
       descricao: json['descricao'] ?? '',
       ativo: json['ativo'] ?? true,
       criadoPor: json['criado_por'],
