@@ -128,6 +128,8 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
 
   bool get _isEdicao => widget.obraId != null;
 
+  String? _carimbo;
+
   // =========================
   // Controllers
   // =========================
@@ -588,6 +590,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
           obra.qtdPaginas != null ? obra.qtdPaginas.toString() : '';
       _volumeController.text = obra.volume ?? '';
       _resumoController.text = obra.resumoObra ?? '';
+      _carimbo = obra.carimbo;
 
       cdTipoPeca = obra.cdTipoPeca;
       cdSubtipoPeca = obra.cdSubtipoPeca;
@@ -726,6 +729,21 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          if ((_carimbo ?? '').isNotEmpty) ...[
+            Center(
+              child: Text(
+                _carimbo!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           CustomTextField(controller: _tituloController, label: 'Título *'),
           const SizedBox(height: 12),
           Row(

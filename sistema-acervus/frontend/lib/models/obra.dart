@@ -26,6 +26,8 @@ class Obra {
   final String? dataCompra;
   final double? valor;
 
+  final String? carimbo;
+
   Obra({
     required this.id,
     this.titulo,
@@ -48,6 +50,7 @@ class Obra {
     this.volume,
     this.dataCompra,
     this.valor,
+    this.carimbo,
   });
 
   factory Obra.fromJson(Map<String, dynamic> json) {
@@ -75,6 +78,7 @@ class Obra {
           ? double.tryParse(json['valor'].toString())
           : null,
       resumoObra: json['resumo_obra'],
+      carimbo: json['carimbo'],
     );
   }
 }
