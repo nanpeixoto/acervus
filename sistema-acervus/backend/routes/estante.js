@@ -44,25 +44,28 @@ async function listarEstantes(req, res) {
   `;
 
   const baseQuery = `
-    SELECT
+    	SELECT
       e.cd_estante,
       e.descricao,
       e.cd_sala,
       e.pais_id,
       e.estado_id,
       e.cidade_id,
-      COUNT(p.cd_estante_prateleira) AS total_prateleiras
+      COUNT(p.cd_estante_prateleira) AS total_prateleiras, 
+	  gp.nome as pais_descricao, ge.nome estado_descricao, gc.nome cidade_descricao
     FROM public.ace_estante e
-    LEFT JOIN public.ace_estante_prateleira p
-      ON p.cd_estante = e.cd_estante
+    Inner  JOIN public.ace_estante_prateleira p       ON p.cd_estante = e.cd_estante
+	 Inner  JOIN public.ger_pais  gp       ON e.pais_id = gp.id
+	  Inner  JOIN public.ger_estado ge       ON e.estado_id = ge.id
+	   Inner  JOIN public.ger_cidade gc       ON e.cidade_id = gc.id
     ${where}
-    GROUP BY
+     GROUP BY
       e.cd_estante,
       e.descricao,
       e.cd_sala,
       e.pais_id,
       e.estado_id,
-      e.cidade_id
+      e.cidade_id,  gp.nome, ge.nome, gc.nome
     ORDER BY unaccent(e.descricao)
   `;
 

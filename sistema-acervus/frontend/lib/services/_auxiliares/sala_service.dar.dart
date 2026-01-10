@@ -161,4 +161,23 @@ class SalaService {
       throw Exception('Erro ao excluir Sala: $e');
     }
   }
+
+  // =============================
+  // LISTAR SALAS POR CIDADE
+  // =============================
+  static Future<List<Sala>> listarPorCidade(int cidadeId) async {
+    final uri = Uri.parse('$baseUrl/sala/listar').replace(queryParameters: {
+      'cidade_id': cidadeId.toString(),
+      'limit': '999',
+    });
+
+    final response = await http.get(uri, headers: await _getHeaders());
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return (data['dados'] as List).map((s) => Sala.fromJson(s)).toList();
+    } else {
+      throw Exception('Erro ao listar salas');
+    }
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sistema_estagio/models/_auxiliares/estante.dart';
 import 'package:sistema_estagio/models/_auxiliares/prateleira.dart';
+import 'package:sistema_estagio/models/_auxiliares/sala_obra.dart';
 import 'package:sistema_estagio/models/prateleiraForm.dart';
 import 'package:sistema_estagio/services/_auxiliares/estante_service.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
@@ -8,6 +9,15 @@ import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
+
+import 'package:sistema_estagio/models/_auxiliares/pais.dart';
+import 'package:sistema_estagio/models/_auxiliares/estado.dart';
+import 'package:sistema_estagio/models/_auxiliares/cidade.dart';
+
+import 'package:sistema_estagio/services/_auxiliares/pais_service.dar.dart';
+import 'package:sistema_estagio/services/_auxiliares/estado_service.dar.dart';
+import 'package:sistema_estagio/services/_auxiliares/cidade_service.dar.dart';
+import 'package:sistema_estagio/services/_auxiliares/sala_service.dar.dart';
 
 class EstanteScreen extends StatefulWidget {
   const EstanteScreen({super.key});
@@ -25,6 +35,16 @@ class _EstanteScreenState extends State<EstanteScreen>
 
   bool _isLoading = false;
   bool _isLoadingPage = false;
+
+  List<Pais> _paises = [];
+  List<Estado> _estados = [];
+  List<Cidade> _cidades = [];
+  List<Sala> _salas = [];
+
+  Pais? _pais;
+  Estado? _estado;
+  Cidade? _cidade;
+  Sala? _sala;
 
   late TabController _tabController;
   int _currentPage = 1;
@@ -48,7 +68,47 @@ class _EstanteScreenState extends State<EstanteScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 1, vsync: this);
+    _loadPaises();
     _loadLista();
+  }
+
+  Future<void> _loadPaises() async {
+    final r = await PaisService.listar(page: 1, limit: 999, ativo: true);
+    if (!mounted) return;
+    setState(() => _paises = List<Pais>.from(r['paises'] ?? []));
+  }
+
+  Future<void> _loadEstados(int paisId) async {
+    final r = await EstadoService.listarPorPais(paisId);
+    if (!mounted) return;
+    setState(() {
+      _estados = List<Estado>.from(r);
+      _estado = null;
+      _cidade = null;
+      _sala = null;
+      _cidades = [];
+      _salas = [];
+    });
+  }
+
+  Future<void> _loadCidades(int estadoId) async {
+    final r = await CidadeService.listarPorEstado(estadoId);
+    if (!mounted) return;
+    setState(() {
+      _cidades = List<Cidade>.from(r);
+      _cidade = null;
+      _sala = null;
+      _salas = [];
+    });
+  }
+
+  Future<void> _loadSalas(int cidadeId) async {
+    final r = await SalaService.listarPorCidade(cidadeId);
+    if (!mounted) return;
+    setState(() {
+      _salas = r;
+      _sala = null;
+    });
   }
 
   // ================= LOAD LISTA =================
@@ -176,6 +236,7 @@ class _EstanteScreenState extends State<EstanteScreen>
   }
 
   // ================= FORM =================
+
   Widget _buildFormulario() {
     return Container(
       margin: const EdgeInsets.all(16),
@@ -187,81 +248,217 @@ class _EstanteScreenState extends State<EstanteScreen>
       ),
       child: Form(
         key: _formKey,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: SingleChildScrollView(
+          // 👈 AQUI
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                _editando == null ? 'Cadastro de Estante' : 'Editar Estante',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1976D2),
+              _formHeader(),
+              const SizedBox(height: 16),
+              _campoDescricao(),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<Pais>(
+                value: _pais,
+                items: _paises
+                    .map((p) => DropdownMenuItem(value: p, child: Text(p.nome)))
+                    .toList(),
+                onChanged: (v) async {
+                  if (v == null) return;
+                  setState(() {
+                    _pais = v;
+                    _estado = null;
+                    _cidade = null;
+                    _sala = null;
+                    _estados = [];
+                    _cidades = [];
+                    _salas = [];
+                  });
+                  await _loadEstados(v.id!);
+                },
+                decoration: const InputDecoration(
+                  labelText: 'País *',
+                  border: OutlineInputBorder(),
                 ),
+                validator: (v) => v == null ? 'País obrigatório' : null,
               ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: _cancelar,
+              const SizedBox(height: 16),
+              DropdownButtonFormField<Estado>(
+                value: _estado,
+                items: _estados
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e.nome)))
+                    .toList(),
+                onChanged: _estados.isEmpty
+                    ? null
+                    : (v) async {
+                        if (v == null) return;
+                        setState(() {
+                          _estado = v;
+                          _cidade = null;
+                          _sala = null;
+                          _cidades = [];
+                          _salas = [];
+                        });
+                        await _loadCidades(v.id!);
+                      },
+                decoration: const InputDecoration(
+                  labelText: 'Estado *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) => v == null ? 'Estado obrigatório' : null,
               ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<Cidade>(
+                value: _cidade,
+                items: _cidades
+                    .map((c) => DropdownMenuItem(value: c, child: Text(c.nome)))
+                    .toList(),
+                onChanged: _cidades.isEmpty
+                    ? null
+                    : (v) async {
+                        if (v == null) return;
+                        setState(() {
+                          _cidade = v;
+                          _sala = null;
+                          _salas = [];
+                        });
+                        await _loadSalas(v.id!);
+                      },
+                decoration: const InputDecoration(
+                  labelText: 'Cidade *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) => v == null ? 'Cidade obrigatória' : null,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<Sala>(
+                value: _sala,
+                items: _salas
+                    .map((s) =>
+                        DropdownMenuItem(value: s, child: Text(s.descricao)))
+                    .toList(),
+                onChanged:
+                    _salas.isEmpty ? null : (v) => setState(() => _sala = v),
+                decoration: const InputDecoration(
+                  labelText: 'Sala *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) => v == null ? 'Sala obrigatória' : null,
+              ),
+              const SizedBox(height: 24),
+              _listaPrateleiras(),
+              const SizedBox(height: 16),
+              _botoesFormulario(),
             ],
           ),
-          const SizedBox(height: 16),
-          CustomTextField(
-            controller: _descricaoController,
-            label: 'Descrição da Estante *',
-            validator: (v) =>
-                Validators.validateRequired(v, 'Descrição da Estante'),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Prateleiras',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ..._prateleiras.asMap().entries.map((e) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: CustomTextField(
-                      controller: e.value.controller,
-                      label: 'Descrição da Prateleira',
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () =>
-                        setState(() => _prateleiras.removeAt(e.key)),
-                  )
-                ],
-              ),
-            );
-          }),
-          TextButton.icon(
-            onPressed: () =>
-                setState(() => _prateleiras.add(PrateleiraForm(descricao: ''))),
-            icon: const Icon(Icons.add),
-            label: const Text('Adicionar Prateleira'),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              ElevatedButton(
-                onPressed: _cancelar,
-                style:
-                    ElevatedButton.styleFrom(backgroundColor: Colors.grey[600]),
-                child: const Text('Cancelar'),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: _salvar,
-                child: Text(_editando == null ? 'Salvar' : 'Atualizar'),
-              ),
-            ],
-          ),
-        ]),
+        ),
       ),
+    );
+  }
+
+  Widget _botoesFormulario() {
+    return Row(
+      children: [
+        ElevatedButton(
+          onPressed: _cancelar,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey[600],
+          ),
+          child: const Text('Cancelar'),
+        ),
+        const SizedBox(width: 16),
+        ElevatedButton(
+          onPressed: _salvar,
+          child: Text(
+            _editando == null ? 'Salvar' : 'Atualizar',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _campoDescricao() {
+    return CustomTextField(
+      controller: _descricaoController,
+      label: 'Descrição da Estante *',
+      validator: (v) => Validators.validateRequired(v, 'Descrição da Estante'),
+    );
+  }
+
+  Widget _formHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          _editando == null ? 'Cadastro de Estante' : 'Editar Estante',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1976D2),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: 'Fechar',
+          onPressed: _cancelar,
+        ),
+      ],
+    );
+  }
+
+  Widget _listaPrateleiras() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Prateleiras',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxHeight: 300,
+          ),
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _prateleiras.length,
+            itemBuilder: (context, index) {
+              final p = _prateleiras[index];
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CustomTextField(
+                        controller: p.controller,
+                        label: 'Descrição da Prateleira',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        setState(() {
+                          _prateleiras.removeAt(index);
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        TextButton.icon(
+          onPressed: () {
+            setState(() {
+              _prateleiras.add(PrateleiraForm(descricao: ''));
+            });
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Adicionar Prateleira'),
+        ),
+      ],
     );
   }
 
@@ -276,36 +473,79 @@ class _EstanteScreenState extends State<EstanteScreen>
       itemCount: _estantes.length,
       itemBuilder: (_, i) {
         final e = _estantes[i];
+
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      e.descricao,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ====== TOPO ======
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        e.descricao,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () => _editar(e),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Prateleiras: ${e.prateleiras.length}',
-                style: TextStyle(color: Colors.grey[700]),
-              ),
-            ]),
+                    PopupMenuButton<String>(
+                      onSelected: (v) {
+                        if (v == 'editar') _editar(e.id!);
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(
+                          value: 'editar',
+                          child: Text('Editar'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                // ====== INFORMAÇÕES ======
+                Text(
+                  'Sala: ${e.descricao ?? '-'}',
+                  style: TextStyle(color: Colors.grey[700]),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Localização: ${e.pais_descricao ?? '-'} / ${e.estado_descricao ?? '-'} / ${e.cidade_descricao ?? '-'}',
+                  style: TextStyle(color: Colors.grey[700]),
+                ),
+
+                const SizedBox(height: 12),
+
+                // ====== RODAPÉ ======
+                Row(
+                  children: [
+                    Chip(
+                      label: const Text(
+                        'ATIVO',
+                        style: TextStyle(color: Colors.green),
+                      ),
+                      backgroundColor: Colors.green.withOpacity(0.15),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Código: ${e.id}',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -343,20 +583,42 @@ class _EstanteScreenState extends State<EstanteScreen>
     });
   }
 
-  void _editar(Estante e) {
-    setState(() {
-      _editando = e;
-      _showForm = true;
+  Future<void> _editar(int id) async {
+    try {
+      setState(() => _isLoading = true);
 
-      _descricaoController.text = e.descricao;
+      final estante = await EstanteService.buscarPorId(id);
+
+      _descricaoController.text = estante.descricao;
       _prateleiras.clear();
-
-      for (final p in e.prateleiras) {
-        _prateleiras.add(
-          PrateleiraForm(descricao: p.descricao),
-        );
+      for (final p in estante.prateleiras) {
+        _prateleiras.add(PrateleiraForm(descricao: p.descricao));
       }
-    });
+
+      final pais = _paises.firstWhere((p) => p.id == estante.paisId);
+      setState(() => _pais = pais);
+
+      await _loadEstados(pais.id!);
+      final estado = _estados.firstWhere((e) => e.id == estante.estadoId);
+      setState(() => _estado = estado);
+
+      await _loadCidades(estado.id!);
+      final cidade = _cidades.firstWhere((c) => c.id == estante.cidadeId);
+      setState(() => _cidade = cidade);
+
+      await _loadSalas(cidade.id!);
+      final sala = _salas.firstWhere((s) => s.id == estante.cdSala);
+      setState(() => _sala = sala);
+
+      setState(() {
+        _editando = estante;
+        _showForm = true;
+      });
+    } catch (e) {
+      AppUtils.showErrorSnackBar(context, 'Erro ao editar estante');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _salvar() async {
@@ -367,10 +629,10 @@ class _EstanteScreenState extends State<EstanteScreen>
 
       final estante = Estante(
         id: _editando?.id,
-        paisId: 1,
-        estadoId: 1,
-        cidadeId: 1,
-        cdSala: 1,
+        paisId: _pais!.id!,
+        estadoId: _estado!.id!,
+        cidadeId: _cidade!.id!,
+        cdSala: _sala!.id!,
         descricao: _descricaoController.text.trim(),
         prateleiras: _prateleiras
             .map((p) => Prateleira(descricao: p.controller.text.trim()))
