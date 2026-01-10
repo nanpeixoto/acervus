@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:sistema_estagio/models/obra.dart';
 
@@ -16,6 +17,13 @@ class ObraService {
     final token = await StorageService.getToken();
     return {
       'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
+
+  static Future<Map<String, String>> _getMultipartHeaders() async {
+    final token = await StorageService.getToken();
+    return {
       'Authorization': 'Bearer $token',
     };
   }
@@ -207,22 +215,66 @@ class ObraService {
   }
 
   static Future<Map<String, dynamic>> salvarImagemGaleria(
-    int obraId,
-    Map<String, dynamic> payload,
-  ) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/obra/galeria/adicionar/$obraId'),
-      headers: await _getHeaders(),
-      body: jsonEncode(payload),
-    );
+    int obraId, {
+    String? filePath,
+    Uint8List? bytes,
+    String? fileName,
+    String? descricao,
+    bool? principal,
+  }) async {
+    try {
+      if ((bytes == null || bytes.isEmpty) &&
+          (filePath == null || filePath.isEmpty)) {
+        throw ArgumentError(
+          'Informe o caminho do arquivo ou os bytes a serem enviados.',
+        );
+      }
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final data = jsonDecode(response.body);
-      final result = data['dados'] ?? data['data'] ?? data;
-      return Map<String, dynamic>.from(result);
+      final uri = Uri.parse('$baseUrl/obra/galeria/adicionar/$obraId');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers.addAll(await _getMultipartHeaders());
+
+      if (bytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'arquivo', // ← MUDANÇA: era 'imagem', agora é 'arquivo'
+            bytes,
+            filename: fileName ??
+                'imagem_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          ),
+        );
+      } else if (filePath != null && filePath.isNotEmpty) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'arquivo', // ← MUDANÇA: era 'imagem', agora é 'arquivo'
+            filePath,
+            filename: fileName,
+          ),
+        );
+      }
+
+      if (descricao != null)
+        request.fields['ds_imagem'] = descricao; // ← MUDANÇA: era 'descricao'
+      if (principal != null) {
+        request.fields['sts_principal'] =
+            principal.toString(); // ← MUDANÇA: era 'principal'
+      }
+
+      final response = await http.Response.fromStream(await request.send());
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        final result = data['dados'] ?? data['data'] ?? data;
+        return Map<String, dynamic>.from(result);
+      }
+
+      throw Exception(
+        'Erro ao salvar imagem na galeria: ${response.body}',
+      );
+    } catch (e) {
+      print('Erro ao salvar imagem: $e');
+      rethrow;
     }
-
-    throw Exception('Erro ao salvar imagem na galeria');
   }
 
   static Future<Map<String, dynamic>> atualizarImagemGaleria(

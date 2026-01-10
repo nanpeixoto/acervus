@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 // ignore: avoid_web_libraries_in_flutter
@@ -79,20 +80,25 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
             ? idDynamic
             : int.tryParse(idDynamic?.toString() ?? '');
 
+        final rawUrl = item['url'] ?? item['caminho'] ?? item['arquivo'];
+        final formattedUrl = rawUrl is String && rawUrl.isNotEmpty
+            ? (rawUrl.startsWith('http')
+                ? rawUrl
+                : '${AppConfig.devBaseUrl}/$rawUrl')
+            : null;
+        final rotationRaw = item['rotacao'] ?? item['grau_rotacao'] ?? 0;
+
         imagens.add(
           _ObraImagem(
             id: id,
+            url: formattedUrl,
             bytes: bytes,
-            url: bytes == null && id != null
-                ? ObraService.galeriaArquivoUrl(id)
-                : null,
-            name: item['nome'] as String?,
-            descricao: item['ds_imagem'] as String?,
-            extensao: item['extensao'] as String?,
-            isPrincipal: item['sts_principal'] == true,
-            rotationDeg: item['rotacao'] is num
-                ? (item['rotacao'] as num).toDouble()
-                : 0,
+            name: item['nm_imagem'] ?? item['nome'],
+            descricao: item['ds_imagem'] ?? item['descricao'],
+            extensao: item['extensao'],
+            rotationDeg: rotationRaw is num ? rotationRaw.toDouble() : 0,
+            isPrincipal:
+                (item['principal'] ?? item['sts_principal'] ?? false) == true,
           ),
         );
       }
@@ -270,52 +276,79 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
       final result = reader.result;
       if (result is ByteBuffer) {
         final bytes = result.asUint8List();
-        await _salvarImagem(bytes, file.name);
+        await ObraService.salvarImagemGaleria(
+          widget.obraId!,
+          bytes: bytes, // Mudança aqui: bytes -> fileBytes
+          filePath: file.relativePath, // Mudança aqui: adicionar filePath
+          fileName: file.name,
+        );
       }
     }
   }
 
-  Future<void> _salvarImagem(Uint8List bytes, String nomeArquivo) async {
-    if (widget.obraId == null) {
-      AppUtils.showErrorSnackBar(
-          context, 'Salve a obra antes de enviar imagens');
-      return;
-    }
-
-    final ext = nomeArquivo.contains('.')
-        ? nomeArquivo.substring(nomeArquivo.lastIndexOf('.'))
-        : '';
-
-    setState(() => _uploading = true);
+  Future<void> adicionarArquivo(int obraId) async {
     try {
-      final saved = await ObraService.salvarImagemGaleria(widget.obraId!, {
-        'nome': nomeArquivo,
-        'extensao': ext,
-        'imagem_base64': base64Encode(bytes),
-        'ds_imagem': null,
-        'sts_principal': false,
-      });
-
-      final imagem = _ObraImagem(
-        id: saved['id'] as int?,
-        bytes: null,
-        url: saved['id'] != null
-            ? ObraService.galeriaArquivoUrl(saved['id'] as int)
-            : null,
-        name: saved['nome'] as String? ?? nomeArquivo,
-        descricao: saved['ds_imagem'] as String?,
-        extensao: saved['extensao'] as String? ?? ext,
-        isPrincipal: saved['sts_principal'] == true,
-        rotationDeg:
-            saved['rotacao'] is num ? (saved['rotacao'] as num).toDouble() : 0,
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: kIsWeb,
       );
 
-      setState(() {
-        _imagens.insert(0, imagem);
-      });
-      AppUtils.showSuccessSnackBar(context, 'Imagem adicionada na galeria');
+      if (result == null) return;
+
+      final file = result.files.single;
+      const maxSize = 10 * 1024 * 1024;
+
+      if (file.size > maxSize) {
+        if (mounted) {
+          AppUtils.showErrorSnackBar(
+            context,
+            'O arquivo deve ter no máximo 10MB.',
+          );
+        }
+        return;
+      }
+
+      final bytes = kIsWeb ? file.bytes : null;
+      final path = !kIsWeb ? file.path : null;
+
+      if (bytes == null && (path == null || path.isEmpty)) {
+        if (mounted) {
+          AppUtils.showErrorSnackBar(
+            context,
+            'Não foi possível ler o arquivo selecionado.',
+          );
+        }
+        return;
+      }
+
+      setState(() => _uploading = true);
+
+      await ObraService.salvarImagemGaleria(
+        obraId,
+        bytes: bytes, // Mudança aqui: bytes -> fileBytes
+        filePath: path, // Mudança aqui: adicionar filePath
+        fileName: file.name,
+      );
+
+      await _carregarGaleria();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Imagem adicionada com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
-      AppUtils.showErrorSnackBar(context, 'Erro ao salvar imagem na galeria');
+      print('❌ Erro ao adicionar arquivo: $e');
+      if (mounted) {
+        AppUtils.showErrorSnackBar(
+          context,
+          'Erro ao adicionar imagem. Tente novamente.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -432,20 +465,27 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
                   'Imagens da Obra',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-                Row(
-                  children: [
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.file_upload_outlined),
-                      label: const Text('Adicionar arquivo'),
-                      onPressed: _uploading ? null : _adicionarImagemArquivoWeb,
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.add_photo_alternate_outlined),
-                      label: const Text('Adicionar URL'),
-                      onPressed: _uploading ? null : _adicionarImagemPorUrl,
-                    ),
-                  ],
+                OutlinedButton.icon(
+                  onPressed: widget.obraId == null || _uploading
+                      ? null
+                      : () => adicionarArquivo(widget.obraId!),
+                  icon: _uploading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(Icons.upload),
+                  label: Text(
+                    _uploading ? 'Enviando...' : 'Adicionar arquivo',
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _adicionarImagemPorUrl,
+                  icon: const Icon(Icons.link),
+                  label: const Text('Adicionar URL'),
                 ),
               ],
             ),
