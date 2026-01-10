@@ -56,8 +56,14 @@ async function listarEstantes(req, res) {
     LEFT JOIN public.ace_estante_prateleira p
       ON p.cd_estante = e.cd_estante
     ${where}
-    GROUP BY e.cd_estante
-    ORDER BY e.descricao
+    GROUP BY
+      e.cd_estante,
+      e.descricao,
+      e.cd_sala,
+      e.pais_id,
+      e.estado_id,
+      e.cidade_id
+    ORDER BY unaccent(e.descricao)
   `;
 
   try {
@@ -69,6 +75,12 @@ async function listarEstantes(req, res) {
       page,
       limit
     );
+
+    // normaliza COUNT (Postgres retorna string)
+    resultado.dados = resultado.dados.map(e => ({
+      ...e,
+      total_prateleiras: Number(e.total_prateleiras)
+    }));
 
     res.status(200).json(resultado);
 

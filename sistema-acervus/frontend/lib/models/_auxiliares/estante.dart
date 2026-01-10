@@ -1,21 +1,49 @@
+import 'package:sistema_estagio/models/_auxiliares/prateleira.dart';
+
 class Estante {
-  final int? id;
+  final int? id; // 👈 agora pode ser null
+
+  final String descricao;
+  final int cdSala;
   final int paisId;
   final int estadoId;
   final int cidadeId;
-  final int cdSala;
-  final String descricao;
+
+  // 👉 usado na LISTAGEM
+  final int totalPrateleiras;
+
+  // 👉 usado só no DETALHE / EDITAR
   final List<Prateleira> prateleiras;
 
   Estante({
-    this.id,
+    required this.id,
+    required this.descricao,
+    required this.cdSala,
     required this.paisId,
     required this.estadoId,
     required this.cidadeId,
-    required this.cdSala,
-    required this.descricao,
-    required this.prateleiras,
+    this.totalPrateleiras = 0,
+    this.prateleiras = const [],
   });
+
+  factory Estante.fromJson(Map<String, dynamic> json) {
+    return Estante(
+      id: json['cd_estante'],
+      descricao: json['descricao']?.trim() ?? '',
+      cdSala: json['cd_sala'],
+      paisId: json['pais_id'],
+      estadoId: json['estado_id'],
+      cidadeId: json['cidade_id'],
+      totalPrateleiras: int.tryParse(
+            json['total_prateleiras']?.toString() ?? '0',
+          ) ??
+          0,
+      prateleiras: (json['prateleiras'] as List<dynamic>?)
+              ?.map((p) => Prateleira.fromJson(p))
+              .toList() ??
+          [],
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -24,39 +52,11 @@ class Estante {
       'cidade_id': cidadeId,
       'cd_sala': cdSala,
       'descricao': descricao,
-      'prateleiras': prateleiras.map((p) => p.toJson()).toList(),
-    };
-  }
-
-  factory Estante.fromJson(Map<String, dynamic> json) {
-    return Estante(
-      id: json['cd_estante'],
-      paisId: json['pais_id'],
-      estadoId: json['estado_id'],
-      cidadeId: json['cidade_id'],
-      cdSala: json['cd_sala'],
-      descricao: json['descricao'],
-      prateleiras: (json['prateleiras'] as List? ?? [])
-          .map((e) => Prateleira.fromJson(e))
+      'prateleiras': prateleiras
+          .map((p) => {
+                'descricao_prateleira': p.descricao,
+              })
           .toList(),
-    );
-  }
-}
-
-class Prateleira {
-  final int? id;
-  final String descricao;
-
-  Prateleira({this.id, required this.descricao});
-
-  Map<String, dynamic> toJson() => {
-        'descricao_prateleira': descricao,
-      };
-
-  factory Prateleira.fromJson(Map<String, dynamic> json) {
-    return Prateleira(
-      id: json['cd_estante_prateleira'],
-      descricao: json['descricao_prateleira'],
-    );
+    };
   }
 }
