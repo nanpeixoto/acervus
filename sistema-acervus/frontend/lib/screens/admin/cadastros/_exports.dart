@@ -18,7 +18,6 @@ export '_organizacoes/instituicoes/instituicoes_list_screen.dart';
 
 export '_auxiliares/setores/setores_list_screen.dart';
 export '_auxiliares/seguradoras/seguradoras_list_screen.dart';
-export '_auxiliares/cidades/cidades_list_screen.dart';
 export '_auxiliares/cbo/cbo_list_screen.dart';
 export '_auxiliares/idiomas/idiomas_list_screen.dart';
 export '_auxiliares/conhecimentos/conhecimentos_list_screen.dart';

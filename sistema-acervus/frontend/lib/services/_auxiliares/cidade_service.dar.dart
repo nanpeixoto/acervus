@@ -60,6 +60,23 @@ class CidadeService {
   }
 
   // =============================
+  // LISTAR SIMPLES (TELA)
+  // =============================
+  static Future<List<Cidade>> listarCidades() async {
+    final uri = Uri.parse('$baseUrl/cidade/listar').replace(
+        queryParameters: {'page': '1', 'limit': '500', 'confirms': 'true'});
+
+    final response = await http.get(uri, headers: await _getHeaders());
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return (data['dados'] as List).map((e) => Cidade.fromJson(e)).toList();
+    } else {
+      throw Exception('Erro ao listar cidades');
+    }
+  }
+
+  // =============================
   // LISTAR POR ESTADO (COMBO)
   // =============================
   static Future<List<Cidade>> listarPorEstado(int estadoId) async {

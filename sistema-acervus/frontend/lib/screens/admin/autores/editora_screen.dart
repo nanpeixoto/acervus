@@ -274,15 +274,23 @@ class _EditoraScreenState extends State<EditoraScreen>
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<Pais>(
+            key: ValueKey(_pais?.id),
             value: _pais,
             items: _paises
                 .map((p) => DropdownMenuItem(value: p, child: Text(p.nome)))
                 .toList(),
-            onChanged: (v) {
-              setState(() => _pais = v);
-              if (v?.id != null) {
-                _loadEstados(v!.id!);
-              }
+            onChanged: (v) async {
+              if (v == null) return;
+
+              setState(() {
+                _pais = v;
+                _estado = null;
+                _cidade = null;
+                _estados = [];
+                _cidades = [];
+              });
+
+              await _loadEstados(v.id!);
             },
             decoration: const InputDecoration(
               labelText: 'País *',
@@ -292,16 +300,24 @@ class _EditoraScreenState extends State<EditoraScreen>
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<Estado>(
+            key: ValueKey(_estado?.id),
             value: _estado,
             items: _estados
                 .map((e) => DropdownMenuItem(value: e, child: Text(e.nome)))
                 .toList(),
-            onChanged: (v) {
-              setState(() => _estado = v);
-              if (v?.id != null) {
-                _loadCidades(v!.id!);
-              }
-            },
+            onChanged: _estados.isEmpty
+                ? null
+                : (v) async {
+                    if (v == null) return;
+
+                    setState(() {
+                      _estado = v;
+                      _cidade = null;
+                      _cidades = [];
+                    });
+
+                    await _loadCidades(v.id!);
+                  },
             decoration: const InputDecoration(
               labelText: 'Estado *',
               border: OutlineInputBorder(),
@@ -310,11 +326,13 @@ class _EditoraScreenState extends State<EditoraScreen>
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<Cidade>(
+            key: ValueKey(_cidade?.id),
             value: _cidade,
             items: _cidades
                 .map((c) => DropdownMenuItem(value: c, child: Text(c.nome)))
                 .toList(),
-            onChanged: (v) => setState(() => _cidade = v),
+            onChanged:
+                _cidades.isEmpty ? null : (v) => setState(() => _cidade = v),
             decoration: const InputDecoration(
               labelText: 'Cidade *',
               border: OutlineInputBorder(),
