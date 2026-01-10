@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:sistema_estagio/models/_auxiliares/material.dart';
-import 'package:sistema_estagio/services/_auxiliares/material_service.dart';
+import 'package:sistema_estagio/models/material.dart';
+import 'package:sistema_estagio/services/material_service.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';

@@ -150,7 +150,6 @@ router.get('/galeria/:obraId', tokenOpcional, async (req, res) => {
       sts_principal,
       nome,
       extensao,
-      rotacao,
       CASE WHEN imagem IS NOT NULL THEN encode(imagem, 'base64') END AS imagem_base64
     FROM public.ace_obra_galeria
     WHERE cd_obra = $1
@@ -241,7 +240,7 @@ router.post('/galeria/adicionar/:obraId', verificarToken, async (req, res) => {
 
   const insertQuery = `
     INSERT INTO public.ace_obra_galeria
-      (cd_obra, ds_imagem, sts_principal, nome, extensao, imagem, rotacao)
+      (cd_obra, ds_imagem, sts_principal, nome, extensao, imagem)
     VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING
       id,
@@ -250,7 +249,6 @@ router.post('/galeria/adicionar/:obraId', verificarToken, async (req, res) => {
       sts_principal,
       nome,
       extensao,
-      rotacao,
       CASE WHEN imagem IS NOT NULL THEN encode(imagem, 'base64') END AS imagem_base64
   `;
 
@@ -333,7 +331,6 @@ router.put('/galeria/editar/:id', verificarToken, async (req, res) => {
       sts_principal,
       nome,
       extensao,
-      rotacao,
       CASE WHEN imagem IS NOT NULL THEN encode(imagem, 'base64') END AS imagem_base64
   `;
 

@@ -3,100 +3,146 @@ const router = express.Router();
 const pool = require('../db');
 const { verificarToken } = require('../auth');
 
-// GET /dashboard/adm
-router.get('/adm', verificarToken, async (req, res) => {
+
+router.get('/grafico/obras-por-tipo', verificarToken, async (req, res) => {
   try {
-    const client = await pool.connect();
-
-       // 🔹 1. Lê o parâmetro ?limit (padrão = 10)
-    let limitParam = parseInt(req.query.limit);
-    if (isNaN(limitParam)) limitParam = 10; // fallback
-    if (limitParam < 0) limitParam = 0; // garante que não seja negativo
-
-    const limitClause = limitParam > 0 ? `LIMIT ${limitParam}` : ''; // 0 = sem limite
-
-
-    // Total de vagas
-    const vagasResult = await client.query('SELECT COUNT(*) AS total FROM vaga');
-    const totalVagas = parseInt(vagasResult.rows[0].total);
-
-    // Total de contratos
-    const contratosResult = await client.query('SELECT COUNT(*) AS total FROM contrato');
-    const totalContratos = parseInt(contratosResult.rows[0].total);
-
-    // Total de estudantes
-    const estudantesResult = await client.query('SELECT COUNT(*) AS total FROM candidato where id_regime_contratacao = 2 ');
-    const totalEstudantes = parseInt(estudantesResult.rows[0].total);
-
-    // Total de aprendizes
-    const aprendizesResult = await client.query('SELECT COUNT(*) AS total FROM candidato where id_regime_contratacao = 1');
-    const totalAprendizes = parseInt(aprendizesResult.rows[0].total);
-
-    // Total de empresas
-    const empresasResult = await client.query('SELECT COUNT(*) AS total FROM empresa');
-    const totalEmpresas = parseInt(empresasResult.rows[0].total);
-
-    // Contratos com data_fim nos próximos 30 dias
-    const contratosVencerResult = await client.query(`
-    WITH data_finais AS (
-  SELECT 
-    COALESCE(cd_contrato_origem, cd_contrato) AS grupo_contrato,
-    MAX(data_termino) AS data_fim
-  FROM contrato
-  WHERE data_termino IS NOT NULL
- 
-  GROUP BY COALESCE(cd_contrato_origem, cd_contrato)
-)
-SELECT
-  ce.cd_contrato,
-  df.data_fim,
-  UPPER(e.razao_social) AS empresa,
-  UPPER(c.nome_completo) AS estagiario
-FROM contrato ce
-JOIN data_finais df 
-  ON df.grupo_contrato = COALESCE(ce.cd_contrato_origem, ce.cd_contrato)
-JOIN empresa e 
-  ON ce.cd_empresa = e.cd_empresa
-JOIN candidato c 
-  ON ce.cd_estudante = c.cd_candidato
-WHERE ce.tipo_contrato = 2
-  AND ce.status NOT IN ('D','C')
-  AND (ce.aditivo IS NULL OR ce.aditivo <> 'true')
-  AND df.data_fim IS NOT NULL
-  AND (
-       df.data_fim < CURRENT_DATE
-       OR df.data_fim BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days'
-      )
-  AND EXTRACT(YEAR FROM df.data_fim) >= 2025
-ORDER BY df.data_fim, empresa ASC
-
-${limitClause}; -- 👈 aplica o limit conforme parâmetro
-
+    const result = await pool.query(`
+      SELECT
+        t.descricao  AS tipo,
+        COUNT(o.cd_obra) AS total
+      FROM public.ace_subtipo_peca t
+      LEFT JOIN ace_obra o
+        ON o.cd_subtipo_peca  = t.cd_subtipo_peca
+      GROUP BY t.descricao
+      ORDER BY total DESC
     `);
-    //WHERE ce.data_termino BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days'
 
-    const contratosAVencer = contratosVencerResult.rows.map(row => ({
-      cd_contrato: row.cd_contrato,
-      empresa: row.empresa,
-      estagiario: row.estagiario,
-      vencimento: row.data_fim.toISOString().split('T')[0]
-    }));
-
-    client.release();
-
-    return res.json({
-      totalVagas,
-      totalContratos,
-      totalEstudantes,
-      totalAprendizes,
-      totalEmpresas,
-      contratosAVencer
-    });
+    return res.json(result.rows);
   } catch (err) {
-    console.error('Erro no dashboard:', err);
-    return res.status(500).json({ erro: 'Erro ao buscar dados do dashboard' });
+    console.error('Erro gráfico obras por tipo:', err);
+    return res.status(500).json({
+      erro: 'Erro ao carregar gráfico de obras por tipo', motivo  : err.message
+    });
   }
 });
+
+
+router.get('/grafico/obras-por-assunto', verificarToken, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        a.ds_assunto AS assunto,
+        COUNT(o.cd_obra) AS total
+      FROM ace_assunto a
+      LEFT JOIN ace_obra o
+        ON o.cd_assunto = a.cd_assunto
+      WHERE a.sts_assunto = 'A'
+      GROUP BY a.ds_assunto
+      ORDER BY total DESC
+      LIMIT 10
+    `);
+
+    return res.json(result.rows);
+  } catch (err) {
+    console.error('Erro gráfico obras por assunto:', err);
+    return res.status(500).json({
+      erro: 'Erro ao carregar gráfico de obras por assunto'
+    });
+  }
+});
+
+ // GET /dashboard/adm
+router.get('/adm', verificarToken, async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const [
+      obras,
+      assuntos,
+      autores,
+      salas,
+      estantes,
+      tipos,
+      subtipos,
+      obrasPorAssuntoResult
+    ] = await Promise.all([
+      client.query('SELECT COUNT(*) FROM ace_obra'),
+      client.query("SELECT COUNT(*) FROM ace_assunto WHERE sts_assunto = 'A'"),
+      client.query("SELECT COUNT(*) FROM ace_autor WHERE sts_autor = 'A'"),
+      client.query('SELECT COUNT(*) FROM ace_sala'),
+      client.query('SELECT COUNT(*) FROM ace_estante'),
+      client.query('SELECT COUNT(*) FROM ace_tipo_peca'),
+      client.query('SELECT COUNT(*) FROM ace_subtipo_peca'),
+
+      // 🎬 Carrossel Netflix-style por Assunto
+      client.query(`
+        SELECT *
+        FROM (
+          SELECT
+            a.ds_assunto AS assunto,
+            o.cd_obra,
+            o.titulo,
+            NULL AS capa_url,
+            ROW_NUMBER() OVER (
+              PARTITION BY a.cd_assunto
+              ORDER BY o.cd_obra DESC
+            ) AS rn
+          FROM ace_obra o
+          JOIN ace_assunto a
+            ON a.cd_assunto = o.cd_assunto
+          WHERE a.sts_assunto = 'A'
+        ) t
+        WHERE t.rn <= 10
+        ORDER BY assunto, rn
+      `),
+    ]);
+
+    // 🔁 Agrupar por assunto
+    const carrosselPorAssunto = {};
+
+    for (const row of obrasPorAssuntoResult.rows) {
+      if (!carrosselPorAssunto[row.assunto]) {
+        carrosselPorAssunto[row.assunto] = [];
+      }
+
+      carrosselPorAssunto[row.assunto].push({
+        cd_obra: row.cd_obra,
+        titulo: row.titulo,
+        capa_url: row.capa_url,
+      });
+    }
+
+    return res.json({
+      totais: {
+        obras: Number(obras.rows[0].count),
+        assuntos: Number(assuntos.rows[0].count),
+        autores: Number(autores.rows[0].count),
+        salas: Number(salas.rows[0].count),
+        estantes: Number(estantes.rows[0].count),
+        tipos: Number(tipos.rows[0].count),
+        subtipos: Number(subtipos.rows[0].count),
+      },
+
+      // 🎬 Netflix real
+      obrasPorAssuntoCarousel: Object.entries(carrosselPorAssunto).map(
+        ([assunto, obras]) => ({
+          assunto,
+          obras,
+        })
+      ),
+    });
+
+  } catch (err) {
+    console.error('Erro dashboard acervo:', err);
+    return res.status(500).json({
+      erro: 'Erro ao carregar dashboard',
+      motivo: err.message,
+    });
+  } finally {
+    client.release();
+  }
+});
+
 
 router.get('/ie/:cd_instituicao', verificarToken, async (req, res) => {
   const { cd_instituicao } = req.params;

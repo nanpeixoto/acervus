@@ -4,8 +4,8 @@ import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/widgets/custom_dropdown.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
-import 'package:sistema_estagio/models/_core/usuario.dart';
-import 'package:sistema_estagio/services/_core/usuario_service.dart'
+import 'package:sistema_estagio/models/usuario.dart';
+import 'package:sistema_estagio/services/usuario_service.dart'
     as usuarioService;
 import 'package:sistema_estagio/utils/validators.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';

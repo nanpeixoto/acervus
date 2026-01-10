@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:sistema_estagio/models/_auxiliares/sala_obra.dart';
-import 'package:sistema_estagio/services/_auxiliares/sala_service.dar.dart';
+import 'package:sistema_estagio/models/sala_obra.dart';
+import 'package:sistema_estagio/services/sala_service.dar.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';

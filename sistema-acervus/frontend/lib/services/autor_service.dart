@@ -1,0 +1,238 @@
+// lib/services/autores/autor_service.dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:sistema_estagio/models/autor.dart';
+
+import 'package:sistema_estagio/models/autor.dart';
+import '../utils/app_config.dart';
+import 'storage_service.dart';
+
+class AutorService {
+  static const String baseUrl = AppConfig.devBaseUrl;
+
+  // =============================
+  // HEADERS
+  // =============================
+  static Future<Map<String, String>> _getHeaders() async {
+    final token = await StorageService.getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ${token ?? ''}',
+    };
+  }
+
+  // =============================
+  // LISTAR (PAGINADO)
+  // =============================
+  static Future<Map<String, dynamic>> listarAutores({
+    int page = 1,
+    int limit = 10,
+    String? search,
+    bool? ativo,
+  }) async {
+    try {
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+
+      if (search != null && search.isNotEmpty) {
+        queryParams['q'] = search;
+      }
+      if (ativo != null) {
+        queryParams['ativo'] = ativo.toString();
+      }
+
+      final uri = Uri.parse('$baseUrl/autor/listar')
+          .replace(queryParameters: queryParams);
+
+      final response = await http.get(uri, headers: await _getHeaders());
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'autores': (data['dados'] as List)
+              .map((json) => Autor.fromJson(json))
+              .toList(),
+          'pagination': data['pagination'],
+        };
+      } else {
+        throw Exception('Erro ao carregar autores');
+      }
+    } catch (e) {
+      throw Exception('Erro ao carregar autores: $e');
+    }
+  }
+
+  // =============================
+  // BUSCAR
+  // =============================
+  static Future<List<Autor>> buscarAutores(String query) async {
+    try {
+      final uri = Uri.parse('$baseUrl/autor/listar')
+          .replace(queryParameters: {'q': query});
+
+      final response = await http.get(uri, headers: await _getHeaders());
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return (data['dados'] as List)
+            .map((json) => Autor.fromJson(json))
+            .toList();
+      } else if (response.statusCode == 404) {
+        return [];
+      } else {
+        throw Exception('Erro ao buscar autor');
+      }
+    } catch (e) {
+      throw Exception('Erro ao buscar autor: $e');
+    }
+  }
+
+  // =============================
+  // BUSCAR POR ID
+  // =============================
+  static Future<Autor> buscarAutorPorId(int id) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/autor/$id'),
+        headers: await _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return Autor.fromJson(data['dados']);
+      } else {
+        throw Exception('Autor não encontrado');
+      }
+    } catch (e) {
+      throw Exception('Erro ao buscar autor: $e');
+    }
+  }
+
+  // =============================
+  // CRIAR
+  // =============================
+  static Future<bool> criarAutor(Map<String, dynamic> dados) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/autor/cadastrar'),
+        headers: await _getHeaders(),
+        body: jsonEncode(dados),
+      );
+
+      if (response.statusCode != 201 &&
+          response.statusCode != 200 &&
+          response.statusCode != 204) {
+        final data = jsonDecode(response.body);
+        throw Exception(data['erro'] ?? 'Erro ao criar autor');
+      }
+
+      return response.statusCode == 201;
+    } catch (e) {
+      throw Exception('Erro ao criar autor: $e');
+    }
+  }
+
+  // =============================
+  // ATUALIZAR
+  // =============================
+  static Future<bool> atualizarAutor(int id, Map<String, dynamic> dados) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/autor/alterar/$id'),
+        headers: await _getHeaders(),
+        body: jsonEncode(dados),
+      );
+
+      if (response.statusCode != 200) {
+        final data = jsonDecode(response.body);
+        throw Exception(data['erro'] ?? 'Erro ao atualizar autor');
+      }
+
+      return true;
+    } catch (e) {
+      throw Exception('Erro ao atualizar autor: $e');
+    }
+  }
+
+  // =============================
+  // ATIVAR / DESATIVAR
+  // =============================
+  static Future<bool> ativarAutor(int id, {bool ativo = true}) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/autor/alterar/$id'),
+        headers: await _getHeaders(),
+        body: jsonEncode({'ativo': ativo}),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      throw Exception('Erro ao ativar autor: $e');
+    }
+  }
+
+  static Future<bool> desativarAutor(int id, {bool ativo = false}) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/autor/alterar/$id'),
+        headers: await _getHeaders(),
+        body: jsonEncode({'ativo': ativo}),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      throw Exception('Erro ao desativar autor: $e');
+    }
+  }
+
+  // =============================
+  // EXCLUIR
+  // =============================
+  static Future<bool> deletarAutor(int id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/autor/excluir/$id'),
+        headers: await _getHeaders(),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      throw Exception('Erro ao excluir autor: $e');
+    }
+  }
+
+  // =============================
+  // EXPORTAR CSV
+  // =============================
+  static Future<String?> exportarCSV({bool? ativo}) async {
+    try {
+      final queryParams = <String, String>{};
+      if (ativo != null) {
+        queryParams['ativo'] = ativo.toString();
+      }
+
+      final uri = Uri.parse('$baseUrl/autor/exportar/csv')
+          .replace(queryParameters: queryParams);
+
+      final response = await http.get(uri, headers: await _getHeaders());
+
+      if (response.statusCode == 200) {
+        final bytes = response.bodyBytes;
+
+        final filename =
+            'autores_${DateTime.now().toIso8601String().substring(0, 10)}.csv';
+
+        final downloader = getCsvDownloader();
+        final savedPath = await downloader.saveCsv(bytes, filename: filename);
+
+        return savedPath;
+      } else {
+        throw Exception('Erro ao exportar CSV');
+      }
+    } catch (e) {
+      throw Exception('Erro ao exportar autores: $e');
+    }
+  }
+}

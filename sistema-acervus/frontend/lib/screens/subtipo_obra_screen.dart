@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:sistema_estagio/models/_auxiliares/subtipo_obra.dart';
-import 'package:sistema_estagio/models/_auxiliares/tipo_obra.dart';
-import 'package:sistema_estagio/services/_auxiliares/subtipo_obra_service.dar.dart';
+import 'package:sistema_estagio/models/subtipo_obra.dart';
+import 'package:sistema_estagio/models/tipo_obra.dart';
+import 'package:sistema_estagio/services/subtipo_obra_service.dar.dart';
 
-import 'package:sistema_estagio/services/_auxiliares/tipo_obra_service.dart';
+import 'package:sistema_estagio/services/tipo_obra_service.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';

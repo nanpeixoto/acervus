@@ -1,7 +1,7 @@
 // lib/routes/app_router.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sistema_estagio/models/_auxiliares/assunto.dart';
+import 'package:sistema_estagio/models/assunto.dart';
 import 'package:sistema_estagio/screens/material_screen.dart';
 import 'package:sistema_estagio/screens/assunto_form_screen.dart';
 import 'package:sistema_estagio/screens/editora_screen.dart';

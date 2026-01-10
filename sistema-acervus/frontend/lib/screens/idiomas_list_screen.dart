@@ -8,9 +8,8 @@ import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/widgets/custom_app_bar.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
-
-import 'package:sistema_estagio/services/_pessoas/formacao/idioma_service.dart'
-    as idiomaService;
+import 'package:sistema_estagio/models/idioma.dart' as idioma;
+import 'package:sistema_estagio/services/idioma_service.dart' as idiomaService;
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';

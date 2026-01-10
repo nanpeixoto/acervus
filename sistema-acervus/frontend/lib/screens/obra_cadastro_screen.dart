@@ -4,34 +4,34 @@ import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sistema_estagio/models/_auxiliares/assunto.dart';
-import 'package:sistema_estagio/models/_auxiliares/autor.dart';
-import 'package:sistema_estagio/models/_auxiliares/editora.dart';
-import 'package:sistema_estagio/models/_auxiliares/estado_conservacao.dart';
-import 'package:sistema_estagio/models/_auxiliares/material.dart';
-import 'package:sistema_estagio/models/_auxiliares/pais.dart';
-import 'package:sistema_estagio/models/_auxiliares/estado.dart';
-import 'package:sistema_estagio/models/_auxiliares/cidade.dart';
-import 'package:sistema_estagio/models/_auxiliares/subtipo_obra.dart';
-import 'package:sistema_estagio/models/_pessoas/formacao/idioma.dart';
-import 'package:sistema_estagio/services/_auxiliares/assunto_service.dart';
-import 'package:sistema_estagio/services/_auxiliares/autor_service.dart';
-import 'package:sistema_estagio/services/_auxiliares/editora_service.dar.dart';
-import 'package:sistema_estagio/services/_auxiliares/estado_conservacao_service.dart';
-import 'package:sistema_estagio/services/_auxiliares/material_service.dart';
-import 'package:sistema_estagio/services/_auxiliares/pais_service.dar.dart';
-import 'package:sistema_estagio/services/_auxiliares/estado_service.dar.dart';
-import 'package:sistema_estagio/services/_auxiliares/cidade_service.dar.dart';
-import 'package:sistema_estagio/services/_auxiliares/subtipo_obra_service.dar.dart';
-import 'package:sistema_estagio/services/_pessoas/formacao/idioma_service.dart';
+import 'package:sistema_estagio/models/assunto.dart';
+import 'package:sistema_estagio/models/autor.dart';
+import 'package:sistema_estagio/models/editora.dart';
+import 'package:sistema_estagio/models/estado_conservacao.dart';
+import 'package:sistema_estagio/models/material.dart';
+import 'package:sistema_estagio/models/pais.dart';
+import 'package:sistema_estagio/models/estado.dart';
+import 'package:sistema_estagio/models/cidade.dart';
+import 'package:sistema_estagio/models/subtipo_obra.dart';
+import 'package:sistema_estagio/models/idioma.dart';
+import 'package:sistema_estagio/services/assunto_service.dart';
+import 'package:sistema_estagio/services/autor_service.dart';
+import 'package:sistema_estagio/services/editora_service.dar.dart';
+import 'package:sistema_estagio/services/estado_conservacao_service.dart';
+import 'package:sistema_estagio/services/material_service.dart';
+import 'package:sistema_estagio/services/pais_service.dar.dart';
+import 'package:sistema_estagio/services/estado_service.dar.dart';
+import 'package:sistema_estagio/services/cidade_service.dar.dart';
+import 'package:sistema_estagio/services/subtipo_obra_service.dar.dart';
+import 'package:sistema_estagio/services/idioma_service.dart';
 import 'package:sistema_estagio/services/obra_service.dart';
 import 'package:sistema_estagio/models/obra.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
-import 'package:sistema_estagio/models/_auxiliares/tipo_obra.dart';
-import 'package:sistema_estagio/services/_auxiliares/tipo_obra_service.dart';
+import 'package:sistema_estagio/models/tipo_obra.dart';
+import 'package:sistema_estagio/services/tipo_obra_service.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 
 class _ObraImagem {
@@ -745,7 +745,6 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                   ),
                   const SizedBox(height: 12),
                 ],
-                
 
                 CustomTextField(
                   controller: _tituloController,

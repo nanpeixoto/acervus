@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../models/_core/usuario.dart';
+import '../models/usuario.dart';
 
-import '../services/_core/user_service.dart';
-import '../services/_pessoas/candidato/candidato_service.dart';
-
-import '../services/_organizacoes/instituicao/instituicao_service.dart';
-import '../services/_pessoas/candidato/jovem_aprendiz_service.dart';
+import '../services/user_service.dart';
 
 class UserProvider extends ChangeNotifier {
   // Estado geral
@@ -80,53 +76,6 @@ class UserProvider extends ChangeNotifier {
   }
 
   // CRUD Candidatos
-  Future<void> loadCandidatos({
-    int page = 1,
-    String? search,
-    String? instituicao,
-    bool? ativo,
-    bool refresh = false,
-  }) async {
-    if (refresh) _currentPage = 1;
-
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      final result = await CandidatoService.listarCandidatos(
-        page: page,
-        search: search,
-        //instituicao: instituicao,
-        //ativo: ativo,
-      );
-
-      _setPagination(result['pagination']);
-      _setLoading(false);
-    } catch (e) {
-      _setError('Erro ao carregar candidatos: $e');
-      _setLoading(false);
-    }
-  }
-
-  Future<bool> deleteCandidato(String id) async {
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      final success = await CandidatoService.deletarCandidato(id as int);
-
-      if (success) {
-        _totalItems = _totalItems > 0 ? _totalItems - 1 : 0;
-      }
-
-      _setLoading(false);
-      return success;
-    } catch (e) {
-      _setError('Erro ao deletar estagiário: $e');
-      _setLoading(false);
-      return false;
-    }
-  }
 
   // Dashboard
   Future<void> loadDashboardData() async {
@@ -155,23 +104,6 @@ class UserProvider extends ChangeNotifier {
 
       if (success) {
         // Atualizar perfil baseado no tipo de usuário
-        switch (_currentUser!.tipo) {
-          case TipoUsuario.ESTAGIARIO:
-            _userProfile =
-                await CandidatoService.buscarCandidato(_userProfile.id);
-            break;
-
-          case TipoUsuario.INSTITUICAO:
-            _userProfile =
-                await InstituicaoService.buscarInstituicao(_userProfile.id);
-            break;
-          case TipoUsuario.JOVEM_APRENDIZ:
-            _userProfile =
-                await JovemAprendizService.buscarJovemAprendiz(_userProfile.id);
-            break;
-          default:
-            break;
-        }
       }
 
       _setLoading(false);

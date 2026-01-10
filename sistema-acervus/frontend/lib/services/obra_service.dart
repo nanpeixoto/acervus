@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:sistema_estagio/models/obra.dart';
 
 import '../utils/app_config.dart';
-import '_core/storage_service.dart';
+import 'storage_service.dart';
 
 class ObraService {
   static const String baseUrl = AppConfig.devBaseUrl;

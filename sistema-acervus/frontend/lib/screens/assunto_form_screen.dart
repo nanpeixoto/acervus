@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:sistema_estagio/models/_auxiliares/assunto.dart';
-import 'package:sistema_estagio/services/_auxiliares/assunto_service.dart';
+import 'package:sistema_estagio/models/assunto.dart';
+import 'package:sistema_estagio/services/assunto_service.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';

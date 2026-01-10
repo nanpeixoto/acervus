@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sistema_estagio/models/_auxiliares/cidade.dart';
-import 'package:sistema_estagio/models/_auxiliares/estado.dart';
-import 'package:sistema_estagio/models/_auxiliares/pais.dart';
-import 'package:sistema_estagio/services/_auxiliares/cidade_service.dar.dart';
-import 'package:sistema_estagio/services/_auxiliares/estado_service.dar.dart';
-import 'package:sistema_estagio/services/_auxiliares/pais_service.dar.dart';
+import 'package:sistema_estagio/models/cidade.dart';
+import 'package:sistema_estagio/models/estado.dart';
+import 'package:sistema_estagio/models/pais.dart';
+import 'package:sistema_estagio/services/cidade_service.dar.dart';
+import 'package:sistema_estagio/services/estado_service.dar.dart';
+import 'package:sistema_estagio/services/pais_service.dar.dart';
 import 'package:sistema_estagio/services/obra_service.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
@@ -42,7 +42,7 @@ class MovimentacoesScreen extends StatefulWidget {
   final int? obraId;
   final String? obraTitulo;
 
-  const MovimentacoesScreen({super.key,required this.obraId, this.obraTitulo});
+  const MovimentacoesScreen({super.key, required this.obraId, this.obraTitulo});
 
   @override
   State<MovimentacoesScreen> createState() => _MovimentacoesScreenState();
@@ -90,7 +90,9 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
           cidadeId: m['cidade_id'] as int?,
           dataInicial: dtIni,
           dataFinal: dtFim,
-          valor: m['valor'] != null ? double.tryParse(m['valor'].toString()) : null,
+          valor: m['valor'] != null
+              ? double.tryParse(m['valor'].toString())
+              : null,
           laudoInicial: m['laudo_inicial'] as String?,
           laudoFinal: m['laudo_final'] as String?,
         );
@@ -167,7 +169,8 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
               children: [
                 Text(
                   mov.tipoMovimento,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 IconButton(
                   tooltip: 'Editar',
@@ -176,13 +179,15 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                 ),
               ],
             ),
-            if ((mov.descricao ?? '').isNotEmpty)
-              Text(mov.descricao ?? ''),
+            if ((mov.descricao ?? '').isNotEmpty) Text(mov.descricao ?? ''),
             const SizedBox(height: 6),
-            Text('Datas: ${_formatDate(mov.dataInicial)} - ${_formatDate(mov.dataFinal)}'),
+            Text(
+                'Datas: ${_formatDate(mov.dataInicial)} - ${_formatDate(mov.dataFinal)}'),
             if (mov.valor != null)
               Text('Valor: R\$ ${mov.valor!.toStringAsFixed(2)}'),
-            if (mov.cidadeId != null || mov.estadoId != null || mov.paisId != null)
+            if (mov.cidadeId != null ||
+                mov.estadoId != null ||
+                mov.paisId != null)
               Text(
                 'Local: ' +
                     [
@@ -228,7 +233,8 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
         return StatefulBuilder(
           builder: (ctx, setModal) {
             return AlertDialog(
-              title: Text(mov == null ? 'Nova movimentação' : 'Editar movimentação'),
+              title: Text(
+                  mov == null ? 'Nova movimentação' : 'Editar movimentação'),
               content: SingleChildScrollView(
                 child: SizedBox(
                   width: 520,
@@ -237,17 +243,23 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                       DropdownButtonFormField<String>(
                         value: selTipo,
                         items: const [
-                          DropdownMenuItem(value: 'Entrada', child: Text('Entrada')),
-                          DropdownMenuItem(value: 'Saída', child: Text('Saída')),
-                          DropdownMenuItem(value: 'Empréstimo', child: Text('Empréstimo')),
+                          DropdownMenuItem(
+                              value: 'Entrada', child: Text('Entrada')),
+                          DropdownMenuItem(
+                              value: 'Saída', child: Text('Saída')),
+                          DropdownMenuItem(
+                              value: 'Empréstimo', child: Text('Empréstimo')),
                         ],
-                        onChanged: (v) => setModal(() => selTipo = v ?? 'Entrada'),
-                        decoration: const InputDecoration(labelText: 'Tipo Movimento *'),
+                        onChanged: (v) =>
+                            setModal(() => selTipo = v ?? 'Entrada'),
+                        decoration: const InputDecoration(
+                            labelText: 'Tipo Movimento *'),
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: descCtrl,
-                        decoration: const InputDecoration(labelText: 'Descrição'),
+                        decoration:
+                            const InputDecoration(labelText: 'Descrição'),
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -256,7 +268,8 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                             child: DropdownButtonFormField<int>(
                               value: selPais,
                               isExpanded: true,
-                              decoration: const InputDecoration(labelText: 'País'),
+                              decoration:
+                                  const InputDecoration(labelText: 'País'),
                               items: _paises
                                   .map((p) => DropdownMenuItem<int>(
                                         value: p.id,
@@ -281,7 +294,8 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                             child: DropdownButtonFormField<int>(
                               value: selEstado,
                               isExpanded: true,
-                              decoration: const InputDecoration(labelText: 'Estado'),
+                              decoration:
+                                  const InputDecoration(labelText: 'Estado'),
                               items: _estados
                                   .map((e) => DropdownMenuItem<int>(
                                         value: e.id,
@@ -331,7 +345,8 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                                 }
                               },
                               child: InputDecorator(
-                                decoration: const InputDecoration(labelText: 'Data Inicial'),
+                                decoration: const InputDecoration(
+                                    labelText: 'Data Inicial'),
                                 child: Text(
                                   dataIni != null
                                       ? '${dataIni!.day.toString().padLeft(2, '0')}/${dataIni!.month.toString().padLeft(2, '0')}/${dataIni!.year}'
@@ -355,7 +370,8 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                                 }
                               },
                               child: InputDecorator(
-                                decoration: const InputDecoration(labelText: 'Data Final'),
+                                decoration: const InputDecoration(
+                                    labelText: 'Data Final'),
                                 child: Text(
                                   dataFim != null
                                       ? '${dataFim!.day.toString().padLeft(2, '0')}/${dataFim!.month.toString().padLeft(2, '0')}/${dataFim!.year}'
@@ -369,19 +385,22 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: valorCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         decoration: const InputDecoration(labelText: 'Valor'),
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: laudoIniCtrl,
-                        decoration: const InputDecoration(labelText: 'Laudo Inicial'),
+                        decoration:
+                            const InputDecoration(labelText: 'Laudo Inicial'),
                         maxLines: 3,
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: laudoFimCtrl,
-                        decoration: const InputDecoration(labelText: 'Laudo Final'),
+                        decoration:
+                            const InputDecoration(labelText: 'Laudo Final'),
                         maxLines: 3,
                       ),
                     ],
@@ -396,7 +415,8 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                 ElevatedButton(
                   onPressed: () async {
                     if (widget.obraId == null) {
-                      AppUtils.showErrorSnackBar(context, 'ID da obra não disponível');
+                      AppUtils.showErrorSnackBar(
+                          context, 'ID da obra não disponível');
                       return;
                     }
 
@@ -406,9 +426,11 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                       'pais_id': selPais,
                       'estado_id': selEstado,
                       'cidade_id': selCidade,
-                      'data_inicial': dataIni?.toIso8601String().substring(0, 10),
+                      'data_inicial':
+                          dataIni?.toIso8601String().substring(0, 10),
                       'data_final': dataFim?.toIso8601String().substring(0, 10),
-                      'valor': double.tryParse(valorCtrl.text.replaceAll(',', '.')),
+                      'valor':
+                          double.tryParse(valorCtrl.text.replaceAll(',', '.')),
                       'laudo_inicial': laudoIniCtrl.text.trim(),
                       'laudo_final': laudoFimCtrl.text.trim(),
                     };
@@ -416,20 +438,24 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                     try {
                       Map<String, dynamic> saved;
                       if (mov == null) {
-                        saved = await ObraService.criarMovimentacao(widget.obraId!, payload);
+                        saved = await ObraService.criarMovimentacao(
+                            widget.obraId!, payload);
                       } else {
-                        saved = await ObraService.atualizarMovimentacao(mov.id!, payload);
+                        saved = await ObraService.atualizarMovimentacao(
+                            mov.id!, payload);
                       }
 
                       final updated = _Movimentacao(
                         id: saved['id'] as int?,
-                        tipoMovimento: (saved['tipo_movimento'] ?? '').toString(),
+                        tipoMovimento:
+                            (saved['tipo_movimento'] ?? '').toString(),
                         descricao: saved['descricao'] as String?,
                         paisId: saved['pais_id'] as int?,
                         estadoId: saved['estado_id'] as int?,
                         cidadeId: saved['cidade_id'] as int?,
                         dataInicial: saved['data_inicial'] != null
-                            ? DateTime.tryParse(saved['data_inicial'].toString())
+                            ? DateTime.tryParse(
+                                saved['data_inicial'].toString())
                             : null,
                         dataFinal: saved['data_final'] != null
                             ? DateTime.tryParse(saved['data_final'].toString())
@@ -445,7 +471,8 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                         if (mov == null) {
                           _movimentacoes.insert(0, updated);
                         } else {
-                          final idx = _movimentacoes.indexWhere((m) => m.id == mov.id);
+                          final idx =
+                              _movimentacoes.indexWhere((m) => m.id == mov.id);
                           if (idx != -1) {
                             _movimentacoes[idx] = updated;
                           }
@@ -454,7 +481,8 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
 
                       if (context.mounted) Navigator.pop(ctx);
                     } catch (e) {
-                      AppUtils.showErrorSnackBar(context, 'Erro ao salvar movimentação');
+                      AppUtils.showErrorSnackBar(
+                          context, 'Erro ao salvar movimentação');
                     }
                   },
                   child: const Text('Salvar'),

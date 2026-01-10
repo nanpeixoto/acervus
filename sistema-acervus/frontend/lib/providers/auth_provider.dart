@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
-import '../models/_core/usuario.dart';
-import '../services/_core/auth_service.dart';
-import '../services/_core/storage_service.dart';
+import '../models/usuario.dart';
+import '../services/auth_service.dart';
+import '../services/storage_service.dart';
 import '../routes/app_router.dart';
 
 const String baseUrl = AppConfig.devBaseUrl;

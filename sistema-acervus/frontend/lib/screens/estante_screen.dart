@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:sistema_estagio/models/_auxiliares/estante.dart';
-import 'package:sistema_estagio/models/_auxiliares/prateleira.dart';
-import 'package:sistema_estagio/models/_auxiliares/sala_obra.dart';
+import 'package:sistema_estagio/models/estante.dart';
+import 'package:sistema_estagio/models/prateleira.dart';
+import 'package:sistema_estagio/models/sala_obra.dart';
 import 'package:sistema_estagio/models/prateleiraForm.dart';
-import 'package:sistema_estagio/services/_auxiliares/estante_service.dart';
+import 'package:sistema_estagio/services/estante_service.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
 
-import 'package:sistema_estagio/models/_auxiliares/pais.dart';
-import 'package:sistema_estagio/models/_auxiliares/estado.dart';
-import 'package:sistema_estagio/models/_auxiliares/cidade.dart';
+import 'package:sistema_estagio/models/pais.dart';
+import 'package:sistema_estagio/models/estado.dart';
+import 'package:sistema_estagio/models/cidade.dart';
 
-import 'package:sistema_estagio/services/_auxiliares/pais_service.dar.dart';
-import 'package:sistema_estagio/services/_auxiliares/estado_service.dar.dart';
-import 'package:sistema_estagio/services/_auxiliares/cidade_service.dar.dart';
-import 'package:sistema_estagio/services/_auxiliares/sala_service.dar.dart';
+import 'package:sistema_estagio/services/pais_service.dar.dart';
+import 'package:sistema_estagio/services/estado_service.dar.dart';
+import 'package:sistema_estagio/services/cidade_service.dar.dart';
+import 'package:sistema_estagio/services/sala_service.dar.dart';
 
 class EstanteScreen extends StatefulWidget {
   const EstanteScreen({super.key});

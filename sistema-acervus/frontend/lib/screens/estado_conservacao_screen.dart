@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:sistema_estagio/models/_auxiliares/estado_conservacao.dart';
-import 'package:sistema_estagio/services/_auxiliares/estado_conservacao_service.dart';
+import 'package:sistema_estagio/models/estado_conservacao.dart';
+import 'package:sistema_estagio/services/estado_conservacao_service.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';

@@ -1,6 +1,6 @@
 // lib/providers/theme_provider.dart
 import 'package:flutter/material.dart';
-import '../services/_core/storage_service.dart';
+import '../services/storage_service.dart';
 
 class ThemeProvider extends ChangeNotifier {
   bool _isDarkMode = false;
