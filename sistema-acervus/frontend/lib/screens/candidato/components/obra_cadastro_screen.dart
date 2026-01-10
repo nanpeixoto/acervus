@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sistema_estagio/models/_auxiliares/assunto.dart';
+import 'package:sistema_estagio/models/_auxiliares/autor.dart';
+import 'package:sistema_estagio/models/_auxiliares/editora.dart';
 import 'package:sistema_estagio/models/_auxiliares/estado_conservacao.dart';
 import 'package:sistema_estagio/models/_auxiliares/material.dart';
 import 'package:sistema_estagio/models/_auxiliares/subtipo_obra.dart';
 import 'package:sistema_estagio/models/_pessoas/formacao/idioma.dart';
 import 'package:sistema_estagio/services/_auxiliares/assunto_service.dart';
+import 'package:sistema_estagio/services/_auxiliares/autor_service.dart';
+import 'package:sistema_estagio/services/_auxiliares/editora_service.dar.dart';
 import 'package:sistema_estagio/services/_auxiliares/estado_conservacao_service.dart';
 import 'package:sistema_estagio/services/_auxiliares/material_service.dart';
 import 'package:sistema_estagio/services/_auxiliares/subtipo_obra_service.dar.dart';
@@ -77,9 +81,14 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
   List<EstadoConservacao> _estadosConservacao = [];
   bool _loadingEstadosConservacao = false;
 
-  List<Idioma> _idiomas = [];
+  List<Editora> _editoras = [];
+  bool _loadingEditoras = false;
 
+  List<Idioma> _idiomas = [];
   bool _loadingIdiomas = false;
+
+  List<Autor> _autores = [];
+  bool _loadingAutores = false;
 
   @override
   void initState() {
@@ -95,6 +104,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
     _loadMateriais();
 
     _loadEstadosConservacao();
+
+    _loadEditoras();
+
+    _loadAutores();
 
     if (_isEdicao) {
       _carregarObra();
@@ -195,6 +208,54 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       AppUtils.showErrorSnackBar(context, 'Erro ao carregar estados de conservação');
     } finally {
       setState(() => _loadingEstadosConservacao = false);
+    }
+  }
+  Future<void> _loadEditoras() async {
+    setState(() => _loadingEditoras = true);
+
+    try {
+      final result = await EditoraService.listar(
+        page: 1,
+        limit: 999,
+        ativo: true,
+      );
+
+      setState(() {
+        _editoras = List<Editora>.from(result['Editoras'] ?? []);
+
+        // segurança: evita value fora da lista
+        if (cdEditora != null && !_editoras.any((e) => e.id == cdEditora)) {
+          cdEditora = null;
+        }
+      });
+    } catch (e) {
+      AppUtils.showErrorSnackBar(context, 'Erro ao carregar editoras');
+    } finally {
+      setState(() => _loadingEditoras = false);
+    }
+  }
+  Future<void> _loadAutores() async {
+    setState(() => _loadingAutores = true);
+
+    try {
+      final result = await AutorService.listarAutores(
+        page: 1,
+        limit: 999,
+        ativo: true,
+      );
+
+      setState(() {
+        _autores = List<Autor>.from(result['autores'] ?? []);
+
+        // segurança: evita value fora da lista
+        if (cdAutor != null && !_autores.any((a) => a.id == cdAutor)) {
+          cdAutor = null;
+        }
+      });
+    } catch (e) {
+      AppUtils.showErrorSnackBar(context, 'Erro ao carregar autores');
+    } finally {
+      setState(() => _loadingAutores = false);
     }
   }
 
@@ -492,9 +553,9 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                   child: _dropdown('Localização *', cdEstantePrateleira,
                       (v) => setState(() => cdEstantePrateleira = v))),
             ],
-          ),
+          ),          
           const SizedBox(height: 12),
-          _dropdown('Autor', cdAutor, (v) => setState(() => cdAutor = v)),
+          _dropdownAutor(),
           const SizedBox(height: 12),
           CustomTextField(controller: _subtituloController, label: 'Subtítulo'),
           const SizedBox(height: 12),
@@ -502,9 +563,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
             children: [
               Expanded(child: _dropdownEstadoConservacao()),
               const SizedBox(width: 12),
-              Expanded(
-                  child: _dropdown('Editora', cdEditora,
-                      (v) => setState(() => cdEditora = v))),
+              Expanded(child: _dropdownEditora()),
             ],
           ),
           const SizedBox(height: 12),
@@ -633,6 +692,81 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
           .toList(),
       onChanged: (v) => setState(() => cdEstadoConservacao = v),
       validator: (v) => v == null ? 'Estado de Conservação é obrigatório' : null,
+    );
+  }
+  Widget _dropdownEditora() {
+    if (_loadingEditoras) {
+      return const LinearProgressIndicator(minHeight: 2);
+    }
+
+    if (_editoras.isEmpty) {
+      return const Text(
+        'Nenhuma editora disponível',
+        style: TextStyle(color: Colors.grey),
+      );
+    }
+
+    return DropdownButtonFormField<int>(
+      value: cdEditora,
+      isExpanded: true,
+      dropdownColor: Colors.white,
+      style: const TextStyle(color: Colors.black),
+      decoration: const InputDecoration(
+        labelText: 'Editora *',
+        border: OutlineInputBorder(),
+        isDense: true,
+      ),
+      items: _editoras
+          .map(
+            (e) => DropdownMenuItem<int>(
+              value: e.id,
+              child: Text(
+                e.descricao,
+                style: const TextStyle(color: Colors.black),
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (v) => setState(() => cdEditora = v),
+      validator: (v) => v == null ? 'Editora é obrigatória' : null,
+    );
+  }
+
+  Widget _dropdownAutor() {
+    if (_loadingAutores) {
+      return const LinearProgressIndicator(minHeight: 2);
+    }
+
+    if (_autores.isEmpty) {
+      return const Text(
+        'Nenhum autor disponível',
+        style: TextStyle(color: Colors.grey),
+      );
+    }
+
+    return DropdownButtonFormField<int>(
+      value: cdAutor,
+      isExpanded: true,
+      dropdownColor: Colors.white,
+      style: const TextStyle(color: Colors.black),
+      decoration: const InputDecoration(
+        labelText: 'Autor *',
+        border: OutlineInputBorder(),
+        isDense: true,
+      ),
+      items: _autores
+          .map(
+            (a) => DropdownMenuItem<int>(
+              value: a.id,
+              child: Text(
+                a.nome,
+                style: const TextStyle(color: Colors.black),
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (v) => setState(() => cdAutor = v),
+      validator: (v) => v == null ? 'Autor é obrigatório' : null,
     );
   }
 
