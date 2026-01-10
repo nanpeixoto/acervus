@@ -10,20 +10,12 @@ export '_pessoas/candidatos/candidatos_list_screen.dart';
 // Usuários
 export '_pessoas/usuarios/usuarios_list_screen.dart';
 
-// === ORGANIZAÇÕES ===
-// Empresas
-export '_organizacoes/empresas/empresas_list_screen.dart';
-
 // Instituições
 export '_organizacoes/instituicoes/instituicoes_list_screen.dart';
 
 // === AUXILIARES ===
 // Cursos
-export '_auxiliares/cursos/cursos_list_screen.dart';
-export '_auxiliares/cursos_aprendizagem/cursos_aprendizagem_list_screen.dart';
 
-// Outros
-export '_auxiliares/turmas/turmas_list_screen.dart';
 export '_auxiliares/setores/setores_list_screen.dart';
 export '_auxiliares/seguradoras/seguradoras_list_screen.dart';
 export '_auxiliares/cidades/cidades_list_screen.dart';
@@ -36,5 +28,3 @@ export '_auxiliares/conhecimentos/experiencia_profissional_screen.dart';
 export '_auxiliares/niveis/niveis_conhecimento_screen.dart';
 export '_auxiliares/niveis/niveis_formacao_screen.dart';
 export '_auxiliares/niveis/modalidades_ensino_screen.dart';
-export '_auxiliares/niveis/turnos_screen.dart';
-export '_auxiliares/niveis/status_curso_screen.dart';

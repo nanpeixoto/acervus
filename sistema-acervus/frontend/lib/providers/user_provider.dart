@@ -7,13 +7,12 @@ import '../models/_organizacoes/empresa/empresa.dart' as emp;
 import '../models/_organizacoes/instituicao/instituicao.dart' as inst;
 import '../models/_pessoas/candidato/jovem_aprendiz.dart' as jovem;
 import '../models/_contratos/contrato/contrato.dart' as contrato;
-import '../models/_academico/_vagas/vaga.dart';
+
 import '../services/_core/user_service.dart';
 import '../services/_pessoas/candidato/candidato_service.dart';
-import '../services/_organizacoes/empresa/empresa_service.dart';
+
 import '../services/_organizacoes/instituicao/instituicao_service.dart';
 import '../services/_pessoas/candidato/jovem_aprendiz_service.dart';
-import '../services/_contratos/contrato/contrato_service.dart';
 
 class UserProvider extends ChangeNotifier {
   // Estado geral
@@ -30,7 +29,6 @@ class UserProvider extends ChangeNotifier {
   final List<inst.InstituicaoEnsino> _instituicoes = [];
   final List<jovem.JovemAprendiz> _jovensAprendizes = [];
   List<contrato.Contrato> _contratos = [];
-  List<Vaga> _vagas = [];
 
   // Paginação
   int _currentPage = 1;
@@ -53,7 +51,7 @@ class UserProvider extends ChangeNotifier {
   List<inst.InstituicaoEnsino> get instituicoes => _instituicoes;
   List<jovem.JovemAprendiz> get jovensAprendizes => _jovensAprendizes;
   List<contrato.Contrato> get contratos => _contratos;
-  List<Vaga> get vagas => _vagas;
+
   int get currentPage => _currentPage;
   int get totalPages => _totalPages;
   int get totalItems => _totalItems;
@@ -75,7 +73,7 @@ class UserProvider extends ChangeNotifier {
     _instituicoes.clear();
     _jovensAprendizes.clear();
     _contratos.clear();
-    _vagas.clear();
+
     _dashboardData.clear();
     _filtros.clear();
     _currentPage = 1;
@@ -159,163 +157,6 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  // CRUD Empresas
-  Future<void> loadEmpresas({
-    int page = 1,
-    String? search,
-    bool? ativo,
-    bool refresh = false,
-  }) async {
-    if (refresh) _currentPage = 1;
-
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      final result = await EmpresaService.listarEmpresas(
-        page: page,
-        search: search,
-        ativo: ativo,
-      );
-
-      if (refresh || page == 1) {
-        _empresas = List<emp.Empresa>.from(result['empresas']);
-      } else {
-        _empresas.addAll(List<emp.Empresa>.from(result['empresas']));
-      }
-
-      _setPagination(result['pagination']);
-      _setLoading(false);
-    } catch (e) {
-      _setError('Erro ao carregar empresas: $e');
-      _setLoading(false);
-    }
-  }
-
-  Future<bool> updateEmpresa(String id, Map<String, dynamic> dados) async {
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      final success = await EmpresaService.atualizarEmpresa(id, dados);
-
-      if (success) {
-        final index = _empresas.indexWhere((e) => e.id == id);
-        if (index != -1) {
-          final updatedEmpresa = await EmpresaService.buscarEmpresa(id);
-          _empresas[index] = updatedEmpresa as emp.Empresa;
-        }
-
-        if (_currentUser?.tipo == TipoUsuario.EMPRESA &&
-            _userProfile?.id == id) {
-          _userProfile = await EmpresaService.buscarEmpresa(id);
-        }
-      }
-
-      _setLoading(false);
-      return success;
-    } catch (e) {
-      _setError('Erro ao atualizar empresa: $e');
-      _setLoading(false);
-      return false;
-    }
-  }
-
-  // CRUD Contratos
-  Future<void> loadContratos({
-    int page = 1,
-    String? status,
-    String? tipo,
-    String? vencimento,
-    bool refresh = false,
-  }) async {
-    if (refresh) _currentPage = 1;
-
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      final result = await ContratoService.listarContratos(
-        page: page,
-        status: status,
-        tipo: tipo,
-      );
-
-      if (refresh || page == 1) {
-        _contratos = List<contrato.Contrato>.from(result['contratos']);
-      } else {
-        _contratos.addAll(List<contrato.Contrato>.from(result['contratos']));
-      }
-
-      _setPagination(result['pagination']);
-      _setLoading(false);
-    } catch (e) {
-      _setError('Erro ao carregar contratos: $e');
-      _setLoading(false);
-    }
-  }
-
-  Future<bool> createContrato(Map<String, dynamic> dados) async {
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      final success = await ContratoService.criarContrato(dados);
-
-      if (success) {
-        // Recarregar a lista de contratos
-        await loadContratos(refresh: true);
-      }
-
-      _setLoading(false);
-      return success;
-    } catch (e) {
-      _setError('Erro ao criar contrato: $e');
-      _setLoading(false);
-      return false;
-    }
-  }
-
-  Future<bool> updateContrato(String id, Map<String, dynamic> dados) async {
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      final success = await ContratoService.atualizarContrato(id, dados);
-
-      if (success) {
-        final index = _contratos.indexWhere((c) => c.id == id);
-        if (index != -1) {
-          final updatedContrato = await ContratoService.buscarContrato(id);
-          _contratos[index] = updatedContrato;
-        }
-      }
-
-      _setLoading(false);
-      return success;
-    } catch (e) {
-      _setError('Erro ao atualizar contrato: $e');
-      _setLoading(false);
-      return false;
-    }
-  }
-
-  Future<Object> generateContratoPDF(String contratoId) async {
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      final success = await ContratoService.gerarPDF(contratoId);
-
-      _setLoading(false);
-      return success;
-    } catch (e) {
-      _setError('Erro ao gerar PDF: $e');
-      _setLoading(false);
-      return false;
-    }
-  }
-
   // Dashboard
   Future<void> loadDashboardData() async {
     try {
@@ -348,9 +189,7 @@ class UserProvider extends ChangeNotifier {
             _userProfile =
                 await CandidatoService.buscarCandidato(_userProfile.id);
             break;
-          case TipoUsuario.EMPRESA:
-            _userProfile = await EmpresaService.buscarEmpresa(_userProfile.id);
-            break;
+
           case TipoUsuario.INSTITUICAO:
             _userProfile =
                 await InstituicaoService.buscarInstituicao(_userProfile.id);
@@ -404,13 +243,6 @@ class UserProvider extends ChangeNotifier {
       default:
         return _contratos;
     }
-  }
-
-  List<Vaga> getVagasDoUsuario() {
-    if (_currentUser?.tipo == TipoUsuario.EMPRESA && _userProfile != null) {
-      return _vagas.where((v) => v.empresa?.id == _userProfile.id).toList();
-    }
-    return _vagas;
   }
 
   // Filtros
@@ -502,8 +334,6 @@ class UserProvider extends ChangeNotifier {
   int get totalContratosAtivos =>
       _contratos.where((c) => c.status == 'ATIVO').length;
 
-  int get totalVagasAbertas => _vagas.where((v) => v.statusVaga == true).length;
-
   // Contratos próximos do vencimento (30 dias)
   List<contrato.Contrato> get contratosProximosVencimento {
     final dataLimite = DateTime.now().add(const Duration(days: 30));
@@ -520,43 +350,6 @@ class UserProvider extends ChangeNotifier {
     if (_currentUser == null) return;
 
     final futures = <Future>[];
-
-    // Carregar dados baseado no tipo de usuário
-    switch (_currentUser!.tipo) {
-      case TipoUsuario.ADMIN:
-      case TipoUsuario.COLABORADOR:
-        futures.addAll([
-          loadCandidatos(refresh: true),
-          loadEmpresas(refresh: true),
-          loadContratos(refresh: true),
-          loadDashboardData(),
-        ]);
-        break;
-
-      case TipoUsuario.EMPRESA:
-        futures.addAll([
-          loadContratos(refresh: true),
-        ]);
-        break;
-
-      case TipoUsuario.SUPERVISOR:
-        futures.addAll([
-          loadContratos(refresh: true),
-        ]);
-        break;
-
-      case TipoUsuario.ESTAGIARIO:
-      case TipoUsuario.JOVEM_APRENDIZ:
-        futures.add(loadContratos(refresh: true));
-        break;
-
-      case TipoUsuario.INSTITUICAO:
-        futures.addAll([
-          loadCandidatos(refresh: true),
-          loadContratos(refresh: true),
-        ]);
-        break;
-    }
 
     try {
       await Future.wait(futures);
