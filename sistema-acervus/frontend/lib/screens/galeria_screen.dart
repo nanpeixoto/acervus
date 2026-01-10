@@ -181,15 +181,18 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AspectRatio(
-            aspectRatio: 4 / 3,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: ColoredBox(
-                color: Colors.grey.shade100,
-                child: Transform.rotate(
-                  angle: angleRad,
-                  child: _buildImagemPreview(item, BoxFit.cover),
+          GestureDetector(
+            onTap: () => _visualizarImagem(item),
+            child: AspectRatio(
+              aspectRatio: 4 / 3,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: ColoredBox(
+                  color: Colors.grey.shade100,
+                  child: Transform.rotate(
+                    angle: angleRad,
+                    child: _buildImagemPreview(item, BoxFit.cover),
+                  ),
                 ),
               ),
             ),
@@ -212,31 +215,52 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
               ),
           ],
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 4, // espaçamento horizontal entre botões
+            runSpacing: 4, // espaçamento vertical se quebrar linha
+            alignment: WrapAlignment.start,
             children: [
-              if (item.isPrincipal)
-                const Icon(Icons.star, color: Colors.amber, size: 18),
               IconButton(
+                iconSize: 20, // reduzir tamanho do ícone
+                tooltip:
+                    item.isPrincipal ? 'Remover como capa' : 'Marcar como capa',
+                icon: Icon(
+                  item.isPrincipal ? Icons.star : Icons.star_border,
+                  color: item.isPrincipal ? Colors.amber : Colors.grey,
+                ),
+                onPressed: () {
+                  setState(() {
+                    item.isPrincipal = !item.isPrincipal;
+                  });
+                  _persistirEdicao(item, principal: item.isPrincipal);
+                },
+              ),
+              IconButton(
+                iconSize: 20,
                 tooltip: 'Rotacionar -90º',
                 icon: const Icon(Icons.rotate_left),
-                onPressed: () => setState(() {
-                  item.rotationDeg = (item.rotationDeg - 90) % 360;
-                }),
+                onPressed: () {
+                  final newRotation = (item.rotationDeg - 90) % 360;
+                  setState(() {
+                    item.rotationDeg = newRotation;
+                  });
+                  _persistirEdicao(item, rotacao: newRotation);
+                },
               ),
               IconButton(
+                iconSize: 20,
                 tooltip: 'Rotacionar +90º',
                 icon: const Icon(Icons.rotate_right),
-                onPressed: () => setState(() {
-                  item.rotationDeg = (item.rotationDeg + 90) % 360;
-                }),
+                onPressed: () {
+                  final newRotation = (item.rotationDeg + 90) % 360;
+                  setState(() {
+                    item.rotationDeg = newRotation;
+                  });
+                  _persistirEdicao(item, rotacao: newRotation);
+                },
               ),
               IconButton(
-                tooltip: 'Editar',
-                icon: const Icon(Icons.fullscreen),
-                onPressed: () => _abrirEditorImagem(index, item),
-              ),
-              IconButton(
+                iconSize: 20,
                 tooltip: 'Remover',
                 icon: const Icon(Icons.delete_outline, color: Colors.red),
                 onPressed: () => setState(() => _imagens.removeAt(index)),
@@ -276,6 +300,37 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
     if (result != null && result.isNotEmpty) {
       setState(() => _imagens.add(_ObraImagem(url: result)));
     }
+  }
+
+  Future<void> _visualizarImagem(_ObraImagem item) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.black87,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Transform.rotate(
+                  angle: item.rotationDeg * 3.1415926535 / 180,
+                  child: _buildImagemPreview(item, BoxFit.contain),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 16,
+              right: 16,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _adicionarImagemArquivoWeb() async {
@@ -529,11 +584,6 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
                   label: Text(
                     _uploading ? 'Enviando...' : 'Adicionar arquivo',
                   ),
-                ),
-                OutlinedButton.icon(
-                  onPressed: _adicionarImagemPorUrl,
-                  icon: const Icon(Icons.link),
-                  label: const Text('Adicionar URL'),
                 ),
               ],
             ),
