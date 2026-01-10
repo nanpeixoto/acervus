@@ -178,46 +178,47 @@ router.get('/galeria/:obraId', tokenOpcional, async (req, res) => {
 // GET /obra/galeria/arquivo/:id
 // Retorna o binário da imagem
 // =====================
+ 
+
 router.get('/galeria/arquivo/:id', tokenOpcional, async (req, res) => {
   const { id } = req.params;
 
-  const query = `
-    SELECT imagem, extensao, nome
-    FROM public.ace_obra_galeria
-    WHERE id = $1
-    LIMIT 1
-  `;
-
   try {
-    const result = await pool.query(query, [id]);
+    const result = await pool.query(
+      `
+      SELECT cd_obra, nome
+      FROM ace_obra_galeria
+      WHERE id = $1
+      `,
+      [id]
+    );
 
     if (result.rowCount === 0) {
       return res.status(404).json({ erro: 'Imagem não encontrada.' });
     }
 
-    const row = result.rows[0];
+    const { cd_obra, nome } = result.rows[0];
 
-    if (!row.imagem) {
-      return res.status(404).json({ erro: 'Imagem sem conteúdo.' });
-    }
-
-    const mime = resolveMime(row.extensao);
-    const filenameBase = row.nome || 'imagem';
-    const ext = row.extensao ? `${row.extensao}`.replace('.', '') : 'bin';
-
-    res.setHeader('Content-Type', mime);
-    res.setHeader(
-      'Content-Disposition',
-      `inline; filename="${filenameBase}.${ext}"`
+    const filePath = path.join(
+      __dirname,
+      '..',
+      'uploads',
+      'obras',
+      String(cd_obra),
+      nome
     );
 
-    return res.send(row.imagem);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ erro: 'Arquivo não encontrado no disco.' });
+    }
+
+    return res.sendFile(filePath);
   } catch (err) {
     console.error('Erro ao obter arquivo da galeria:', err);
-    logger.error('Erro ao obter arquivo da galeria: ' + err.stack, 'obras');
-    res.status(500).json({ erro: 'Erro ao obter arquivo.' });
+    return res.status(500).json({ erro: 'Erro ao obter arquivo.' });
   }
 });
+
 
 // =====================
 // POST /obra/galeria/:obraId
