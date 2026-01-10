@@ -52,12 +52,13 @@ async function listarEstantes(req, res) {
       e.estado_id,
       e.cidade_id,
       COUNT(p.cd_estante_prateleira) AS total_prateleiras, 
-	  gp.nome as pais_descricao, ge.nome estado_descricao, gc.nome cidade_descricao
+	  gp.nome as pais_descricao, ge.nome estado_descricao, gc.nome cidade_descricao, sala.ds_sala sala_descricao
     FROM public.ace_estante e
     Inner  JOIN public.ace_estante_prateleira p       ON p.cd_estante = e.cd_estante
 	 Inner  JOIN public.ger_pais  gp       ON e.pais_id = gp.id
 	  Inner  JOIN public.ger_estado ge       ON e.estado_id = ge.id
 	   Inner  JOIN public.ger_cidade gc       ON e.cidade_id = gc.id
+      Inner  JOIN public.ace_Sala sala       ON e.cd_sala = sala.cd_sala
     ${where}
      GROUP BY
       e.cd_estante,
@@ -65,7 +66,7 @@ async function listarEstantes(req, res) {
       e.cd_sala,
       e.pais_id,
       e.estado_id,
-      e.cidade_id,  gp.nome, ge.nome, gc.nome
+      e.cidade_id,  gp.nome, ge.nome, gc.nome, sala.ds_sala 
     ORDER BY unaccent(e.descricao)
   `;
 

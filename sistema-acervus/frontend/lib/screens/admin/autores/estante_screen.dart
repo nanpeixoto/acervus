@@ -516,7 +516,7 @@ class _EstanteScreenState extends State<EstanteScreen>
 
                 // ====== INFORMAÇÕES ======
                 Text(
-                  'Sala: ${e.descricao ?? '-'}',
+                  'Sala: ${e.sala_descricao ?? '-'}',
                   style: TextStyle(color: Colors.grey[700]),
                 ),
                 const SizedBox(height: 4),
