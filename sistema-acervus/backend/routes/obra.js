@@ -223,58 +223,87 @@ router.get('/galeria/arquivo/:id', tokenOpcional, async (req, res) => {
 // POST /obra/galeria/:obraId
 // Salva imagem da galeria (base64)
 // =====================
-router.post('/galeria/adicionar/:obraId', verificarToken, async (req, res) => {
-  const obraId = parseInt(req.params.obraId, 10);
-  if (!obraId) {
-    return res.status(400).json({ erro: 'Obra inválida.' });
+// =====================
+// POST /obra/galeria/adicionar/:obraId
+// Upload de imagem (arquivo físico, sem base64)
+// =====================
+router.post(
+  '/galeria/adicionar/:obraId',
+  verificarToken,
+  upload.single('arquivo'),
+  async (req, res) => {
+    const obraId = parseInt(req.params.obraId, 10);
+    if (!obraId) {
+      return res.status(400).json({ erro: 'Obra inválida.' });
+    }
+
+    const client = await pool.connect();
+
+    try {
+      const {
+        ds_imagem = null,
+        sts_principal = false,
+      } = req.body;
+
+      if (!req.file) {
+        return res.status(400).json({ erro: 'Arquivo não enviado.' });
+      }
+
+      // ⭐ Se for capa, desmarca as outras
+      if (sts_principal === 'true' || sts_principal === true || sts_principal === '1') {
+        await client.query(
+          `
+          UPDATE ace_obra_galeria
+             SET sts_principal = false
+           WHERE cd_obra = $1
+          `,
+          [obraId]
+        );
+      }
+
+      // 💾 Salva SOMENTE metadados
+      const insertQuery = `
+        INSERT INTO ace_obra_galeria
+          (cd_obra, nome, extensao, sts_principal, ds_imagem)
+        VALUES
+          ($1, $2, $3, $4, $5)
+        RETURNING
+          id,
+          cd_obra,
+          nome,
+          extensao,
+          sts_principal,
+          ds_imagem
+      `;
+
+      const values = [
+        obraId,
+        req.file.filename,        // nome físico salvo
+        req.file.mimetype,        // ex: image/jpeg
+        sts_principal === 'true' || sts_principal === true || sts_principal === '1',
+        ds_imagem,
+      ];
+
+      const result = await client.query(insertQuery, values);
+      const row = result.rows[0];
+
+      return res.status(201).json({
+        ...row,
+        url: `/uploads/obras/${obraId}/${req.file.filename}`,
+      });
+    } catch (err) {
+      console.error('Erro ao salvar imagem da galeria:', err);
+      logger.error('Erro ao salvar imagem da galeria: ' + err.stack, 'obras');
+      return res.status(500).json({
+        erro: 'Erro ao salvar imagem da galeria.',
+        detalhe: err.message,
+      });
+    } finally {
+      client.release();
+    }
   }
+);
 
-  const {
-    nome,
-    ds_imagem,
-    extensao,
-    imagem_base64,
-    sts_principal,
-  } = req.body || {};
-
- 
-
- 
-
-  const insertQuery = `
-    INSERT INTO public.ace_obra_galeria
-      (cd_obra, ds_imagem, sts_principal, nome, extensao, imagem)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING
-      id,
-      cd_obra,
-      ds_imagem,
-      sts_principal,
-      nome,
-      extensao,
-      CASE WHEN imagem IS NOT NULL THEN encode(imagem, 'base64') END AS imagem_base64
-  `;
-
-  const params = [
-    obraId,
-    ds_imagem || null,
-    sts_principal === true,
-    nome || null,
-    extensao || null,
-    buffer,
-    0,
-  ];
-
-  try {
-    const result = await pool.query(insertQuery, params);
-    const row = result.rows[0];
-    return res.status(201).json({ dados: row });
-  } catch (err) {
-    console.error('Erro ao salvar imagem da galeria:', err);
-    logger.error('Erro ao salvar imagem da galeria: ' + err.stack, 'obras');
-    return res.status(500).json({ erro: 'Erro ao salvar imagem da galeria.' });
-  }
-});
 
 // =====================
 // PUT /obra/galeria/:id
