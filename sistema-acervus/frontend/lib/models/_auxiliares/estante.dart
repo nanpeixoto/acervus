@@ -1,0 +1,62 @@
+import 'package:sistema_estagio/models/_auxiliares/prateleira.dart';
+
+class Estante {
+  final int? id; // 👈 agora pode ser null
+
+  final String descricao;
+  final int cdSala;
+  final int paisId;
+  final int estadoId;
+  final int cidadeId;
+
+  // 👉 usado na LISTAGEM
+  final int totalPrateleiras;
+
+  // 👉 usado só no DETALHE / EDITAR
+  final List<Prateleira> prateleiras;
+
+  Estante({
+    required this.id,
+    required this.descricao,
+    required this.cdSala,
+    required this.paisId,
+    required this.estadoId,
+    required this.cidadeId,
+    this.totalPrateleiras = 0,
+    this.prateleiras = const [],
+  });
+
+  factory Estante.fromJson(Map<String, dynamic> json) {
+    return Estante(
+      id: json['cd_estante'],
+      descricao: json['descricao']?.trim() ?? '',
+      cdSala: json['cd_sala'],
+      paisId: json['pais_id'],
+      estadoId: json['estado_id'],
+      cidadeId: json['cidade_id'],
+      totalPrateleiras: int.tryParse(
+            json['total_prateleiras']?.toString() ?? '0',
+          ) ??
+          0,
+      prateleiras: (json['prateleiras'] as List<dynamic>?)
+              ?.map((p) => Prateleira.fromJson(p))
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'pais_id': paisId,
+      'estado_id': estadoId,
+      'cidade_id': cidadeId,
+      'cd_sala': cdSala,
+      'descricao': descricao,
+      'prateleiras': prateleiras
+          .map((p) => {
+                'descricao_prateleira': p.descricao,
+              })
+          .toList(),
+    };
+  }
+}

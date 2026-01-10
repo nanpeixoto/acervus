@@ -219,6 +219,15 @@ const editora = require('./routes/editora.js');
 app.use('/editora', editora);
 
 
+const sala = require('./routes/sala.js');
+app.use('/sala', sala);
+
+
+const estante = require('./routes/estante.js');
+app.use('/estante', estante);
+
+
+
 const estadoConservacao = require('./routes/estadoConservacao.js');
 app.use('/estado-conservacao', estadoConservacao);
 

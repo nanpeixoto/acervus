@@ -5,6 +5,9 @@ import 'package:sistema_estagio/models/_auxiliares/assunto.dart';
 import 'package:sistema_estagio/screens/admin/autores/assunto_form_screen.dart';
 import 'package:sistema_estagio/screens/admin/autores/editora_screen.dart';
 import 'package:sistema_estagio/screens/admin/autores/estado_conservacao_screen.dart';
+import 'package:sistema_estagio/screens/admin/autores/estante_screen.dart';
+
+import 'package:sistema_estagio/screens/admin/autores/sala_screen.dart';
 import 'package:sistema_estagio/screens/admin/autores/subtipo_obra_screen.dart';
 import 'package:sistema_estagio/screens/admin/autores/tipo_obra_screen.dart';
 import 'package:sistema_estagio/screens/admin/cadastros/_auxiliares/idiomas/idiomas_list_screen.dart';
@@ -146,6 +149,14 @@ class AppRouter {
               GoRoute(
                 path: '/admin/editoras',
                 builder: (context, state) => const EditoraScreen(),
+              ),
+              GoRoute(
+                path: '/admin/salas',
+                builder: (context, state) => const SalaScreen(),
+              ),
+              GoRoute(
+                path: '/admin/estantes',
+                builder: (context, state) => const EstanteScreen(),
               ),
             ],
           ),
