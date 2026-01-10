@@ -4,6 +4,14 @@ const pool = require('../db');
 const { verificarToken, tokenOpcional } = require('../auth');
 const logger = require('../utils/logger');
 const { paginarConsulta } = require('../helpers/paginador');
+ 
+ 
+ 
+const upload = require('../middlewares/uploadObraImagem');
+ 
+ ;
+
+
 
 const mimeByExt = {
   png: 'image/png',
@@ -751,6 +759,109 @@ router.put('/alterar/:id', verificarToken, async (req, res) => {
     res.status(500).json({ erro: 'Erro ao alterar obra.' });
   }
 });
+
+
+// =======================================
+// 📂 LISTAR GALERIA
+// GET /obras/:cdObra/galeria
+// =======================================
+router.get(
+  '/:cdObra/galeria',
+  verificarToken,
+  async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const { cdObra } = req.params;
+
+      const result = await client.query(
+        `
+        SELECT
+          id,
+          nome,
+          extensao,
+          sts_principal,
+          ds_imagem
+        FROM ace_obra_galeria
+        WHERE cd_obra = $1
+        ORDER BY sts_principal DESC, id DESC
+        `,
+        [cdObra]
+      );
+
+      return res.json(result.rows);
+    } catch (err) {
+      return res.status(500).json({ erro: err.message });
+    } finally {
+      client.release();
+    }
+  }
+);
+
+
+ 
+// =======================================
+router.post(  '/galeria/adicionar/:cdObra',
+  verificarToken,
+  upload.single('arquivo'),
+  async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const { cdObra } = req.params;
+      const {
+        sts_principal = false,
+        ds_imagem = null,
+      } = req.body;
+
+      if (!req.file) {
+        return res.status(400).json({ erro: 'Arquivo não enviado' });
+      }
+
+      // 🔒 Se for capa → desmarca outras capas
+      if (sts_principal === 'true' || sts_principal === '1') {
+        await client.query(
+          `
+          UPDATE ace_obra_galeria
+             SET sts_principal = false
+           WHERE cd_obra = $1
+          `,
+          [cdObra]
+        );
+      }
+
+      // 💾 Salva SOMENTE metadados
+      const result = await client.query(
+        `
+        INSERT INTO ace_obra_galeria
+          (cd_obra, nome, extensao, sts_principal, ds_imagem)
+        VALUES
+          ($1, $2, $3, $4, $5)
+        RETURNING id, nome, extensao, sts_principal
+        `,
+        [
+          cdObra,
+          req.file.filename,
+          req.file.mimetype,
+          sts_principal === 'true' || sts_principal === '1',
+          ds_imagem,
+        ]
+      );
+
+      return res.json({
+        ...result.rows[0],
+        caminho: `/uploads/obras/${cdObra}/${req.file.filename}`,
+      });
+    } catch (err) {
+      console.error('Erro upload galeria:', err);
+      return res.status(500).json({
+        erro: 'Erro ao salvar imagem',
+        detalhe: err.message,
+      });
+    } finally {
+      client.release();
+    }
+  }
+);
+
 
 
 module.exports = router;

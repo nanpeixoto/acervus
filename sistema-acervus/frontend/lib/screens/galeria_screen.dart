@@ -277,7 +277,8 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
 
   Future<void> _salvarImagem(Uint8List bytes, String nomeArquivo) async {
     if (widget.obraId == null) {
-      AppUtils.showErrorSnackBar(context, 'Salve a obra antes de enviar imagens');
+      AppUtils.showErrorSnackBar(
+          context, 'Salve a obra antes de enviar imagens');
       return;
     }
 
@@ -305,9 +306,8 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
         descricao: saved['ds_imagem'] as String?,
         extensao: saved['extensao'] as String? ?? ext,
         isPrincipal: saved['sts_principal'] == true,
-        rotationDeg: saved['rotacao'] is num
-            ? (saved['rotacao'] as num).toDouble()
-            : 0,
+        rotationDeg:
+            saved['rotacao'] is num ? (saved['rotacao'] as num).toDouble() : 0,
       );
 
       setState(() {

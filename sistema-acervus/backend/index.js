@@ -17,7 +17,10 @@ const PORT = process.env.PORT || 3000;
 
  
 
-app.use('/uploads/imagem_modelo', express.static(path.join(__dirname, 'uploads/imagem_modelo')));
+ 
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 
 
