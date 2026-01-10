@@ -87,7 +87,7 @@ class ObraService {
   static Future<Obra?> buscarObraPorId(int id) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/obra/listar/$id'),
+        Uri.parse('$baseUrl/obra/buscar/$id'),
         headers: await _getHeaders(),
       );
 
@@ -173,6 +173,140 @@ class ObraService {
       print('Erro ao editar obra: $e');
       rethrow;
     }
+  }
+
+  // ======================================================
+  // GALERIA
+  // ======================================================
+  static String galeriaArquivoUrl(int imagemId) {
+    return '$baseUrl/obra/galeria/arquivo/$imagemId';
+  }
+
+  static Future<List<Map<String, dynamic>>> listarGaleria(int obraId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/obra/galeria/$obraId'),
+        headers: await _getHeaders(),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Erro ao listar galeria');
+      }
+
+      final data = jsonDecode(response.body);
+      final lista = _extrairObras(data);
+
+      return lista
+          .whereType<Map<String, dynamic>>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } catch (e) {
+      print('Erro ao listar galeria: $e');
+      rethrow;
+    }
+  }
+
+  static Future<Map<String, dynamic>> salvarImagemGaleria(
+    int obraId,
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/obra/galeria/adicionar/$obraId'),
+      headers: await _getHeaders(),
+      body: jsonEncode(payload),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      final result = data['dados'] ?? data['data'] ?? data;
+      return Map<String, dynamic>.from(result);
+    }
+
+    throw Exception('Erro ao salvar imagem na galeria');
+  }
+
+  static Future<Map<String, dynamic>> atualizarImagemGaleria(
+    int imagemId,
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/obra/galeria/editar/$imagemId'),
+      headers: await _getHeaders(),
+      body: jsonEncode(payload),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final result = data['dados'] ?? data['data'] ?? data;
+      return Map<String, dynamic>.from(result);
+    }
+
+    throw Exception('Erro ao atualizar imagem da galeria');
+  }
+
+  // ======================================================
+  // MOVIMENTACOES
+  // ======================================================
+  static Future<List<Map<String, dynamic>>> listarMovimentacoes(
+      int obraId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/obra/movimentacoes/$obraId'),
+        headers: await _getHeaders(),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Erro ao listar movimentações');
+      }
+
+      final data = jsonDecode(response.body);
+      final lista = _extrairObras(data);
+      return lista
+          .whereType<Map<String, dynamic>>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } catch (e) {
+      print('Erro ao listar movimentações: $e');
+      rethrow;
+    }
+  }
+
+  static Future<Map<String, dynamic>> criarMovimentacao(
+    int obraId,
+    Map<String, dynamic> dados,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/obra/movimentacoes/$obraId'),
+      headers: await _getHeaders(),
+      body: jsonEncode(dados),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      final result = data['dados'] ?? data['data'] ?? data;
+      return Map<String, dynamic>.from(result);
+    }
+
+    throw Exception('Erro ao criar movimentação');
+  }
+
+  static Future<Map<String, dynamic>> atualizarMovimentacao(
+    int id,
+    Map<String, dynamic> dados,
+  ) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/obra/movimentacoes/$id'),
+      headers: await _getHeaders(),
+      body: jsonEncode(dados),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final result = data['dados'] ?? data['data'] ?? data;
+      return Map<String, dynamic>.from(result);
+    }
+
+    throw Exception('Erro ao atualizar movimentação');
   }
 
   // ======================================================

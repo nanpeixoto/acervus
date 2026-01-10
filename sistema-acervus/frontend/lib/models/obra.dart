@@ -3,6 +3,7 @@ class Obra {
 
   final String? titulo;
   final String? subtitulo;
+  final String? resumoObra;
 
   final int? cdTipoPeca;
   final int? cdSubtipoPeca;
@@ -29,6 +30,7 @@ class Obra {
     required this.id,
     this.titulo,
     this.subtitulo,
+    this.resumoObra,
     this.cdTipoPeca,
     this.cdSubtipoPeca,
     this.cdAssunto,
@@ -72,6 +74,7 @@ class Obra {
       valor: json['valor'] != null
           ? double.tryParse(json['valor'].toString())
           : null,
+      resumoObra: json['resumo_obra'],
     );
   }
 }

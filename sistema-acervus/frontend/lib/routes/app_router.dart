@@ -14,6 +14,8 @@ import 'package:sistema_estagio/screens/admin/cadastros/_auxiliares/idiomas/idio
 import 'package:sistema_estagio/screens/admin/cadastros/_auxiliares/material_screen.dart';
 import 'package:sistema_estagio/screens/admin/cadastros/obras_list_screen.dart';
 import 'package:sistema_estagio/screens/candidato/components/obra_cadastro_screen.dart';
+import 'package:sistema_estagio/screens/admin/cadastros/obras/movimentacoes_screen.dart';
+import 'package:sistema_estagio/screens/admin/cadastros/obras/galeria_screen.dart';
 
 import '../providers/auth_provider.dart';
 import '../screens/public/login_screen.dart';
@@ -113,6 +115,35 @@ class AppRouter {
                 builder: (context, state) {
                   final id = int.parse(state.pathParameters['id']!);
                   return ObraCadastroScreen(obraId: id);
+                },
+              ),
+              GoRoute(
+                path: '/admin/obras/movimentacoes/:id',
+                builder: (context, state) {
+                  final id = int.parse(state.pathParameters['id']!);
+                  return MovimentacoesScreen(obraId: id);
+                },
+              ),
+              GoRoute(
+                path: '/admin/obras/movimentacoes/:id/editar',
+                builder: (context, state) {
+                  final id = int.parse(state.pathParameters['id']!);
+                  return MovimentacoesScreen(obraId: id);
+                },
+              ),
+              GoRoute(
+                path: '/admin/obras/galeria/:id',
+                builder: (context, state) {
+                  final id = int.parse(state.pathParameters['id']!);
+                  return GaleriaScreen(obraId: id);
+                },
+              ),
+              GoRoute(
+                path: '/admin/obras/galeria/:id/editar',
+                builder: (context, state) {
+                  final id = int.parse(state.pathParameters['id']!);
+                  final titulo = state.uri.queryParameters['titulo'];
+                  return GaleriaScreen(obraId: id, obraTitulo: titulo);
                 },
               ),
               GoRoute(
