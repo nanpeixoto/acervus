@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sistema_estagio/models/_auxiliares/cidade.dart';
 import 'package:sistema_estagio/models/_auxiliares/estado.dart';
 import 'package:sistema_estagio/models/_auxiliares/pais.dart';
@@ -470,6 +471,10 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/admin/obras/'),
+        ),
         title: Text(widget.obraTitulo ?? 'Movimentações da Obra'),
       ),
       body: Padding(

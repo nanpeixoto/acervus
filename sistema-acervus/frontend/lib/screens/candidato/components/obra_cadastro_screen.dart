@@ -680,6 +680,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/admin/obras/'),
+        ),
         title: Text(_isEdicao ? 'Editar Obra' : 'Cadastrar Obra'),
         actions: [
           if (_isEdicao)

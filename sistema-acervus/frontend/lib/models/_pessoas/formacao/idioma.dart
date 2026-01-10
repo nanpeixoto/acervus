@@ -1,4 +1,5 @@
 // TODO Implement this library.// TODO Implement this library.// lib/models/turnos.dart
+
 class Idioma {
   final int? id;
   final String? cdCandidato; // ID do candidato associado
