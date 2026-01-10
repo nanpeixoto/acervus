@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sistema_estagio/models/_auxiliares/assunto.dart';
 import 'package:sistema_estagio/screens/admin/autores/assunto_form_screen.dart';
+import 'package:sistema_estagio/screens/admin/autores/editora_screen.dart';
 import 'package:sistema_estagio/screens/admin/autores/estado_conservacao_screen.dart';
 import 'package:sistema_estagio/screens/admin/autores/subtipo_obra_screen.dart';
 import 'package:sistema_estagio/screens/admin/autores/tipo_obra_screen.dart';
@@ -110,6 +111,10 @@ class AppRouter {
                   final id = int.parse(state.pathParameters['id']!);
                   return ObraCadastroScreen(obraId: id);
                 },
+              ),
+              GoRoute(
+                path: '/admin/editoras',
+                builder: (context, state) => const EditoraScreen(),
               ),
             ],
           ),

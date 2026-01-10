@@ -222,7 +222,7 @@ class _EstadoConservacaoScreenState extends State<EstadoConservacaoScreen>
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E7D32),
+                    color: Color(0xFF1976D2),
                   ),
                 ),
                 IconButton(

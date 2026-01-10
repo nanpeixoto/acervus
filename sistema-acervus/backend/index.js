@@ -51,8 +51,6 @@ app.get('/ping', (req, res) => {
 const instituicaoRoute = require('./routes/instituicao');
 app.use('/instituicao', instituicaoRoute);
 
-const cidadeRoute = require('./routes/cidade');
-app.use('/cidade', cidadeRoute);
 
 const representante_legalRoute = require('./routes/representante_legal.js');
 app.use('/representantelegal', representante_legalRoute);
@@ -198,6 +196,17 @@ app.use('/Materiais', material);
 const tipo_obra = require('./routes/tipo_obra.js');
 app.use('/tipo_obra', tipo_obra);
 
+const estado = require('./routes/estado.js');
+app.use('/estado', estado);
+
+const cidadeRoute = require('./routes/cidade');
+app.use('/cidade', cidadeRoute);
+
+
+
+const pais = require('./routes/pais.js');
+app.use('/pais', pais);
+
 
 const subtipo_obra = require('./routes/subtipo_obra.js');
 app.use('/subtipo_obra', subtipo_obra);
@@ -205,6 +214,9 @@ app.use('/subtipo_obra', subtipo_obra);
 
 const obra = require('./routes/obra.js');
 app.use('/obra', obra);
+
+const editora = require('./routes/editora.js');
+app.use('/editora', editora);
 
 
 const estadoConservacao = require('./routes/estadoConservacao.js');

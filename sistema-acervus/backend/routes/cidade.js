@@ -1,122 +1,298 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-// ✅ MELHOR ABORDAGEM: Importar o objeto completo
-// ✅ CORREÇÃO: Importação correta do middleware de autenticação
 const { verificarToken, tokenOpcional } = require('../auth');
 const logger = require('../utils/logger');
 const { paginarConsulta } = require('../helpers/paginador');
 
+/* =========================================================
+   LISTAR / BUSCAR (PAGINADO)
+========================================================= */
+router.get('/listar', tokenOpcional, listarCidades);
+router.get('/buscar', tokenOpcional, listarCidades);
 
-router.get('/cidades', verificarToken, async (req, res) => {
+async function listarCidades(req, res) {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 50;
-  const offset = (page - 1) * limit;
 
-  const { nome, uf } = req.query;
+  const {
+    q,
+    estado_id,
+    pais_id,
+    codigo_ibge
+  } = req.query;
 
-  let filtros = [];
-  let valores = [];
-  let where = '';
+  const filtros = [];
+  const valores = [];
 
-  if (nome) {
-    valores.push(`%${nome}%`);
-    filtros.push(`unaccent(nome) ILIKE unaccent($${valores.length})`);
+  if (q) {
+    valores.push(`%${q}%`);
+    filtros.push(`
+      (
+        unaccent(c.nome) ILIKE unaccent($${valores.length})
+        OR CAST(c.codigo_ibge AS TEXT) ILIKE $${valores.length}
+        OR CAST(c.id AS TEXT) ILIKE $${valores.length}
+      )
+    `);
   }
 
-  if (uf) {
-    valores.push(uf.toUpperCase());
-    filtros.push(`uf = $${valores.length}`);
+  if (codigo_ibge) {
+    valores.push(codigo_ibge);
+    filtros.push(`c.codigo_ibge = $${valores.length}`);
   }
 
-  if (filtros.length > 0) {
-    where = `WHERE ${filtros.join(' AND ')}`;
+  if (estado_id) {
+    valores.push(estado_id);
+    filtros.push(`c.estado_id = $${valores.length}`);
   }
 
-  
-    const countQuery =  `SELECT COUNT(*) FROM cidade ${where}` 
- 
+  if (pais_id) {
+    valores.push(pais_id);
+    filtros.push(`e.pais_id = $${valores.length}`);
+  }
 
-    valores.push(limit);
-    valores.push(offset);
+  const where = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';
 
-    const baseQuery =  `
-      SELECT cd_cidade as id, nome, uf
-      FROM cidade
-      ${where}
-      ORDER BY nome
-        `;
+  const countQuery = `
+    SELECT COUNT(*)
+    FROM public.ger_cidade c
+    JOIN public.ger_estado e ON e.id = c.estado_id
+    ${where}
+  `;
 
+  const baseQuery = `
+    SELECT
+      c.id,
+      c.nome,
+      c.codigo_ibge,
+      c.estado_id,
+      e.nome   AS estado_nome,
+      e.sigla  AS estado_sigla,
+      e.pais_id,
+      p.nome   AS pais_nome,
+      p.sigla  AS pais_sigla,
+      c.populacao_2010,
+      c.densidade_demo,
+      c.gentilico,
+      c.area
+    FROM public.ger_cidade c
+    JOIN public.ger_estado e ON e.id = c.estado_id
+    JOIN public.ger_pais   p ON p.id = e.pais_id
+    ${where}
+    ORDER BY c.nome
+  `;
 
-      logger.info('Base query montada', 'instituicoes');
-      logger.info('Filtros aplicados: ' + JSON.stringify(filtros), 'instituicoes');
-      logger.info('Valores: ' + JSON.stringify(valores), 'instituicoes');
-    
+  try {
+    const resultado = await paginarConsulta(
+      pool,
+      baseQuery,
+      countQuery,
+      valores,
+      page,
+      limit
+    );
 
-    try {
-    const resultado = await paginarConsulta(pool, baseQuery, countQuery, filtros, page, limit);
-    res.json(resultado);
+    res.status(200).json(resultado);
+
   } catch (err) {
-    console.error('Erro ao buscar CIDADES:', err);
-      logger.error('Erro ao buscar CIDADES: ' + err.stack, 'CIDADES');
-    res.status(500).json({ erro: 'Erro ao buscar CIDADES.' });
-    
+    logger.error('Erro ao listar Cidades: ' + err.stack, 'Cidade');
+    res.status(500).json({
+      erro: 'Erro ao listar cidades.',
+      motivo: err.message
+    });
   }
-});
+}
 
-
-// LISTAR UFs ORDENADAS
-router.get('/uf/listar', tokenOpcional, async (req, res) => {
-  try {
-    const sql = `
-       
-      select    uf.sigla, uf.nome from cidade inner join uf on uf.sigla = cidade.uf
-       group by uf.sigla, uf.nome 
-      ORDER BY uf.nome ASC ;
-    `;
-
-    const result = await pool.query(sql);
-
-    return res.status(200).json(result.rows);
-  } catch (error) {
-    console.error('Erro ao listar UFs:', error);
-    return res.status(500).json({ erro: 'Erro interno ao listar UFs.' });
-  }
-});
-
-
-router.get('/:ufSigla/listar', tokenOpcional, async (req, res) => {
-  const { ufSigla } = req.params;
-
-  if (!ufSigla) {
-    return res.status(400).json({ erro: "UF não informada." });
-  }
+/* =========================================================
+   LISTAR SIMPLES (POR ESTADO)
+========================================================= */
+router.get('/listar-por-estado/:estado_id', tokenOpcional, async (req, res) => {
+  const { estado_id } = req.params;
 
   try {
     const sql = `
-      SELECT cd_cidade AS id, nome, uf
-      FROM cidade
-      WHERE uf = $1
-      ORDER BY nome ASC;
+      SELECT id, nome
+      FROM public.ger_cidade
+      WHERE estado_id = $1
+      ORDER BY nome
     `;
 
-    const result = await pool.query(sql, [ufSigla.toUpperCase()]);
+    const result = await pool.query(sql, [estado_id]);
+    res.status(200).json(result.rows);
 
-    const cidades = result.rows.map(c => ({
-      id: c.id.toString(),
-      nome: c.nome,
-      uf: c.uf
-    }));
-
-    return res.status(200).json(cidades);
-
-  } catch (error) {
-    console.error('Erro ao listar cidades:', error);
-    return res.status(500).json({ erro: "Erro interno ao listar cidades." });
+  } catch (err) {
+    logger.error('Erro ao listar cidades por estado: ' + err.stack, 'Cidade');
+    res.status(500).json({ erro: 'Erro ao listar cidades.' });
   }
 });
 
+/* =========================================================
+   CADASTRAR
+========================================================= */
+router.post('/cadastrar', verificarToken, async (req, res) => {
+  const {
+    nome,
+    codigo_ibge,
+    estado_id,
+    populacao_2010,
+    densidade_demo,
+    gentilico,
+    area
+  } = req.body;
 
+  if (!nome || !estado_id) {
+    return res.status(400).json({
+      erro: 'Os campos "nome" e "estado_id" são obrigatórios.'
+    });
+  }
 
+  try {
+    // valida duplicidade (nome + estado)
+    const dup = await pool.query(
+      `
+      SELECT 1
+      FROM public.ger_cidade
+      WHERE LOWER(nome) = LOWER($1)
+        AND estado_id = $2
+      LIMIT 1
+      `,
+      [nome.trim(), estado_id]
+    );
+
+    if (dup.rowCount > 0) {
+      return res.status(409).json({
+        erro: 'Já existe uma cidade com esse nome para o estado informado.'
+      });
+    }
+
+    const result = await pool.query(
+      `
+      INSERT INTO public.ger_cidade (
+        nome,
+        codigo_ibge,
+        estado_id,
+        populacao_2010,
+        densidade_demo,
+        gentilico,
+        area
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id
+      `,
+      [
+        nome.trim(),
+        codigo_ibge || null,
+        estado_id,
+        populacao_2010 || null,
+        densidade_demo || null,
+        gentilico?.trim() || null,
+        area || null
+      ]
+    );
+
+    res.status(201).json({
+      message: 'Cidade cadastrada com sucesso!',
+      id: result.rows[0].id
+    });
+
+  } catch (err) {
+    logger.error('Erro ao cadastrar Cidade: ' + err.stack, 'Cidade');
+    res.status(500).json({ erro: 'Erro ao cadastrar cidade.' });
+  }
+});
+
+/* =========================================================
+   ALTERAR
+========================================================= */
+router.put('/alterar/:id', verificarToken, async (req, res) => {
+  const { id } = req.params;
+
+  const {
+    nome,
+    codigo_ibge,
+    estado_id,
+    populacao_2010,
+    densidade_demo,
+    gentilico,
+    area
+  } = req.body;
+
+  try {
+    const atual = await pool.query(
+      `
+      SELECT nome, estado_id
+      FROM public.ger_cidade
+      WHERE id = $1
+      `,
+      [id]
+    );
+
+    if (atual.rowCount === 0) {
+      return res.status(404).json({
+        erro: 'Cidade não encontrada.'
+      });
+    }
+
+    // valida duplicidade se mudar nome ou estado
+    if (
+      (nome && nome.trim().toLowerCase() !== atual.rows[0].nome.toLowerCase()) ||
+      (estado_id && estado_id !== atual.rows[0].estado_id)
+    ) {
+      const dup = await pool.query(
+        `
+        SELECT 1
+        FROM public.ger_cidade
+        WHERE LOWER(nome) = LOWER($1)
+          AND estado_id = $2
+          AND id <> $3
+        `,
+        [
+          nome?.trim() || atual.rows[0].nome,
+          estado_id || atual.rows[0].estado_id,
+          id
+        ]
+      );
+
+      if (dup.rowCount > 0) {
+        return res.status(409).json({
+          erro: 'Já existe uma cidade com esse nome para o estado informado.'
+        });
+      }
+    }
+
+    await pool.query(
+      `
+      UPDATE public.ger_cidade
+      SET
+        nome = COALESCE($1, nome),
+        codigo_ibge = COALESCE($2, codigo_ibge),
+        estado_id = COALESCE($3, estado_id),
+        populacao_2010 = COALESCE($4, populacao_2010),
+        densidade_demo = COALESCE($5, densidade_demo),
+        gentilico = COALESCE($6, gentilico),
+        area = COALESCE($7, area)
+      WHERE id = $8
+      `,
+      [
+        nome?.trim(),
+        codigo_ibge,
+        estado_id,
+        populacao_2010,
+        densidade_demo,
+        gentilico?.trim(),
+        area,
+        id
+      ]
+    );
+
+    res.status(200).json({
+      message: 'Cidade atualizada com sucesso!'
+    });
+
+  } catch (err) {
+    logger.error('Erro ao alterar Cidade: ' + err.stack, 'Cidade');
+    res.status(500).json({ erro: 'Erro ao atualizar cidade.' });
+  }
+});
 
 module.exports = router;

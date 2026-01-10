@@ -1,28 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:sistema_estagio/models/_auxiliares/assunto.dart';
-import 'package:sistema_estagio/services/_auxiliares/assunto_service.dart';
+import 'package:sistema_estagio/models/_auxiliares/editora.dart';
+import 'package:sistema_estagio/models/_auxiliares/pais.dart';
+import 'package:sistema_estagio/models/_auxiliares/estado.dart';
+import 'package:sistema_estagio/models/_auxiliares/cidade.dart';
+import 'package:sistema_estagio/services/_auxiliares/cidade_service.dar.dart';
+import 'package:sistema_estagio/services/_auxiliares/editora_service.dar.dart';
+
+import 'package:sistema_estagio/services/_auxiliares/estado_service.dar.dart';
+
+import 'package:sistema_estagio/services/_auxiliares/pais_service.dar.dart';
+
 import 'package:sistema_estagio/utils/app_config.dart';
+
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
 
-class AssuntosScreen extends StatefulWidget {
-  const AssuntosScreen({super.key});
+class EditoraScreen extends StatefulWidget {
+  const EditoraScreen({super.key});
 
   @override
-  State<AssuntosScreen> createState() => _AssuntosScreenState();
+  State<EditoraScreen> createState() => _EditoraScreenState();
 }
 
-class _AssuntosScreenState extends State<AssuntosScreen>
+class _EditoraScreenState extends State<EditoraScreen>
     with TickerProviderStateMixin {
   final _searchController = TextEditingController();
 
-  List<Assunto> _assuntos = [];
+  List<Editora> _editoras = [];
+  List<Pais> _paises = [];
+  List<Estado> _estados = [];
+  List<Cidade> _cidades = [];
+
+  Pais? _pais;
+  Estado? _estado;
+  Cidade? _cidade;
+
   bool _isLoading = false;
   bool _isLoadingPage = false;
-
-  bool? _filtroAtivo;
 
   late TabController _tabController;
   int _currentPage = 1;
@@ -30,79 +46,95 @@ class _AssuntosScreenState extends State<AssuntosScreen>
   Map<String, dynamic>? _pagination;
   String _currentSearch = '';
 
-  final List<int> _pageSizeOptions = [5, 10, 20, 50, 100];
-
-  bool _showForm = false;
-  Assunto? _editando;
   final _formKey = GlobalKey<FormState>();
+  bool _showForm = false;
+  Editora? _editando;
 
-  final _siglaController = TextEditingController();
   final _descricaoController = TextEditingController();
   bool _ativo = true;
+
+  final List<int> _pageSizeOptions = [5, 10, 20, 50, 100];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 1, vsync: this);
-    _loadAssuntos();
+    _loadPaises();
+    _loadEditoras();
   }
 
-  Future<void> _loadAssuntos({bool showLoading = true}) async {
-    if (!mounted) return;
+  // ================= LOAD =================
+  Future<void> _loadPaises() async {
+    final r = await PaisService.listar(page: 1, limit: 999, ativo: true);
+    setState(() => _paises = r['paises']);
+  }
 
+  Future<void> _loadEstados(int paisId) async {
+    final r = await EstadoService.listarPorPais(paisId);
+    setState(() {
+      _estados = r;
+      _estado = null;
+      _cidade = null;
+      _cidades = [];
+    });
+  }
+
+  Future<void> _loadCidades(int estadoId) async {
+    final r = await CidadeService.listarPorEstado(estadoId);
+    setState(() {
+      _cidades = r;
+      _cidade = null;
+    });
+  }
+
+  Future<void> _loadEditoras({bool showLoading = true}) async {
     setState(() {
       showLoading ? _isLoading = true : _isLoadingPage = true;
     });
 
     try {
-      final result = await AssuntoService.listarAssuntos(
+      final result = await EditoraService.listar(
         page: _currentPage,
         limit: _pageSize,
         search: _currentSearch.isEmpty ? null : _currentSearch,
-        ativo: _filtroAtivo,
       );
 
       setState(() {
-        _assuntos = result['Assuntos'];
+        _editoras = result['Editoras'];
         _pagination = result['pagination'];
       });
     } catch (e) {
-      AppUtils.showErrorSnackBar(context, 'Erro ao carregar assuntos: $e');
+      AppUtils.showErrorSnackBar(context, 'Erro ao carregar editoras');
     } finally {
-      setState(() {
-        _isLoading = false;
-        _isLoadingPage = false;
-      });
+      _isLoading = false;
+      _isLoadingPage = false;
     }
   }
 
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Assuntos'),
+        title: const Text('Editoras'),
         actions: [
           IconButton(
-            onPressed: _showFiltrosDialog,
-            icon: const Icon(Icons.filter_list),
-          ),
-          IconButton(
-            onPressed: _novo,
             icon: const Icon(Icons.add),
-          ),
+            onPressed: _novo,
+          )
         ],
       ),
       body: LoadingOverlay(
         isLoading: _isLoading,
         child: TabBarView(
           controller: _tabController,
-          children: [_buildListaTab()],
+          children: [_buildLista()],
         ),
       ),
     );
   }
 
-  Widget _buildListaTab() {
+  Widget _buildLista() {
     return Column(
       children: [
         _buildHeader(),
@@ -113,7 +145,7 @@ class _AssuntosScreenState extends State<AssuntosScreen>
     );
   }
 
-  // ================= HEADER CLONE =================
+  // ================= HEADER =================Widget _buildHeader() {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -124,8 +156,8 @@ class _AssuntosScreenState extends State<AssuntosScreen>
             children: [
               Expanded(
                 child: _statCard(
-                  'Total de Assuntos',
-                  (_pagination?['totalItems'] ?? _assuntos.length).toString(),
+                  'Total de Editoras',
+                  (_pagination?['totalItems'] ?? _editoras.length).toString(),
                   Icons.book,
                   const Color(0xFF2E7D32),
                 ),
@@ -135,7 +167,7 @@ class _AssuntosScreenState extends State<AssuntosScreen>
                 child: _statCard(
                   'Total de Páginas',
                   (_pagination?['totalPages'] ?? 0).toString(),
-                  Icons.check_circle,
+                  Icons.layers,
                   const Color(0xFF1976D2),
                 ),
               ),
@@ -147,7 +179,7 @@ class _AssuntosScreenState extends State<AssuntosScreen>
               Expanded(
                 child: CustomTextField(
                   controller: _searchController,
-                  label: 'Buscar por sigla ou descrição',
+                  label: 'Buscar por descrição',
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
@@ -180,14 +212,14 @@ class _AssuntosScreenState extends State<AssuntosScreen>
                     _pageSize = v!;
                     _currentPage = 1;
                   });
-                  _loadAssuntos();
+                  _loadEditoras();
                 },
               ),
               const SizedBox(width: 16),
               ElevatedButton.icon(
                 onPressed: () {
                   setState(() => _currentPage = 1);
-                  _loadAssuntos();
+                  _loadEditoras();
                 },
                 icon: const Icon(Icons.refresh, size: 16),
                 label: const Text('Atualizar'),
@@ -199,7 +231,13 @@ class _AssuntosScreenState extends State<AssuntosScreen>
     );
   }
 
-  // ================= FORM CLONE =================
+  void _clearSearch() {
+    _searchController.clear();
+    _currentSearch = '';
+    _loadEditoras();
+  }
+
+  // ================= FORM =================
   Widget _buildFormulario() {
     return Container(
       margin: const EdgeInsets.all(16),
@@ -211,79 +249,114 @@ class _AssuntosScreenState extends State<AssuntosScreen>
       ),
       child: Form(
         key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _editando == null ? 'Novo Assunto' : 'Editar Assunto',
-                  style: const TextStyle(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _editando == null ? 'Nova Editora' : 'Editar Editora',
+                style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1976D2),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: _cancelar,
-                ),
-              ],
+                    color: Color(0xFF1976D2)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _cancelar,
+              )
+            ],
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            controller: _descricaoController,
+            label: 'Descrição *',
+            validator: (v) => Validators.validateRequired(v, 'Descrição'),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<Pais>(
+            value: _pais,
+            items: _paises
+                .map((p) => DropdownMenuItem(value: p, child: Text(p.nome)))
+                .toList(),
+            onChanged: (v) {
+              setState(() => _pais = v);
+              if (v?.id != null) {
+                _loadEstados(v!.id!);
+              }
+            },
+            decoration: const InputDecoration(
+              labelText: 'País *',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 16),
-            CustomTextField(
-              controller: _siglaController,
-              label: 'Sigla *',
-              validator: (v) => Validators.validateRequired(v, 'Sigla'),
+            validator: (v) => v == null ? 'País obrigatório' : null,
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<Estado>(
+            value: _estado,
+            items: _estados
+                .map((e) => DropdownMenuItem(value: e, child: Text(e.nome)))
+                .toList(),
+            onChanged: (v) {
+              setState(() => _estado = v);
+              if (v?.id != null) {
+                _loadCidades(v!.id!);
+              }
+            },
+            decoration: const InputDecoration(
+              labelText: 'Estado *',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 16),
-            CustomTextField(
-              controller: _descricaoController,
-              label: 'Descrição *',
-              validator: (v) => Validators.validateRequired(v, 'Descrição'),
+            validator: (v) => v == null ? 'Estado obrigatório' : null,
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<Cidade>(
+            value: _cidade,
+            items: _cidades
+                .map((c) => DropdownMenuItem(value: c, child: Text(c.nome)))
+                .toList(),
+            onChanged: (v) => setState(() => _cidade = v),
+            decoration: const InputDecoration(
+              labelText: 'Cidade *',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 16),
-            CheckboxListTile(
-              title: const Text('Ativo'),
-              value: _ativo,
-              onChanged: (v) => setState(() => _ativo = v ?? true),
-              controlAffinity: ListTileControlAffinity.leading,
+            validator: (v) => v == null ? 'Cidade obrigatória' : null,
+          ),
+          CheckboxListTile(
+            title: const Text('Ativo'),
+            value: _ativo,
+            onChanged: (v) => setState(() => _ativo = v ?? true),
+            controlAffinity: ListTileControlAffinity.leading,
+          ),
+          Row(children: [
+            ElevatedButton(
+              onPressed: _cancelar,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[600],
+              ),
+              child: const Text('Cancelar'),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: _cancelar,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[600],
-                  ),
-                  child: const Text('Cancelar'),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: _salvar,
-                  child: Text(_editando == null ? 'Criar' : 'Atualizar'),
-                ),
-              ],
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: _salvar,
+              child: Text(_editando == null ? 'Criar' : 'Atualizar'),
             ),
-          ],
-        ),
+          ])
+        ]),
       ),
     );
   }
 
-  // ================= LIST CLONE =================
+  // ================= LIST =================
   Widget _buildList() {
-    if (_assuntos.isEmpty) {
-      return const Center(child: Text('Nenhum assunto cadastrado'));
+    if (_editoras.isEmpty) {
+      return const Center(child: Text('Nenhuma editora cadastrada'));
     }
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _assuntos.length,
+      itemCount: _editoras.length,
       itemBuilder: (_, i) {
-        final a = _assuntos[i];
+        final e = _editoras[i];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 2,
@@ -296,13 +369,13 @@ class _AssuntosScreenState extends State<AssuntosScreen>
                   children: [
                     Expanded(
                       child: Text(
-                        '${a.sigla} - ${a.descricao}',
+                        e.descricao,
                         style: const TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 16),
                       ),
                     ),
                     PopupMenuButton<String>(
-                      onSelected: (v) => _menu(v, a),
+                      onSelected: (v) => _menu(v, e),
                       itemBuilder: (_) => [
                         const PopupMenuItem(
                           value: 'editar',
@@ -310,20 +383,26 @@ class _AssuntosScreenState extends State<AssuntosScreen>
                         ),
                         PopupMenuItem(
                           value: 'toggle',
-                          child: Text(a.ativo ? 'Desativar' : 'Ativar'),
+                          child: Text(e.ativo ? 'Desativar' : 'Ativar'),
                         ),
                       ],
                     ),
                   ],
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  '${e.cidadeNome ?? '-'} / ${e.estadoSigla ?? '-'}',
+                  style: TextStyle(color: Colors.grey[700]),
+                ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    _statusChip(a.ativo),
+                    _statusChip(e.ativo),
                     const Spacer(),
-                    Text('ID: ${a.id}',
-                        style:
-                            TextStyle(color: Colors.grey[600], fontSize: 12)),
+                    Text(
+                      'ID: ${e.id}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
                   ],
                 ),
               ],
@@ -355,28 +434,6 @@ class _AssuntosScreenState extends State<AssuntosScreen>
     );
   }
 
-  Widget _statCard(String t, String v, IconData i, Color c) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: c.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: c.withOpacity(0.3)),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Icon(i, color: c, size: 20),
-          const SizedBox(width: 8),
-          Text(t, style: TextStyle(fontSize: 12, color: c)),
-        ]),
-        const SizedBox(height: 4),
-        Text(v,
-            style:
-                TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: c)),
-      ]),
-    );
-  }
-
   Widget _buildPaginationControls() {
     if (_pagination == null) return const SizedBox.shrink();
     return Row(
@@ -403,18 +460,17 @@ class _AssuntosScreenState extends State<AssuntosScreen>
     setState(() => _showForm = true);
   }
 
-  void _menu(String a, Assunto s) {
+  void _menu(String a, Editora e) {
     if (a == 'editar') {
       setState(() {
-        _editando = s;
-        _siglaController.text = s.sigla;
-        _descricaoController.text = s.descricao;
-        _ativo = s.ativo;
+        _editando = e;
+        _descricaoController.text = e.descricao;
+        _ativo = e.ativo;
         _showForm = true;
       });
     } else {
-      AssuntoService.atualizarAssunto(s.id!, {'ativo': !s.ativo})
-          .then((_) => _loadAssuntos(showLoading: false));
+      EditoraService.atualizar(e.id!, {'ativo': !e.ativo})
+          .then((_) => _loadEditoras(showLoading: false));
     }
   }
 
@@ -422,20 +478,22 @@ class _AssuntosScreenState extends State<AssuntosScreen>
     if (!_formKey.currentState!.validate()) return;
 
     final dados = {
-      'sigla': _siglaController.text.trim(),
       'descricao': _descricaoController.text.trim(),
+      'pais_id': _pais!.id,
+      'estado_id': _estado!.id,
+      'cidade_id': _cidade!.id,
       'ativo': _ativo,
     };
 
     if (_editando == null) {
-      await AssuntoService.criarAssunto(dados);
+      await EditoraService.criar(dados);
     } else {
-      await AssuntoService.atualizarAssunto(_editando!.id!, dados);
+      await EditoraService.atualizar(_editando!.id!, dados);
     }
 
-    AppUtils.showSuccessSnackBar(context, 'Assunto salvo com sucesso!');
+    AppUtils.showSuccessSnackBar(context, 'Editora salva com sucesso!');
     _cancelar();
-    _loadAssuntos();
+    _loadEditoras();
   }
 
   void _cancelar() {
@@ -445,34 +503,49 @@ class _AssuntosScreenState extends State<AssuntosScreen>
 
   void _limpar() {
     _editando = null;
-    _siglaController.clear();
     _descricaoController.clear();
+    _pais = null;
+    _estado = null;
+    _cidade = null;
     _ativo = true;
   }
 
   void _search() {
     _currentSearch = _searchController.text.trim();
     _currentPage = 1;
-    _loadAssuntos();
-  }
-
-  void _clearSearch() {
-    _searchController.clear();
-    _currentSearch = '';
-    _loadAssuntos();
+    _loadEditoras();
   }
 
   void _go(int p) {
     _currentPage = p;
-    _loadAssuntos(showLoading: false);
+    _loadEditoras(showLoading: false);
   }
 
-  void _showFiltrosDialog() {}
+  Widget _statCard(String t, String v, IconData i, Color c) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: c.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: c.withOpacity(0.3)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(i, color: c),
+          const SizedBox(width: 8),
+          Text(t, style: TextStyle(color: c)),
+        ]),
+        const SizedBox(height: 4),
+        Text(v,
+            style:
+                TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: c)),
+      ]),
+    );
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _siglaController.dispose();
     _descricaoController.dispose();
     _tabController.dispose();
     super.dispose();
