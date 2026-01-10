@@ -237,14 +237,9 @@ router.post('/galeria/adicionar/:obraId', verificarToken, async (req, res) => {
     sts_principal,
   } = req.body || {};
 
-  if (!imagem_base64 || typeof imagem_base64 !== 'string') {
-    return res.status(400).json({ erro: 'Imagem (base64) é obrigatória.' });
-  }
+ 
 
-  const buffer = decodeBase64(imagem_base64);
-  if (!buffer) {
-    return res.status(400).json({ erro: 'Falha ao decodificar imagem.' });
-  }
+ 
 
   const insertQuery = `
     INSERT INTO public.ace_obra_galeria
