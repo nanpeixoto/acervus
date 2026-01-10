@@ -125,6 +125,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isLoading = false;
+  final Set<String> _camposComErro = {};
 
   bool get _isEdicao => widget.obraId != null;
 
@@ -621,9 +622,69 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
   // =========================
   // SAVE
   // =========================
-  Future<void> _salvar() async {
+
+  bool _validarCamposObrigatorios() {
+    _camposComErro.clear();
+
     if (_tituloController.text.trim().isEmpty) {
-      AppUtils.showErrorSnackBar(context, 'Título é obrigatório');
+      _camposComErro.add('titulo');
+    }
+    if (cdTipoPeca == null) {
+      _camposComErro.add('cd_tipo_peca');
+    }
+    if (cdSubtipoPeca == null) {
+      _camposComErro.add('cd_subtipo_peca');
+    }
+    if (cdAssunto == null) {
+      _camposComErro.add('cd_assunto');
+    }
+    if (cdMaterial == null) {
+      _camposComErro.add('cd_material');
+    }
+    if (cdIdioma == null) {
+      _camposComErro.add('cd_idioma');
+    }
+    if (cdEstadoConservacao == null) {
+      _camposComErro.add('cd_estado_conservacao');
+    }
+    if (cdAutor == null) {
+      _camposComErro.add('cd_autor');
+    }
+    if (cdEditora == null) {
+      _camposComErro.add('cd_editora');
+    }
+
+    return _camposComErro.isEmpty;
+  }
+
+  String _gerarMensagemErro() {
+    final Map<String, String> nomesCampos = {
+      'titulo': 'Título',
+      'cd_tipo_peca': 'Tipo de Obra',
+      'cd_subtipo_peca': 'Subtipo de Obra',
+      'cd_assunto': 'Assunto',
+      'cd_material': 'Material',
+      'cd_idioma': 'Idioma',
+      'cd_estado_conservacao': 'Estado de Conservação',
+      'cd_autor': 'Autor',
+      'cd_editora': 'Editora',
+    };
+
+    final camposFaltando =
+        _camposComErro.map((campo) => nomesCampos[campo] ?? campo).toList();
+
+    if (camposFaltando.length == 1) {
+      return 'Campo obrigatório não preenchido: ${camposFaltando.first}';
+    }
+
+    return 'Campos obrigatórios não preenchidos:\n${camposFaltando.join(', ')}';
+  }
+
+  Future<void> _salvar() async {
+    // Validação local antes de enviar
+    if (!_validarCamposObrigatorios()) {
+      setState(() {}); // Atualiza a UI para mostrar os erros
+      AppUtils.showErrorSnackBar(context, _gerarMensagemErro());
       return;
     }
 
@@ -665,11 +726,24 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
         await ObraService.criarObra(payload);
         AppUtils.showSuccessSnackBar(context, 'Obra cadastrada com sucesso!');
       }
-      context.pop();
+
+      // Limpa os erros em caso de sucesso
+      _camposComErro.clear();
+
+      if (mounted) context.pop();
     } catch (e) {
-      AppUtils.showErrorSnackBar(context, 'Erro ao salvar obra');
+      // Trata erros específicos do backend
+      String mensagemErro = 'Erro ao salvar obra';
+
+      if (e.toString().contains('Campos obrigatórios')) {
+        mensagemErro = 'Verifique os campos obrigatórios e tente novamente';
+      }
+
+      AppUtils.showErrorSnackBar(context, mensagemErro);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -686,11 +760,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
         ),
         title: Text(_isEdicao ? 'Editar Obra' : 'Cadastrar Obra'),
         actions: [
-          if (_isEdicao)
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _salvar,
-            ),
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _salvar,
+          ),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -749,8 +822,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                 CustomTextField(
                   controller: _tituloController,
                   label: 'Título *',
-                  onChanged: (value) =>
-                      setState(() {}), // Atualiza a caixa azul
+                  onChanged: (value) {
+                    _camposComErro.remove('titulo'); // Remove erro ao editar
+                    setState(() {});
+                  }, // Atualiza a caixa azul
                 ),
 
                 const SizedBox(height: 12),
@@ -761,9 +836,31 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                       child: DropdownButtonFormField<int>(
                         value: cdTipoPeca,
                         isExpanded: true,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Tipo de Obra *',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: _camposComErro.contains('cd_tipo_peca')
+                                  ? Colors.red
+                                  : Colors.grey,
+                              width: _camposComErro.contains('cd_tipo_peca')
+                                  ? 2
+                                  : 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: _camposComErro.contains('cd_tipo_peca')
+                                  ? Colors.red
+                                  : Colors.grey,
+                              width: _camposComErro.contains('cd_tipo_peca')
+                                  ? 2
+                                  : 1,
+                            ),
+                          ),
+                          errorText: _camposComErro.contains('cd_tipo_peca')
+                              ? 'Campo obrigatório'
+                              : null,
                         ),
                         items: _tiposObra
                             .map((tipo) => DropdownMenuItem<int>(
@@ -773,6 +870,8 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                             .toList(),
                         onChanged: (value) {
                           if (value == null) return;
+                          _camposComErro.remove(
+                              'cd_tipo_peca'); // Remove erro ao selecionar
                           setState(() => cdTipoPeca = value);
                           _carregarSubtiposPorTipo(value);
                         },
@@ -783,9 +882,31 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                       child: DropdownButtonFormField<int>(
                         value: cdSubtipoPeca,
                         isExpanded: true,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Subtipo de Obra *',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: _camposComErro.contains('cd_subtipo_peca')
+                                  ? Colors.red
+                                  : Colors.grey,
+                              width: _camposComErro.contains('cd_subtipo_peca')
+                                  ? 2
+                                  : 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: _camposComErro.contains('cd_subtipo_peca')
+                                  ? Colors.red
+                                  : Colors.grey,
+                              width: _camposComErro.contains('cd_subtipo_peca')
+                                  ? 2
+                                  : 1,
+                            ),
+                          ),
+                          errorText: _camposComErro.contains('cd_subtipo_peca')
+                              ? 'Campo obrigatório'
+                              : null,
                         ),
                         items: _subtiposObra
                             .map((s) => DropdownMenuItem<int>(
@@ -795,7 +916,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                             .toList(),
                         onChanged: (_loadingSubtipo || cdTipoPeca == null)
                             ? null
-                            : (value) => setState(() => cdSubtipoPeca = value),
+                            : (value) {
+                                _camposComErro.remove('cd_subtipo_peca');
+                                setState(() => cdSubtipoPeca = value);
+                              },
                       ),
                     ),
                   ],
@@ -809,10 +933,30 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                       child: DropdownButtonFormField<int>(
                         value: cdAssunto,
                         isExpanded: true,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Assunto *',
-                          border: OutlineInputBorder(),
                           isDense: true,
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: _camposComErro.contains('cd_assunto')
+                                  ? Colors.red
+                                  : Colors.grey,
+                              width:
+                                  _camposComErro.contains('cd_assunto') ? 2 : 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: _camposComErro.contains('cd_assunto')
+                                  ? Colors.red
+                                  : Colors.grey,
+                              width:
+                                  _camposComErro.contains('cd_assunto') ? 2 : 1,
+                            ),
+                          ),
+                          errorText: _camposComErro.contains('cd_assunto')
+                              ? 'Campo obrigatório'
+                              : null,
                         ),
                         items: _assuntos
                             .map((a) => DropdownMenuItem<int>(
@@ -820,7 +964,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                                   child: Text(a.descricao),
                                 ))
                             .toList(),
-                        onChanged: (v) => setState(() => cdAssunto = v),
+                        onChanged: (v) {
+                          _camposComErro.remove('cd_assunto');
+                          setState(() => cdAssunto = v);
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -828,10 +975,30 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                       child: DropdownButtonFormField<int>(
                         value: cdIdioma,
                         isExpanded: true,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Idioma *',
-                          border: OutlineInputBorder(),
                           isDense: true,
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: _camposComErro.contains('cd_idioma')
+                                  ? Colors.red
+                                  : Colors.grey,
+                              width:
+                                  _camposComErro.contains('cd_idioma') ? 2 : 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: _camposComErro.contains('cd_idioma')
+                                  ? Colors.red
+                                  : Colors.grey,
+                              width:
+                                  _camposComErro.contains('cd_idioma') ? 2 : 1,
+                            ),
+                          ),
+                          errorText: _camposComErro.contains('cd_idioma')
+                              ? 'Campo obrigatório'
+                              : null,
                         ),
                         items: _idiomas
                             .map((i) => DropdownMenuItem<int>(
@@ -839,7 +1006,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                                   child: Text(i.descricao),
                                 ))
                             .toList(),
-                        onChanged: (v) => setState(() => cdIdioma = v),
+                        onChanged: (v) {
+                          _camposComErro.remove('cd_idioma');
+                          setState(() => cdIdioma = v);
+                        },
                       ),
                     ),
                   ],
@@ -1283,10 +1453,27 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       isExpanded: true,
       dropdownColor: Colors.white,
       style: const TextStyle(color: Colors.black),
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         labelText: 'Material *',
-        border: OutlineInputBorder(),
         isDense: true,
+        border: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: _camposComErro.contains('cd_material')
+                ? Colors.red
+                : Colors.grey,
+            width: _camposComErro.contains('cd_material') ? 2 : 1,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: _camposComErro.contains('cd_material')
+                ? Colors.red
+                : Colors.grey,
+            width: _camposComErro.contains('cd_material') ? 2 : 1,
+          ),
+        ),
+        errorText:
+            _camposComErro.contains('cd_material') ? 'Campo obrigatório' : null,
       ),
       items: _materiais
           .map(
@@ -1299,8 +1486,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
             ),
           )
           .toList(),
-      onChanged: (v) => setState(() => cdMaterial = v),
-      validator: (v) => v == null ? 'Material é obrigatório' : null,
+      onChanged: (v) {
+        _camposComErro.remove('cd_material');
+        setState(() => cdMaterial = v);
+      },
     );
   }
 
@@ -1321,10 +1510,28 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       isExpanded: true,
       dropdownColor: Colors.white,
       style: const TextStyle(color: Colors.black),
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         labelText: 'Estado de Conservação *',
-        border: OutlineInputBorder(),
         isDense: true,
+        border: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: _camposComErro.contains('cd_estado_conservacao')
+                ? Colors.red
+                : Colors.grey,
+            width: _camposComErro.contains('cd_estado_conservacao') ? 2 : 1,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: _camposComErro.contains('cd_estado_conservacao')
+                ? Colors.red
+                : Colors.grey,
+            width: _camposComErro.contains('cd_estado_conservacao') ? 2 : 1,
+          ),
+        ),
+        errorText: _camposComErro.contains('cd_estado_conservacao')
+            ? 'Campo obrigatório'
+            : null,
       ),
       items: _estadosConservacao
           .map(
@@ -1337,9 +1544,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
             ),
           )
           .toList(),
-      onChanged: (v) => setState(() => cdEstadoConservacao = v),
-      validator: (v) =>
-          v == null ? 'Estado de Conservação é obrigatório' : null,
+      onChanged: (v) {
+        _camposComErro.remove('cd_estado_conservacao');
+        setState(() => cdEstadoConservacao = v);
+      },
     );
   }
 
@@ -1360,10 +1568,27 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       isExpanded: true,
       dropdownColor: Colors.white,
       style: const TextStyle(color: Colors.black),
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         labelText: 'Editora *',
-        border: OutlineInputBorder(),
         isDense: true,
+        border: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: _camposComErro.contains('cd_editora')
+                ? Colors.red
+                : Colors.grey,
+            width: _camposComErro.contains('cd_editora') ? 2 : 1,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: _camposComErro.contains('cd_editora')
+                ? Colors.red
+                : Colors.grey,
+            width: _camposComErro.contains('cd_editora') ? 2 : 1,
+          ),
+        ),
+        errorText:
+            _camposComErro.contains('cd_editora') ? 'Campo obrigatório' : null,
       ),
       items: _editoras
           .map(
@@ -1376,8 +1601,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
             ),
           )
           .toList(),
-      onChanged: (v) => setState(() => cdEditora = v),
-      validator: (v) => v == null ? 'Editora é obrigatória' : null,
+      onChanged: (v) {
+        _camposComErro.remove('cd_editora');
+        setState(() => cdEditora = v);
+      },
     );
   }
 
@@ -1398,10 +1625,25 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       isExpanded: true,
       dropdownColor: Colors.white,
       style: const TextStyle(color: Colors.black),
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         labelText: 'Autor *',
-        border: OutlineInputBorder(),
         isDense: true,
+        border: OutlineInputBorder(
+          borderSide: BorderSide(
+            color:
+                _camposComErro.contains('cd_autor') ? Colors.red : Colors.grey,
+            width: _camposComErro.contains('cd_autor') ? 2 : 1,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color:
+                _camposComErro.contains('cd_autor') ? Colors.red : Colors.grey,
+            width: _camposComErro.contains('cd_autor') ? 2 : 1,
+          ),
+        ),
+        errorText:
+            _camposComErro.contains('cd_autor') ? 'Campo obrigatório' : null,
       ),
       items: _autores
           .map(
@@ -1414,8 +1656,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
             ),
           )
           .toList(),
-      onChanged: (v) => setState(() => cdAutor = v),
-      validator: (v) => v == null ? 'Autor é obrigatório' : null,
+      onChanged: (v) {
+        _camposComErro.remove('cd_autor');
+        setState(() => cdAutor = v);
+      },
     );
   }
 
