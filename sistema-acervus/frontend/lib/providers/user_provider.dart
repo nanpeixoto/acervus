@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:sistema_estagio/models/_pessoas/candidato/jovem_aprendiz.dart'
-    as jovem;
+
 import '../models/_core/usuario.dart';
-import '../models/_pessoas/candidato/candidato.dart' as candidato;
-import '../models/_organizacoes/empresa/empresa.dart' as emp;
-import '../models/_organizacoes/instituicao/instituicao.dart' as inst;
-import '../models/_pessoas/candidato/jovem_aprendiz.dart' as jovem;
-import '../models/_contratos/contrato/contrato.dart' as contrato;
 
 import '../services/_core/user_service.dart';
 import '../services/_pessoas/candidato/candidato_service.dart';
@@ -24,11 +18,6 @@ class UserProvider extends ChangeNotifier {
   dynamic _userProfile;
 
   // Dados específicos por tipo de usuário
-  List<candidato.Candidato> _candidatos = [];
-  List<emp.Empresa> _empresas = [];
-  final List<inst.InstituicaoEnsino> _instituicoes = [];
-  final List<jovem.JovemAprendiz> _jovensAprendizes = [];
-  List<contrato.Contrato> _contratos = [];
 
   // Paginação
   int _currentPage = 1;
@@ -46,11 +35,6 @@ class UserProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   Usuario? get currentUser => _currentUser;
   dynamic get userProfile => _userProfile;
-  List<candidato.Candidato> get estagiarios => _candidatos;
-  List<emp.Empresa> get empresas => _empresas;
-  List<inst.InstituicaoEnsino> get instituicoes => _instituicoes;
-  List<jovem.JovemAprendiz> get jovensAprendizes => _jovensAprendizes;
-  List<contrato.Contrato> get contratos => _contratos;
 
   int get currentPage => _currentPage;
   int get totalPages => _totalPages;
@@ -68,11 +52,6 @@ class UserProvider extends ChangeNotifier {
   void clearUserData() {
     _currentUser = null;
     _userProfile = null;
-    _candidatos.clear();
-    _empresas.clear();
-    _instituicoes.clear();
-    _jovensAprendizes.clear();
-    _contratos.clear();
 
     _dashboardData.clear();
     _filtros.clear();
@@ -121,13 +100,6 @@ class UserProvider extends ChangeNotifier {
         //ativo: ativo,
       );
 
-      if (refresh || page == 1) {
-        _candidatos = List<candidato.Candidato>.from(result['candidatos']);
-      } else {
-        _candidatos
-            .addAll(List<candidato.Candidato>.from(result['candidatos']));
-      }
-
       _setPagination(result['pagination']);
       _setLoading(false);
     } catch (e) {
@@ -144,7 +116,6 @@ class UserProvider extends ChangeNotifier {
       final success = await CandidatoService.deletarCandidato(id as int);
 
       if (success) {
-        _candidatos.removeWhere((e) => e.id == id);
         _totalItems = _totalItems > 0 ? _totalItems - 1 : 0;
       }
 
@@ -213,37 +184,6 @@ class UserProvider extends ChangeNotifier {
   }
 
   // Métodos específicos por tipo de usuário
-  List<contrato.Contrato> getContratosDoUsuario() {
-    if (_currentUser == null || _userProfile == null) return [];
-
-    switch (_currentUser!.tipo) {
-      case TipoUsuario.ESTAGIARIO:
-        return _contratos
-            .where((c) =>
-                c.estudante?.id == _userProfile.id && c.tipo == 'ESTAGIO')
-            .toList();
-
-      case TipoUsuario.JOVEM_APRENDIZ:
-        return _contratos
-            .where((c) =>
-                c.estudante?.id == _userProfile.id &&
-                c.tipo == 'JOVEM_APRENDIZ')
-            .toList();
-
-      case TipoUsuario.EMPRESA:
-        return _contratos
-            .where((c) => c.empresa?.id == _userProfile.id)
-            .toList();
-
-      case TipoUsuario.INSTITUICAO:
-        return _contratos
-            .where((c) => c.instituicao?.id == _userProfile.id)
-            .toList();
-
-      default:
-        return _contratos;
-    }
-  }
 
   // Filtros
   void updateFiltros(Map<String, dynamic> novosFiltros) {
@@ -277,72 +217,6 @@ class UserProvider extends ChangeNotifier {
       _currentPage--;
       notifyListeners();
     }
-  }
-
-  // Métodos de busca
-  List<candidato.Candidato> searchCandidatos(String query) {
-    if (query.isEmpty) return _candidatos;
-
-    return _candidatos.where((candidato) {
-      return candidato.nomeCompleto
-              .toLowerCase()
-              .contains(query.toLowerCase()) ||
-          candidato.cpf.contains(query.replaceAll(RegExp(r'\D'), '')) ||
-          candidato.email.toLowerCase().contains(query.toLowerCase());
-    }).toList();
-  }
-
-  List<emp.Empresa> searchEmpresas(String query) {
-    if (query.isEmpty) return _empresas;
-
-    return _empresas.where((empresa) {
-      return empresa.nomeFantasia!
-              .toLowerCase()
-              .contains(query.toLowerCase()) ||
-          empresa.razaoSocial!.toLowerCase().contains(query.toLowerCase()) ||
-          empresa.cnpj.contains(query.replaceAll(RegExp(r'\D'), ''));
-    }).toList();
-  }
-
-  List<contrato.Contrato> searchContratos(String query) {
-    if (query.isEmpty) return _contratos;
-
-    return _contratos.where((contrato) {
-      return contrato.numero.contains(query) ||
-          (contrato.empresa?.nomeFantasia
-                  ?.toLowerCase()
-                  .contains(query.toLowerCase()) ??
-              false) ||
-          (contrato.estudante?.nome
-                  ?.toLowerCase()
-                  .contains(query.toLowerCase()) ??
-              false);
-    }).toList();
-  }
-
-  // Estatísticas rápidas
-  int get totalCandidatosAtivos => _candidatos
-      .where((e) => getContratosDoUsuario()
-          .any((c) => c.status == 'ATIVO' && c.tipo == 'ESTAGIO'))
-      .length;
-
-  int get totalJovensAprendizesAtivos => _jovensAprendizes
-      .where((j) => getContratosDoUsuario()
-          .any((c) => c.status == 'ATIVO' && c.tipo == 'JOVEM_APRENDIZ'))
-      .length;
-
-  int get totalContratosAtivos =>
-      _contratos.where((c) => c.status == 'ATIVO').length;
-
-  // Contratos próximos do vencimento (30 dias)
-  List<contrato.Contrato> get contratosProximosVencimento {
-    final dataLimite = DateTime.now().add(const Duration(days: 30));
-    return _contratos
-        .where((c) =>
-            c.status == 'ATIVO' &&
-            c.dataFim.isBefore(dataLimite) &&
-            c.dataFim.isAfter(DateTime.now()))
-        .toList();
   }
 
   // Método para refresh geral

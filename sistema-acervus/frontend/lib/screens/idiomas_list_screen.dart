@@ -1,4 +1,4 @@
-// lib/screens/admin/experiencia_profissional_screen.dart
+// lib/screens/admin/status_curso_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -8,34 +8,31 @@ import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/widgets/custom_app_bar.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
-import 'package:sistema_estagio/models/_pessoas/formacao/experiencia_profissional.dart'
-    as experiencia;
-import 'package:sistema_estagio/services/_pessoas/formacao/experiencia_profissional_service.dart'
-    as experienciaService;
+
+import 'package:sistema_estagio/services/_pessoas/formacao/idioma_service.dart'
+    as idiomaService;
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
-class ExperienciaProfissionalScreen extends StatefulWidget {
-  const ExperienciaProfissionalScreen({super.key});
+class IdiomasScreen extends StatefulWidget {
+  const IdiomasScreen({super.key});
 
   @override
-  State<ExperienciaProfissionalScreen> createState() =>
-      _ExperienciaProfissionalScreenState();
+  State<IdiomasScreen> createState() => _IdiomasScreenState();
 }
 
-class _ExperienciaProfissionalScreenState
-    extends State<ExperienciaProfissionalScreen> with TickerProviderStateMixin {
+class _IdiomasScreenState extends State<IdiomasScreen>
+    with TickerProviderStateMixin {
   final _searchController = TextEditingController();
 
-  List<experiencia.ExperienciaProfissional> _experiencias = [];
+  List<idioma.Idioma> _idiomas = [];
   Map<String, dynamic> _estatisticas = {};
   bool _isLoading = false;
 
   // Filtros
-  String? _filtroEmpresa;
-  DateTime? _filtroDataInicio;
-  DateTime? _filtroDataFim;
+  bool? _filtroAtivo;
+  bool? _filtroDefault;
 
   // Paginação
   late TabController _tabController;
@@ -50,23 +47,38 @@ class _ExperienciaProfissionalScreenState
 
   // Formulário
   bool _showForm = false;
-  experiencia.ExperienciaProfissional? _experienciaEditando;
+  idioma.Idioma? _statusEditando;
   final _formKey = GlobalKey<FormState>();
-  final _empresaController = TextEditingController();
+  final _nomeController = TextEditingController();
   final _descricaoController = TextEditingController();
-  final _candidatoIdController = TextEditingController();
-  DateTime? _dataInicio;
-  DateTime? _dataFim;
+  final _ordemController = TextEditingController();
+  String? _corSelecionada;
+  bool _ativo = true;
+  bool _isDefault = false;
+
+  // Cores disponíveis
+  final List<String> _coresDisponiveis = [
+    '#4CAF50', // Verde
+    '#FF9800', // Laranja
+    '#F44336', // Vermelho
+    '#2196F3', // Azul
+    '#9C27B0', // Roxo
+    '#FF5722', // Laranja escuro
+    '#795548', // Marrom
+    '#607D8B', // Azul acinzentado
+    '#9E9E9E', // Cinza
+    '#E91E63', // Rosa
+  ];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadExperienciasProfissionais();
-    _loadEstatisticas();
+    _loadIdiomas();
+    //_loadEstatisticas();
   }
 
-  Future<void> _loadExperienciasProfissionais({bool showLoading = true}) async {
+  Future<void> _loadIdiomas({bool showLoading = true}) async {
     if (!mounted) return;
 
     if (showLoading) {
@@ -76,23 +88,21 @@ class _ExperienciaProfissionalScreenState
     }
 
     try {
-      final result = await experienciaService.ExperienciaProfissionalService
-          .listarExperienciasProfissionais(
+      final result = await idiomaService.IdiomaService.listarIdiomas(
         page: _currentPage,
         limit: _pageSize,
         search: _currentSearch.isEmpty ? null : _currentSearch,
-        empresa: _filtroEmpresa,
-        dataInicio: _filtroDataInicio,
-        dataFim: _filtroDataFim,
+        ativo: _filtroAtivo,
+        isDefault: _filtroDefault,
       );
 
       if (mounted) {
         setState(() {
-          _experiencias = result['experiencias'];
+          _idiomas = result['idiomas'];
           _pagination = result['pagination'];
 
           if (_pagination == null || _pagination!.isEmpty) {
-            final totalItems = _experiencias.length;
+            final totalItems = _idiomas.length;
             final totalPages = (totalItems / _pageSize)
                 .ceil()
                 .clamp(1, double.infinity)
@@ -112,7 +122,7 @@ class _ExperienciaProfissionalScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao carregar experiências: $e'),
+            content: Text('Erro ao carregar Items: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -129,8 +139,8 @@ class _ExperienciaProfissionalScreenState
 
   Future<void> _loadEstatisticas() async {
     try {
-      final stats = await experienciaService.ExperienciaProfissionalService
-          .getCachedEstatisticasGerais();
+      final stats =
+          await idiomaService.IdiomaService.getCachedEstatisticasGerais();
       setState(() {
         _estatisticas = stats;
       });
@@ -150,20 +160,20 @@ class _ExperienciaProfissionalScreenState
 
     try {
       if (_currentSearch.isEmpty) {
-        await _loadExperienciasProfissionais();
+        await _loadIdiomas();
         return;
       }
 
-      final result = await experienciaService.ExperienciaProfissionalService
-          .buscarExperienciaProfissional(_currentSearch);
+      final result =
+          await idiomaService.IdiomaService.buscarIdioma(_currentSearch);
 
       if (mounted) {
         setState(() {
-          _experiencias = result ?? <experiencia.ExperienciaProfissional>[];
+          _idiomas = result ?? <idioma.Idioma>[];
           _pagination = {
             'currentPage': 1,
             'totalPages': 1,
-            'total': _experiencias.length,
+            'total': _idiomas.length,
             'hasNextPage': false,
             'hasPrevPage': false,
           };
@@ -173,7 +183,7 @@ class _ExperienciaProfissionalScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao buscar experiências: $e'),
+            content: Text('Erro ao buscar Items: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -191,14 +201,14 @@ class _ExperienciaProfissionalScreenState
       _currentSearch = '';
       _currentPage = 1;
     });
-    _loadExperienciasProfissionais();
+    _loadIdiomas();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Experiências Profissionais'),
+        title: const Text('Idiomas'),
         actions: [
           IconButton(
             onPressed: _showFiltrosDialog,
@@ -211,18 +221,18 @@ class _ExperienciaProfissionalScreenState
             tooltip: 'Exportar',
           ),
           IconButton(
-            onPressed: _showNovaExperienciaForm,
+            onPressed: _showNovoStatusForm,
             icon: const Icon(Icons.add),
-            tooltip: 'Adicionar Experiência Profissional',
+            tooltip: 'Adicionar Nível de Idioma',
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Lista', icon: Icon(Icons.list)),
-            Tab(text: 'Estatísticas', icon: Icon(Icons.analytics)),
-          ],
-        ),
+        // bottom: TabBar(
+        //   controller: _tabController,
+        //   tabs: const [
+        //     Tab(text: 'Lista', icon: Icon(Icons.list)),
+        //     Tab(text: 'Estatísticas', icon: Icon(Icons.analytics)),
+        //   ],
+        // ),
       ),
       body: LoadingOverlay(
         isLoading: _isLoading,
@@ -242,7 +252,7 @@ class _ExperienciaProfissionalScreenState
       children: [
         _buildHeader(),
         if (_showForm) _buildFormulario(),
-        Expanded(child: _buildExperienciasList()),
+        Expanded(child: buscarIdiomasList()),
         _buildPaginationControls(),
       ],
     );
@@ -272,29 +282,27 @@ class _ExperienciaProfissionalScreenState
             children: [
               Expanded(
                 child: _buildStatCard(
-                  'Total de Experiências',
-                  (_pagination?['total'] ?? _experiencias.length).toString(),
-                  Icons.work,
+                  'Total de Status',
+                  (_pagination?['total'] ?? _idiomas.length).toString(),
+                  Icons.description,
                   const Color(0xFF2E7D32),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: _buildStatCard(
-                  'Em Andamento',
-                  (_experiencias.where((e) => e.dataFim == null).length)
-                      .toString(),
-                  Icons.timeline,
+                  'Ativos',
+                  (_idiomas.where((s) => s.ativo).length).toString(),
+                  Icons.check_circle,
                   const Color(0xFF1976D2),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: _buildStatCard(
-                  'Finalizadas',
-                  (_experiencias.where((e) => e.dataFim != null).length)
-                      .toString(),
-                  Icons.check_circle,
+                  'Padrão',
+                  (_idiomas.where((s) => s.isDefault).length).toString(),
+                  Icons.star,
                   const Color(0xFFED6C02),
                 ),
               ),
@@ -308,7 +316,7 @@ class _ExperienciaProfissionalScreenState
               Expanded(
                 child: CustomTextField(
                   controller: _searchController,
-                  label: 'Buscar por empresa ou atividades',
+                  label: 'Buscar por nome ou descrição',
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
@@ -350,7 +358,7 @@ class _ExperienciaProfissionalScreenState
                       _pageSize = value;
                       _currentPage = 1;
                     });
-                    _loadExperienciasProfissionais();
+                    _loadIdiomas();
                   }
                 },
                 underline: Container(),
@@ -360,7 +368,7 @@ class _ExperienciaProfissionalScreenState
               ElevatedButton.icon(
                 onPressed: () {
                   setState(() => _currentPage = 1);
-                  _loadExperienciasProfissionais();
+                  _loadIdiomas();
                 },
                 icon: const Icon(Icons.refresh, size: 16),
                 label: const Text('Atualizar'),
@@ -403,9 +411,7 @@ class _ExperienciaProfissionalScreenState
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _experienciaEditando == null
-                      ? 'Nova Experiência'
-                      : 'Editar Experiência',
+                  _statusEditando == null ? 'Novo Item' : 'Editar Item',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -419,116 +425,21 @@ class _ExperienciaProfissionalScreenState
               ],
             ),
             const SizedBox(height: 16),
-
-            // ID do Candidato
             CustomTextField(
-              controller: _candidatoIdController,
-              label: 'ID do Candidato *',
-              keyboardType: TextInputType.number,
-              validator: (value) =>
-                  Validators.validateRequired(value, 'ID do Candidato'),
-            ),
-            const SizedBox(height: 16),
-
-            // Empresa
-            CustomTextField(
-              controller: _empresaController,
-              label: 'Empresa *',
+              controller: _nomeController,
+              label: 'Nome do Item *',
               maxLines: 1,
               validator: (value) =>
-                  Validators.validateRequired(value, 'Empresa'),
+                  Validators.validateRequired(value, 'Nome do Item'),
             ),
             const SizedBox(height: 16),
-
-            // Atividades desenvolvidas
-            CustomTextField(
-              controller: _descricaoController,
-              label: 'Atividades Desenvolvidas *',
-              maxLines: 3,
-              validator: (value) => Validators.validateRequired(
-                  value, 'Atividades Desenvolvidas'),
+            CheckboxListTile(
+              title: const Text('Ativo'),
+              value: _ativo,
+              onChanged: (value) => setState(() => _ativo = value ?? true),
+              controlAffinity: ListTileControlAffinity.leading,
             ),
             const SizedBox(height: 16),
-
-            // Data de Início
-            Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () => _selecionarDataInicio(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _dataInicio != null
-                                ? 'Data Início: ${_formatarData(_dataInicio!)}'
-                                : 'Selecionar Data de Início *',
-                            style: TextStyle(
-                              color: _dataInicio != null
-                                  ? Colors.black
-                                  : Colors.grey[600],
-                              fontSize: 16,
-                            ),
-                          ),
-                          const Icon(Icons.calendar_today),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Data de Fim
-            Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () => _selecionarDataFim(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _dataFim != null
-                                ? 'Data Fim: ${_formatarData(_dataFim!)}'
-                                : 'Selecionar Data de Fim (opcional)',
-                            style: TextStyle(
-                              color: _dataFim != null
-                                  ? Colors.black
-                                  : Colors.grey[600],
-                              fontSize: 16,
-                            ),
-                          ),
-                          const Icon(Icons.calendar_today),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: () => setState(() => _dataFim = null),
-                  child: const Text('Limpar'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
             Row(
               children: [
                 ElevatedButton(
@@ -541,13 +452,12 @@ class _ExperienciaProfissionalScreenState
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
-                  onPressed: _salvarExperiencia,
+                  onPressed: _salvarStatus,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2E7D32),
                     foregroundColor: Colors.white,
                   ),
-                  child: Text(
-                      _experienciaEditando == null ? 'Criar' : 'Atualizar'),
+                  child: Text(_statusEditando == null ? 'Criar' : 'Atualizar'),
                 ),
               ],
             ),
@@ -599,7 +509,7 @@ class _ExperienciaProfissionalScreenState
     );
   }
 
-  Widget _buildExperienciasList() {
+  Widget buscarIdiomasList() {
     if (_isLoadingPage) {
       return const Center(
         child: Column(
@@ -613,21 +523,21 @@ class _ExperienciaProfissionalScreenState
       );
     }
 
-    if (_experiencias.isEmpty) {
+    if (_idiomas.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.work_outline,
+              Icons.flag_outlined,
               size: 64,
               color: Colors.grey[400],
             ),
             const SizedBox(height: 16),
             Text(
               _currentSearch.isNotEmpty
-                  ? 'Nenhuma experiência encontrada para a busca "$_currentSearch"'
-                  : 'Nenhuma experiência cadastrada',
+                  ? 'Nenhum Item encontrado para a busca "$_currentSearch"'
+                  : 'Nenhum Item cadastrado',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -646,12 +556,12 @@ class _ExperienciaProfissionalScreenState
               )
             else
               ElevatedButton(
-                onPressed: _showNovaExperienciaForm,
+                onPressed: _showNovoStatusForm,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2E7D32),
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Adicionar Primeira Experiência'),
+                child: const Text('Adicionar Primeiro Ítem'),
               ),
           ],
         ),
@@ -660,20 +570,15 @@ class _ExperienciaProfissionalScreenState
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _experiencias.length,
+      itemCount: _idiomas.length,
       itemBuilder: (context, index) {
-        final experiencia = _experiencias[index];
-        return _buildExperienciaCard(experiencia, index);
+        final idioma = _idiomas[index];
+        return _buildIdiomaCard(idioma, index);
       },
     );
   }
 
-  Widget _buildExperienciaCard(
-      experiencia.ExperienciaProfissional experiencia, int index) {
-    final isAtiva = experiencia.dataFim == null;
-    final duracao =
-        _calcularDuracao(experiencia.dataInicio, experiencia.dataFim);
-
+  Widget _buildIdiomaCard(idioma.Idioma idioma, int index) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -685,21 +590,22 @@ class _ExperienciaProfissionalScreenState
             Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 30,
+                  height: 30,
                   decoration: BoxDecoration(
-                    color: isAtiva
-                        ? const Color(0xFF2E7D32).withOpacity(0.1)
-                        : Colors.grey.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isAtiva ? const Color(0xFF2E7D32) : Colors.grey,
-                    ),
+                    color: const Color(0xFF2E7D32).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: const Color(0xFF2E7D32)),
                   ),
-                  child: Icon(
-                    Icons.work,
-                    size: 20,
-                    color: isAtiva ? const Color(0xFF2E7D32) : Colors.grey,
+                  child: Center(
+                    child: Text(
+                      idioma.ordem?.toString() ?? '${index + 1}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2E7D32),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -709,51 +615,48 @@ class _ExperienciaProfissionalScreenState
                     children: [
                       Row(
                         children: [
-                          Expanded(
-                            child: Text(
-                              experiencia.empresa,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
+                          Text(
+                            idioma.nome,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
                             ),
                           ),
-                          if (isAtiva) ...[
+                          if (idioma.isDefault) ...[
+                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.2),
+                                color: Colors.amber.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.green),
+                                border: Border.all(color: Colors.amber),
                               ),
                               child: const Text(
-                                'EM ANDAMENTO',
+                                'PADRÃO',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.green,
+                                  color: Colors.amber,
                                 ),
                               ),
                             ),
                           ],
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        experiencia.descricaoAtividades,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
+                      if (idioma.descricao.isNotEmpty)
+                        Text(
+                          idioma.descricao,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
                     ],
                   ),
                 ),
                 PopupMenuButton<String>(
-                  onSelected: (value) => _handleMenuAction(value, experiencia),
+                  onSelected: (value) => _handleMenuAction(value, idioma),
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 'editar',
@@ -765,29 +668,43 @@ class _ExperienciaProfissionalScreenState
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
-                      value: 'excluir',
+                    PopupMenuItem(
+                      value: idioma.ativo ? 'desativar' : 'ativar',
                       child: Row(
                         children: [
-                          Icon(Icons.delete, size: 18, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Excluir', style: TextStyle(color: Colors.red)),
+                          Icon(
+                            idioma.ativo
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            size: 18,
+                            color: idioma.ativo ? Colors.orange : Colors.green,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            idioma.ativo ? 'Desativar' : 'Ativar',
+                            style: TextStyle(
+                              color:
+                                  idioma.ativo ? Colors.orange : Colors.green,
+                            ),
+                          ),
                         ],
                       ),
                     ),
+                    // if (!idioma.isDefault)
+                    //   const PopupMenuItem(
+                    //     value: 'excluir',
+                    //     child: Row(
+                    //       children: [
+                    //         Icon(Icons.delete, size: 18, color: Colors.red),
+                    //         SizedBox(width: 8),
+                    //         Text('Excluir', style: TextStyle(color: Colors.red)),
+                    //       ],
+                    //     ),
+                    //   ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-
-            // Informações da experiência
-            _buildInfoChip(
-                'Período',
-                '${_formatarData(experiencia.dataInicio)} - ${experiencia.dataFim != null ? _formatarData(experiencia.dataFim!) : 'Atual'}',
-                Icons.calendar_today),
-            const SizedBox(height: 4),
-            _buildInfoChip('Duração', duracao, Icons.schedule),
             const SizedBox(height: 12),
 
             // Status
@@ -797,26 +714,26 @@ class _ExperienciaProfissionalScreenState
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isAtiva
+                    color: idioma.ativo
                         ? Colors.green.withOpacity(0.1)
                         : Colors.grey.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isAtiva ? Colors.green : Colors.grey,
+                      color: idioma.ativo ? Colors.green : Colors.grey,
                     ),
                   ),
                   child: Text(
-                    isAtiva ? 'EM ANDAMENTO' : 'FINALIZADA',
+                    idioma.ativo ? 'ATIVO' : 'INATIVO',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: isAtiva ? Colors.green : Colors.grey,
+                      color: idioma.ativo ? Colors.green : Colors.grey,
                     ),
                   ),
                 ),
                 const Spacer(),
                 Text(
-                  'ID: ${experiencia.id} | Candidato: ${experiencia.candidatoId}',
+                  'ID: ${idioma.id}',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],
@@ -858,19 +775,19 @@ class _ExperienciaProfissionalScreenState
   }
 
   Widget _buildPaginationControls() {
-    if (_experiencias.isEmpty && !_isLoading && !_isLoadingPage) {
+    if (_idiomas.isEmpty && !_isLoading && !_isLoadingPage) {
       return const SizedBox.shrink();
     }
 
     final totalPages = _pagination?['totalPages'] ??
-        ((_experiencias.isNotEmpty)
-            ? ((_experiencias.length / _pageSize)
+        ((_idiomas.isNotEmpty)
+            ? ((_idiomas.length / _pageSize)
                 .ceil()
                 .clamp(1, double.infinity)
                 .toInt())
             : 1);
     final currentPage = _pagination?['currentPage'] ?? _currentPage;
-    final total = _pagination?['total'] ?? _experiencias.length;
+    final total = _pagination?['total'] ?? _idiomas.length;
     final hasNextPage =
         _pagination?['hasNextPage'] ?? (_currentPage < totalPages);
     final hasPrevPage = _pagination?['hasPrevPage'] ?? (_currentPage > 1);
@@ -1040,7 +957,7 @@ class _ExperienciaProfissionalScreenState
   void _goToPage(int page) {
     if (page != _currentPage && page >= 1) {
       setState(() => _currentPage = page);
-      _loadExperienciasProfissionais(showLoading: false);
+      _loadIdiomas(showLoading: false);
     }
   }
 
@@ -1062,25 +979,25 @@ class _ExperienciaProfissionalScreenState
           childAspectRatio: 1.5,
           children: [
             _buildStatCard(
-              'Total de Experiências',
+              'Total de Status',
               (_estatisticas['total'] ?? 0).toString(),
-              Icons.work,
+              Icons.flag,
               const Color(0xFF2E7D32),
             ),
             _buildStatCard(
-              'Em Andamento',
-              (_estatisticas['emAndamento'] ?? 0).toString(),
-              Icons.timeline,
+              'Status Ativos',
+              (_estatisticas['ativos'] ?? 0).toString(),
+              Icons.check_circle,
               const Color(0xFF1976D2),
             ),
             _buildStatCard(
-              'Finalizadas',
-              (_estatisticas['finalizadas'] ?? 0).toString(),
-              Icons.check_circle,
+              'Status Padrão',
+              (_estatisticas['padrao'] ?? 0).toString(),
+              Icons.star,
               const Color(0xFFED6C02),
             ),
             _buildStatCard(
-              'Este Mês',
+              'Criados Este Mês',
               (_estatisticas['criadosEsteMes'] ?? 0).toString(),
               Icons.trending_up,
               const Color(0xFF9C27B0),
@@ -1108,7 +1025,7 @@ class _ExperienciaProfissionalScreenState
           ),
           child: const Center(
             child: Text(
-              'Gráfico de distribuição de experiências\n(Implementar com charts)',
+              'Gráfico de distribuição de status\n(Implementar com charts)',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),
             ),
@@ -1118,48 +1035,78 @@ class _ExperienciaProfissionalScreenState
     );
   }
 
-  void _handleMenuAction(
-      String action, experiencia.ExperienciaProfissional experiencia) {
+  void _handleMenuAction(String action, idioma.Idioma idioma) {
     switch (action) {
       case 'editar':
-        _editarExperiencia(experiencia);
+        _editarIdioma(idioma);
+        break;
+      case 'ativar':
+        _ativarIdioma(idioma);
+        break;
+      case 'desativar':
+        _desativarIdioma(idioma);
         break;
       case 'excluir':
-        _confirmarExclusao(experiencia);
+        _confirmarExclusao(idioma);
         break;
     }
   }
 
-  void _editarExperiencia(experiencia.ExperienciaProfissional experiencia) {
+  void _editarIdioma(idioma.Idioma idioma) {
     setState(() {
-      _experienciaEditando = experiencia;
-      _candidatoIdController.text = experiencia.candidatoId.toString();
-      _empresaController.text = experiencia.empresa;
-      _descricaoController.text = experiencia.descricaoAtividades;
-      _dataInicio = experiencia.dataInicio;
-      _dataFim = experiencia.dataFim;
+      _statusEditando = idioma;
+      _nomeController.text = idioma.nome;
+      //_descricaoController.text = idioma.descricao;
+      _ordemController.text = idioma.ordem?.toString() ?? '';
+      _corSelecionada = idioma.cor;
+      _ativo = idioma.ativo;
+      _isDefault = idioma.isDefault;
       _showForm = true;
     });
   }
 
-  Future<void> _confirmarExclusao(
-      experiencia.ExperienciaProfissional experiencia) async {
+  Future<void> _ativarIdioma(idioma.Idioma idioma) async {
+    try {
+      final success =
+          await idiomaService.IdiomaService.ativarIdioma(idioma.id!);
+      if (success) {
+        AppUtils.showSuccessSnackBar(context, 'Item ativado com sucesso!');
+        _loadIdiomas(showLoading: false);
+      }
+    } catch (e) {
+      AppUtils.showErrorSnackBar(context, 'Erro: $e');
+    }
+  }
+
+  Future<void> _desativarIdioma(idioma.Idioma idioma) async {
+    try {
+      final success =
+          await idiomaService.IdiomaService.desativarIdioma(idioma.id!);
+      if (success) {
+        AppUtils.showSuccessSnackBar(context, 'Item desativado com sucesso!');
+        _loadIdiomas(showLoading: false);
+      }
+    } catch (e) {
+      AppUtils.showErrorSnackBar(context, 'Erro: $e');
+    }
+  }
+
+  Future<void> _confirmarExclusao(idioma.Idioma idioma) async {
     final confirm = await AppUtils.showConfirmDialog(
       context,
-      title: 'Excluir Experiência',
+      title: 'Excluir Item',
       content:
-          'Tem certeza que deseja excluir a experiência em "${experiencia.empresa}"?\n\nEsta ação não pode ser desfeita.',
+          'Tem certeza que deseja excluir "${idioma.nome}"?\n\nEsta ação não pode ser desfeita e pode afetar cursos que utilizam este status.',
       confirmText: 'Excluir',
     );
 
     if (confirm) {
       try {
-        final success = await experienciaService.ExperienciaProfissionalService
-            .deletarExperienciaProfissional(experiencia.id!);
+        final success =
+            await idiomaService.IdiomaService.deletarIdioma(idioma.id!);
         if (success) {
-          AppUtils.showSuccessSnackBar(
-              context, 'Experiência excluída com sucesso!');
-          _loadExperienciasProfissionais();
+          AppUtils.showSuccessSnackBar(context, 'Item excluído com sucesso!');
+          _loadIdiomas();
         }
       } catch (e) {
         AppUtils.showErrorSnackBar(context, 'Erro: $e');
@@ -1167,7 +1114,7 @@ class _ExperienciaProfissionalScreenState
     }
   }
 
-  void _showNovaExperienciaForm() {
+  void _showNovoStatusForm() {
     _limparFormulario();
     setState(() => _showForm = true);
   }
@@ -1178,109 +1125,52 @@ class _ExperienciaProfissionalScreenState
   }
 
   void _limparFormulario() {
-    _candidatoIdController.clear();
-    _empresaController.clear();
+    _nomeController.clear();
     _descricaoController.clear();
-    _dataInicio = null;
-    _dataFim = null;
-    _experienciaEditando = null;
+    _ordemController.clear();
+    _corSelecionada = null;
+    _ativo = true;
+    _isDefault = false;
+    _statusEditando = null;
   }
 
-  Future<void> _salvarExperiencia() async {
+  Future<void> _salvarStatus() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_dataInicio == null) {
-      AppUtils.showErrorSnackBar(context, 'Data de início é obrigatória');
-      return;
-    }
-
-    if (_dataFim != null && _dataFim!.isBefore(_dataInicio!)) {
-      AppUtils.showErrorSnackBar(
-          context, 'Data de fim deve ser posterior à data de início');
-      return;
-    }
-
     final dados = {
-      'candidatoId': int.parse(_candidatoIdController.text.trim()),
-      'empresa': _empresaController.text.trim(),
-      'descricao': _descricaoController.text.trim(),
-      'dataInicio': _dataInicio!.toIso8601String(),
-      if (_dataFim != null) 'dataFim': _dataFim!.toIso8601String(),
+      'descricao': _nomeController.text.trim(),
+      //'descricao': _descricaoController.text.trim(),
+      //'cor': _corSelecionada,
+      //'ordem': _ordemController.text.isNotEmpty ? int.parse(_ordemController.text) : null,
+      //'is_default': _isDefault,
+      'ativo': _ativo,
     };
 
     try {
       setState(() => _isLoading = true);
 
       bool success;
-      if (_experienciaEditando == null) {
-        success = await experienciaService.ExperienciaProfissionalService
-            .criarExperienciaProfissional(dados);
+      if (_statusEditando == null) {
+        success = await idiomaService.IdiomaService.criarIdioma(dados);
       } else {
-        success = await experienciaService.ExperienciaProfissionalService
-            .atualizarExperienciaProfissional(_experienciaEditando!.id!, dados);
+        success = await idiomaService.IdiomaService.atualizarIdioma(
+            _statusEditando!.id!, dados);
       }
 
       if (success) {
         AppUtils.showSuccessSnackBar(
           context,
-          _experienciaEditando == null
-              ? 'Experiência criada com sucesso!'
-              : 'Experiência atualizada com sucesso!',
+          _statusEditando == null
+              ? 'Item criado com sucesso!'
+              : 'Item atualizado com sucesso!',
         );
         _cancelarForm();
-        _loadExperienciasProfissionais();
+        _loadIdiomas();
       }
     } catch (e) {
       AppUtils.showErrorSnackBar(context, 'Erro: $e');
     } finally {
       setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _selecionarDataInicio(BuildContext context) async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _dataInicio ?? DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-    );
-    if (date != null) {
-      setState(() => _dataInicio = date);
-    }
-  }
-
-  Future<void> _selecionarDataFim(BuildContext context) async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _dataFim ?? _dataInicio ?? DateTime.now(),
-      firstDate: _dataInicio ?? DateTime(1900),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (date != null) {
-      setState(() => _dataFim = date);
-    }
-  }
-
-  String _formatarData(DateTime data) {
-    return '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
-  }
-
-  String _calcularDuracao(DateTime inicio, DateTime? fim) {
-    final dataFim = fim ?? DateTime.now();
-    final diferenca = dataFim.difference(inicio);
-    final anos = (diferenca.inDays / 365).floor();
-    final meses = ((diferenca.inDays % 365) / 30).floor();
-
-    if (anos > 0) {
-      if (meses > 0) {
-        return '$anos ano${anos > 1 ? 's' : ''} e $meses mes${meses > 1 ? 'es' : ''}';
-      } else {
-        return '$anos ano${anos > 1 ? 's' : ''}';
-      }
-    } else if (meses > 0) {
-      return '$meses mes${meses > 1 ? 'es' : ''}';
-    } else {
-      return '${diferenca.inDays} dia${diferenca.inDays > 1 ? 's' : ''}';
     }
   }
 
@@ -1293,52 +1183,26 @@ class _ExperienciaProfissionalScreenState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(
-                initialValue: _filtroEmpresa,
-                decoration: const InputDecoration(labelText: 'Empresa'),
-                onChanged: (value) =>
-                    _filtroEmpresa = value.isEmpty ? null : value,
+              DropdownButtonFormField<bool>(
+                value: _filtroAtivo,
+                decoration: const InputDecoration(labelText: 'Status'),
+                items: const [
+                  DropdownMenuItem(value: null, child: Text('Todos')),
+                  DropdownMenuItem(value: true, child: Text('Ativos')),
+                  DropdownMenuItem(value: false, child: Text('Inativos')),
+                ],
+                onChanged: (value) => setState(() => _filtroAtivo = value),
               ),
               const SizedBox(height: 16),
-              ListTile(
-                title: const Text('Data Início'),
-                subtitle: Text(_filtroDataInicio != null
-                    ? _formatarData(_filtroDataInicio!)
-                    : 'Não selecionada'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.calendar_today),
-                  onPressed: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: _filtroDataInicio ?? DateTime.now(),
-                      firstDate: DateTime(1900),
-                      lastDate: DateTime.now(),
-                    );
-                    if (date != null) {
-                      setState(() => _filtroDataInicio = date);
-                    }
-                  },
-                ),
-              ),
-              ListTile(
-                title: const Text('Data Fim'),
-                subtitle: Text(_filtroDataFim != null
-                    ? _formatarData(_filtroDataFim!)
-                    : 'Não selecionada'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.calendar_today),
-                  onPressed: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: _filtroDataFim ?? DateTime.now(),
-                      firstDate: DateTime(1900),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (date != null) {
-                      setState(() => _filtroDataFim = date);
-                    }
-                  },
-                ),
+              DropdownButtonFormField<bool>(
+                value: _filtroDefault,
+                decoration: const InputDecoration(labelText: 'Tipo'),
+                items: const [
+                  DropdownMenuItem(value: null, child: Text('Todos')),
+                  DropdownMenuItem(value: true, child: Text('Status Padrão')),
+                  DropdownMenuItem(value: false, child: Text('Personalizados')),
+                ],
+                onChanged: (value) => setState(() => _filtroDefault = value),
               ),
             ],
           ),
@@ -1347,13 +1211,12 @@ class _ExperienciaProfissionalScreenState
           TextButton(
             onPressed: () {
               setState(() {
-                _filtroEmpresa = null;
-                _filtroDataInicio = null;
-                _filtroDataFim = null;
+                _filtroAtivo = null;
+                _filtroDefault = null;
                 _currentPage = 1;
               });
               Navigator.of(context).pop();
-              _loadExperienciasProfissionais();
+              _loadIdiomas();
             },
             child: const Text('Limpar'),
           ),
@@ -1361,7 +1224,7 @@ class _ExperienciaProfissionalScreenState
             onPressed: () {
               Navigator.of(context).pop();
               setState(() => _currentPage = 1);
-              _loadExperienciasProfissionais();
+              _loadIdiomas();
             },
             child: const Text('Aplicar'),
           ),
@@ -1371,9 +1234,8 @@ class _ExperienciaProfissionalScreenState
   }
 
   bool _temFiltrosAtivos() {
-    return _filtroEmpresa != null ||
-        _filtroDataInicio != null ||
-        _filtroDataFim != null ||
+    return _filtroAtivo != null ||
+        _filtroDefault != null ||
         _currentSearch.isNotEmpty;
   }
 
@@ -1384,26 +1246,19 @@ class _ExperienciaProfissionalScreenState
       filtros.add(_buildFiltroChip('Busca: "$_currentSearch"', _clearSearch));
     }
 
-    if (_filtroEmpresa != null) {
-      filtros.add(_buildFiltroChip('Empresa: "$_filtroEmpresa"', () {
-        setState(() => _filtroEmpresa = null);
-        _loadExperienciasProfissionais();
-      }));
-    }
-
-    if (_filtroDataInicio != null) {
+    if (_filtroAtivo != null) {
       filtros.add(_buildFiltroChip(
-          'Data Início: ${_formatarData(_filtroDataInicio!)}', () {
-        setState(() => _filtroDataInicio = null);
-        _loadExperienciasProfissionais();
+          'Status: ${_filtroAtivo! ? "Ativos" : "Inativos"}', () {
+        setState(() => _filtroAtivo = null);
+        _loadIdiomas();
       }));
     }
 
-    if (_filtroDataFim != null) {
-      filtros.add(
-          _buildFiltroChip('Data Fim: ${_formatarData(_filtroDataFim!)}', () {
-        setState(() => _filtroDataFim = null);
-        _loadExperienciasProfissionais();
+    if (_filtroDefault != null) {
+      filtros.add(_buildFiltroChip(
+          'Tipo: ${_filtroDefault! ? "Padrão" : "Personalizados"}', () {
+        setState(() => _filtroDefault = null);
+        _loadIdiomas();
       }));
     }
 
@@ -1421,11 +1276,9 @@ class _ExperienciaProfissionalScreenState
 
   Future<void> _exportarDados() async {
     try {
-      await experienciaService.ExperienciaProfissionalService
-          .exportarExperienciasProfissionaisCSV(
-        empresa: _filtroEmpresa,
-        dataInicio: _filtroDataInicio,
-        dataFim: _filtroDataFim,
+      await idiomaService.IdiomaService.exportarCSV(
+        ativo: _filtroAtivo,
+        isDefault: _filtroDefault,
       );
       AppUtils.showSuccessSnackBar(context, 'Dados exportados com sucesso!');
     } catch (e) {
@@ -1437,9 +1290,9 @@ class _ExperienciaProfissionalScreenState
   void dispose() {
     _searchController.dispose();
     _tabController.dispose();
-    _candidatoIdController.dispose();
-    _empresaController.dispose();
+    _nomeController.dispose();
     _descricaoController.dispose();
+    _ordemController.dispose();
     super.dispose();
   }
 }

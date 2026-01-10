@@ -2,27 +2,27 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sistema_estagio/models/_auxiliares/assunto.dart';
-import 'package:sistema_estagio/screens/admin/autores/assunto_form_screen.dart';
-import 'package:sistema_estagio/screens/admin/autores/editora_screen.dart';
-import 'package:sistema_estagio/screens/admin/autores/estado_conservacao_screen.dart';
-import 'package:sistema_estagio/screens/admin/autores/estante_screen.dart';
+import 'package:sistema_estagio/screens/admin/autores/material_screen.dart';
+import 'package:sistema_estagio/screens/assunto_form_screen.dart';
+import 'package:sistema_estagio/screens/editora_screen.dart';
+import 'package:sistema_estagio/screens/estado_conservacao_screen.dart';
+import 'package:sistema_estagio/screens/estante_screen.dart';
 
-import 'package:sistema_estagio/screens/admin/autores/sala_screen.dart';
-import 'package:sistema_estagio/screens/admin/autores/subtipo_obra_screen.dart';
-import 'package:sistema_estagio/screens/admin/autores/tipo_obra_screen.dart';
-import 'package:sistema_estagio/screens/admin/cadastros/_auxiliares/idiomas/idiomas_list_screen.dart';
-import 'package:sistema_estagio/screens/admin/cadastros/_auxiliares/material_screen.dart';
-import 'package:sistema_estagio/screens/admin/cadastros/obras_list_screen.dart';
-import 'package:sistema_estagio/screens/candidato/components/obra_cadastro_screen.dart';
-import 'package:sistema_estagio/screens/admin/cadastros/obras/movimentacoes_screen.dart';
-import 'package:sistema_estagio/screens/admin/cadastros/obras/galeria_screen.dart';
+import 'package:sistema_estagio/screens/sala_screen.dart';
+import 'package:sistema_estagio/screens/subtipo_obra_screen.dart';
+import 'package:sistema_estagio/screens/tipo_obra_screen.dart';
+import 'package:sistema_estagio/screens/idiomas_list_screen.dart';
+import 'package:sistema_estagio/screens/obras_list_screen.dart';
+import 'package:sistema_estagio/screens/obra_cadastro_screen.dart';
+import 'package:sistema_estagio/screens/movimentacoes_screen.dart';
+import 'package:sistema_estagio/screens/galeria_screen.dart';
 
 import '../providers/auth_provider.dart';
-import '../screens/public/login_screen.dart';
-import '../screens/admin/dashboard/dashboard_screen.dart';
+import '../screens/login_screen.dart';
+import '../screens/dashboard_screen.dart';
 import '../widgets/admin_layout.dart';
 
-import '../screens/admin/autores/autor_form_screen.dart';
+import '../screens/autor_form_screen.dart';
 
 class AppRouter {
   final AuthProvider authProvider;
