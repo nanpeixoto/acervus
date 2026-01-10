@@ -92,8 +92,15 @@ router.get('/listar-por-pais/:pais_id', tokenOpcional, async (req, res) => {
 
   try {
     const sql = `
-      SELECT id, nome, sigla
-      FROM public.ger_estado
+     SELECT
+      e.id,
+      e.nome,
+      e.sigla,
+      e.pais_id,
+      p.nome AS pais_nome,
+      p.sigla AS pais_sigla
+    FROM public.ger_estado e
+    LEFT JOIN public.ger_pais p ON p.id = e.pais_id
       WHERE pais_id = $1
       ORDER BY nome
     `;

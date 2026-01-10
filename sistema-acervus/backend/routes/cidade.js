@@ -111,8 +111,22 @@ router.get('/listar-por-estado/:estado_id', tokenOpcional, async (req, res) => {
 
   try {
     const sql = `
-      SELECT id, nome
-      FROM public.ger_cidade
+      SELECT  c.id,
+      c.nome,
+      c.codigo_ibge,
+      c.estado_id,
+      e.nome   AS estado_nome,
+      e.sigla  AS estado_sigla,
+      e.pais_id,
+      p.nome   AS pais_nome,
+      p.sigla  AS pais_sigla,
+      c.populacao_2010,
+      c.densidade_demo,
+      c.gentilico,
+      c.area
+       FROM public.ger_cidade c
+    JOIN public.ger_estado e ON e.id = c.estado_id
+    JOIN public.ger_pais   p ON p.id = e.pais_id
       WHERE estado_id = $1
       ORDER BY nome
     `;
