@@ -163,7 +163,7 @@ class _AdminLayoutState extends State<AdminLayout> {
               '/admin/dashboard', collapsed),
           _section('OBRAS', collapsed),
           _menuItem(
-              Icons.menu_book_rounded, 'Livros', '/admin/obras', collapsed),          
+              Icons.menu_book_rounded, 'Livros', '/admin/obras', collapsed),
           _section('CADASTROS', collapsed),
           _menuItem(
             Icons.person_outline_rounded,
@@ -192,14 +192,9 @@ class _AdminLayoutState extends State<AdminLayout> {
               Icons.meeting_room_outlined, 'Sala', '/admin/salas', collapsed),
           _menuItem(Icons.view_column_outlined, 'Estante', '/admin/estantes',
               collapsed),
-          _menuItem(Icons.view_agenda_outlined, 'Prateleira',
-              '/admin/prateleiras', collapsed),
-          _section('CONFIGURAÇÕES', collapsed),
-          _menuItem(Icons.manage_accounts_outlined, 'Usuários',
-              '/admin/usuarios', collapsed),
-          _section('RELATÓRIOS', collapsed),
-          _menuItem(Icons.bar_chart_rounded, 'Relatórios', '/admin/relatorios',
-              collapsed),
+          // _menuItem(Icons.view_agenda_outlined, 'Prateleira',              '/admin/prateleiras', collapsed),
+          // _section('CONFIGURAÇÕES', collapsed),          _menuItem(Icons.manage_accounts_outlined, 'Usuários',              '/admin/usuarios', collapsed),
+          //  _section('RELATÓRIOS', collapsed),          _menuItem(Icons.bar_chart_rounded, 'Relatórios', '/admin/relatorios',              collapsed),
         ],
       ),
     );

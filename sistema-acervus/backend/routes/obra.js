@@ -76,7 +76,7 @@ router.get('/listar', tokenOpcional, async (req, res) => {
   `;
 
   const baseQuery = `
-    SELECT
+     
       SELECT
       cd_obra,
       cd_material,
@@ -127,7 +127,7 @@ router.get('/listar', tokenOpcional, async (req, res) => {
   } catch (err) {
     console.error('Erro ao listar obras:', err);
     logger.error('Erro ao listar obras: ' + err.stack, 'obras');
-    res.status(500).json({ erro: 'Erro ao listar obras.' });
+    res.status(500).json({ erro: 'Erro ao listar obras.' , motivo: err.message});
   }
 });
 
