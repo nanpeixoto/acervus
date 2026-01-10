@@ -6,6 +6,7 @@ import 'dart:html' as html;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sistema_estagio/services/obra_service.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
@@ -547,6 +548,10 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
     final titulo = widget.obraTitulo;
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/admin/obras/'),
+        ),
         title: Text(titulo != null ? 'Galeria - $titulo' : 'Galeria da Obra'),
         actions: [
           IconButton(
