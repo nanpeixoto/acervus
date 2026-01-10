@@ -77,9 +77,37 @@ router.get('/listar', tokenOpcional, async (req, res) => {
 
   const baseQuery = `
     SELECT
-      o.cd_obra AS id,
-      o.titulo,
-      o.subtitulo
+      SELECT
+      cd_obra,
+      cd_material,
+      cd_tipo_peca,
+      cd_subtipo_peca,
+      cd_assunto,
+      cd_idioma,
+      titulo,
+      subtitulo,
+      cd_estado_conservacao,
+      data_compra,
+      numero_apolice,
+      valor,
+      cd_estante_prateleira,
+      cd_editora,
+      numero_edicao,
+      qtd_paginas,
+      volume,
+      resumo,
+      observacao,
+      carimbo,
+      cd_autor,
+      cd_autor_2,
+      medida,
+      conjunto,
+      origem,
+      data_historica,
+      codigo_obra_tipo,
+      posicao_obra,
+      nr_carimbo,
+      cd_estante_prateleira_from
     FROM public.ace_obra o
     ${where}
     ORDER BY o.cd_obra DESC
@@ -495,20 +523,43 @@ router.put('/movimentacoes/:id', verificarToken, async (req, res) => {
 router.get('/buscar/:id', verificarToken, async (req, res) => {
   const { id } = req.params;
 
-  const query = `
+   const query = `
     SELECT
-      cd_obra AS id,
+      cd_obra,
+      cd_material,
+      cd_tipo_peca,
+      cd_subtipo_peca,
+      cd_assunto,
+      cd_idioma,
       titulo,
       subtitulo,
-      cd_assunto,
-      cd_material,
-      cd_autor,
+      cd_estado_conservacao,
+      data_compra,
+      numero_apolice,
       valor,
-      data_compra
+      cd_estante_prateleira,
+      cd_editora,
+      numero_edicao,
+      qtd_paginas,
+      volume,
+      resumo,
+      observacao,
+      carimbo,
+      cd_autor,
+      cd_autor_2,
+      medida,
+      conjunto,
+      origem,
+      data_historica,
+      codigo_obra_tipo,
+      posicao_obra,
+      nr_carimbo,
+      cd_estante_prateleira_from
     FROM public.ace_obra
     WHERE cd_obra = $1
     LIMIT 1
   `;
+
 
   try {
     const result = await pool.query(query, [id]);
@@ -529,43 +580,83 @@ router.get('/buscar/:id', verificarToken, async (req, res) => {
 // POST /obra/cadastrar
 // =====================
 router.post('/cadastrar', verificarToken, async (req, res) => {
-  const {
-    titulo,
-    subtitulo,
-    cd_assunto,
-    cd_material,
-    cd_autor,
-    valor,
-    data_compra
-  } = req.body;
+  const o = req.body;
 
-  if (!titulo) {
-    return res.status(400).json({ erro: 'Título é obrigatório.' });
+  if (!o.titulo || !o.cd_material || !o.cd_tipo_peca || !o.cd_subtipo_peca || !o.cd_assunto) {
+    return res.status(400).json({
+      erro: 'Campos obrigatórios: titulo, cd_material, cd_tipo_peca, cd_subtipo_peca, cd_assunto'
+    });
   }
 
   const query = `
     INSERT INTO public.ace_obra (
+      cd_material,
+      cd_tipo_peca,
+      cd_subtipo_peca,
+      cd_assunto,
+      cd_idioma,
       titulo,
       subtitulo,
-      cd_assunto,
-      cd_material,
-      cd_autor,
+      cd_estado_conservacao,
+      data_compra,
+      numero_apolice,
       valor,
-      data_compra
+      cd_estante_prateleira,
+      cd_editora,
+      numero_edicao,
+      qtd_paginas,
+      volume,
+      resumo,
+      observacao,
+      carimbo,
+      cd_autor,
+      cd_autor_2,
+      medida,
+      conjunto,
+      origem,
+      data_historica,
+      codigo_obra_tipo,
+      posicao_obra,
+      nr_carimbo,
+      cd_estante_prateleira_from
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+      $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
+      $21,$22,$23,$24,$25,$26,$27,$28
     )
-    RETURNING cd_obra;
+    RETURNING cd_obra
   `;
 
   const values = [
-    titulo.toUpperCase(),
-    subtitulo?.toUpperCase() || null,
-    cd_assunto || null,
-    cd_material || null,
-    cd_autor || null,
-    valor || null,
-    data_compra || null
+    o.cd_material,
+    o.cd_tipo_peca,
+    o.cd_subtipo_peca,
+    o.cd_assunto,
+    o.cd_idioma || null,
+    o.titulo?.toUpperCase(),
+    o.subtitulo?.toUpperCase() || null,
+    o.cd_estado_conservacao || null,
+    o.data_compra || null,
+    o.numero_apolice || null,
+    o.valor || null,
+    o.cd_estante_prateleira || null,
+    o.cd_editora || null,
+    o.numero_edicao || null,
+    o.qtd_paginas || null,
+    o.volume || null,
+    o.resumo || null,
+    o.observacao || null,
+    o.carimbo || null,
+    o.cd_autor || null,
+    o.cd_autor_2 || null,
+    o.medida || null,
+    o.conjunto || null,
+    o.origem || null,
+    o.data_historica || null,
+    o.codigo_obra_tipo || null,
+    o.posicao_obra || 1,
+    o.nr_carimbo || null,
+    o.cd_estante_prateleira_from || null
   ];
 
   try {
@@ -576,7 +667,6 @@ router.post('/cadastrar', verificarToken, async (req, res) => {
       cd_obra: result.rows[0].cd_obra
     });
   } catch (err) {
-    console.error('Erro ao cadastrar obra:', err);
     logger.error('Erro ao cadastrar obra: ' + err.stack, 'obras');
     res.status(500).json({ erro: 'Erro ao cadastrar obra.' });
   }
@@ -589,55 +679,81 @@ router.put('/alterar/:id', verificarToken, async (req, res) => {
   const { id } = req.params;
   const body = req.body;
 
-  const campos = [
+  const camposPermitidos = [
+    'cd_material',
+    'cd_tipo_peca',
+    'cd_subtipo_peca',
+    'cd_assunto',
+    'cd_idioma',
     'titulo',
     'subtitulo',
-    'cd_assunto',
-    'cd_material',
-    'cd_autor',
+    'cd_estado_conservacao',
+    'data_compra',
+    'numero_apolice',
     'valor',
-    'data_compra'
+    'cd_estante_prateleira',
+    'cd_editora',
+    'numero_edicao',
+    'qtd_paginas',
+    'volume',
+    'resumo',
+    'observacao',
+    'carimbo',
+    'cd_autor',
+    'cd_autor_2',
+    'medida',
+    'conjunto',
+    'origem',
+    'data_historica',
+    'codigo_obra_tipo',
+    'posicao_obra',
+    'nr_carimbo',
+    'cd_estante_prateleira_from'
   ];
 
-  const updateFields = [];
-  const updateValues = [];
+  const updates = [];
+  const values = [];
 
-  campos.forEach((campo) => {
+  camposPermitidos.forEach(campo => {
     if (body[campo] !== undefined) {
-      updateFields.push(`${campo} = $${updateValues.length + 1}`);
-      updateValues.push(body[campo]);
+      updates.push(`${campo} = $${values.length + 1}`);
+      values.push(
+        campo === 'titulo' || campo === 'subtitulo'
+          ? body[campo]?.toUpperCase()
+          : body[campo]
+      );
     }
   });
 
-  if (updateFields.length === 0) {
+  if (!updates.length) {
     return res.status(400).json({ erro: 'Nenhum campo para atualizar.' });
   }
 
-  updateValues.push(id);
+  values.push(id);
 
   const query = `
     UPDATE public.ace_obra
-    SET ${updateFields.join(', ')}
-    WHERE cd_obra = $${updateValues.length}
-    RETURNING *;
+    SET ${updates.join(', ')}
+    WHERE cd_obra = $${values.length}
+    RETURNING *
   `;
 
   try {
-    const result = await pool.query(query, updateValues);
+    const result = await pool.query(query, values);
 
     if (result.rowCount === 0) {
       return res.status(404).json({ erro: 'Obra não encontrada.' });
     }
 
     res.json({
-      mensagem: 'Obra alterada com sucesso!',
+      mensagem: 'Obra atualizada com sucesso!',
       obra: result.rows[0]
     });
   } catch (err) {
-    console.error('Erro ao alterar obra:', err);
     logger.error('Erro ao alterar obra: ' + err.stack, 'obras');
     res.status(500).json({ erro: 'Erro ao alterar obra.' });
   }
 });
+
 
 module.exports = router;
