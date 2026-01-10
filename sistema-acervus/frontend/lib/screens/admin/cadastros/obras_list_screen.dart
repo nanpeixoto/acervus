@@ -304,6 +304,10 @@ class _ObrasListScreenState extends State<ObrasListScreen>
             onSelected: (v) {
               if (v == 'editar') {
                 context.go('/admin/obras/editar/${obra.id}');
+              } else if (v == 'galeria') {
+                context.go('/admin/obras/galeria/${obra.id}');
+              } else if (v == 'movimentacoes') {
+                context.go('/admin/obras/movimentacoes/${obra.id}');
               }
             },
             itemBuilder: (context) => const [
@@ -314,6 +318,26 @@ class _ObrasListScreenState extends State<ObrasListScreen>
                     Icon(Icons.edit, size: 18),
                     SizedBox(width: 8),
                     Text('Editar'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'galeria',
+                child: Row(
+                  children: [
+                    Icon(Icons.photo_library_outlined, size: 18),
+                    SizedBox(width: 8),
+                    Text('Galeria'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'movimentacoes',
+                child: Row(
+                  children: [
+                    Icon(Icons.swap_horiz, size: 18),
+                    SizedBox(width: 8),
+                    Text('Movimentação'),
                   ],
                 ),
               ),

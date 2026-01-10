@@ -163,7 +163,7 @@ class _AdminLayoutState extends State<AdminLayout> {
               '/admin/dashboard', collapsed),
           _section('OBRAS', collapsed),
           _menuItem(
-              Icons.menu_book_rounded, 'Livros', '/admin/obras', collapsed),
+              Icons.menu_book_rounded, 'Livros', '/admin/obras', collapsed),          
           _section('CADASTROS', collapsed),
           _menuItem(
             Icons.person_outline_rounded,

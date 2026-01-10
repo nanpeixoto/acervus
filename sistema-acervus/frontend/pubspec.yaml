@@ -32,8 +32,8 @@ dependencies:
   # Formulários e validação
   form_field_validator: ^1.1.0
   mask_text_input_formatter: ^2.5.0
-  flutter_quill: ^9.3.7
-  flutter_quill_extensions: ^9.3.7
+  flutter_quill: ^10.0.0
+  flutter_quill_extensions: ^10.0.0
   vsc_quill_delta_to_html: ^1.0.5
   quill_native_bridge: ^11.0.1
   pdf: ^3.10.8
