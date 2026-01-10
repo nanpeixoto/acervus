@@ -296,6 +296,23 @@ class ObraService {
     throw Exception('Erro ao atualizar imagem da galeria');
   }
 
+  static Future<Uint8List?> buscarImagemGaleria(int imagemId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/obra/galeria/arquivo/$imagemId'),
+        headers: await _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      }
+      return null;
+    } catch (e) {
+      print('Erro ao buscar imagem: $e');
+      return null;
+    }
+  }
+
   // ======================================================
   // MOVIMENTACOES
   // ======================================================
