@@ -17,7 +17,7 @@ class _ObraImagem {
   final String? name;
   final String? descricao;
   final String? extensao;
-  final bool isPrincipal;
+  bool isPrincipal;
   double rotationDeg;
 
   _ObraImagem({
@@ -124,6 +124,32 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
         errorBuilder: (_, __, ___) => const Center(
           child: Icon(Icons.broken_image, color: Colors.grey),
         ),
+      );
+    }
+
+    // Se tem ID, buscar pela API com autenticação
+    if (item.id != null) {
+      return FutureBuilder<Uint8List?>(
+        future: ObraService.buscarImagemGaleria(item.id!),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasData && snapshot.data != null) {
+            return Image.memory(
+              snapshot.data!,
+              fit: fit,
+              errorBuilder: (_, __, ___) => const Center(
+                child: Icon(Icons.broken_image, color: Colors.grey),
+              ),
+            );
+          }
+
+          return const Center(
+            child: Icon(Icons.broken_image, color: Colors.grey),
+          );
+        },
       );
     }
 
@@ -356,63 +382,85 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
 
   Future<void> _abrirEditorImagem(int index, _ObraImagem item) async {
     double tempRotation = item.rotationDeg;
+    bool tempPrincipal = item.isPrincipal; // Adicionar esta linha
 
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Editar imagem'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 320,
-              height: 220,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: ColoredBox(
-                  color: Colors.grey.shade100,
-                  child: Transform.rotate(
-                    angle: tempRotation * 3.1415926535 / 180,
-                    child: _buildImagemPreview(item, BoxFit.contain),
+      builder: (ctx) => StatefulBuilder(
+        // Mudança: AlertDialog -> StatefulBuilder
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Editar imagem'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 320,
+                height: 220,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: ColoredBox(
+                    color: Colors.grey.shade100,
+                    child: Transform.rotate(
+                      angle: tempRotation * 3.1415926535 / 180,
+                      child: _buildImagemPreview(item, BoxFit.contain),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Text('Rotação'),
-                Expanded(
-                  child: Slider(
-                    value: tempRotation,
-                    min: 0,
-                    max: 360,
-                    divisions: 36,
-                    label: '${tempRotation.round()}º',
-                    onChanged: (v) => setState(() {
-                      tempRotation = v;
-                    }),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Text('Rotação'),
+                  Expanded(
+                    child: Slider(
+                      value: tempRotation,
+                      min: 0,
+                      max: 360,
+                      divisions: 36,
+                      label: '${tempRotation.round()}º',
+                      onChanged: (v) => setDialogState(() {
+                        tempRotation = v;
+                      }),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Adicionar checkbox para marcar como principal
+              CheckboxListTile(
+                title: const Text('Marcar como capa principal'),
+                subtitle: const Text('Esta será a imagem de destaque da obra'),
+                value: tempPrincipal,
+                onChanged: (value) => setDialogState(() {
+                  tempPrincipal = value ?? false;
+                }),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Fechar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final newRot = tempRotation % 360;
+                setState(() {
+                  item.rotationDeg = newRot;
+                  item.isPrincipal = tempPrincipal;
+                });
+                Navigator.pop(ctx);
+                _persistirEdicao(
+                  item,
+                  rotacao: newRot,
+                  principal: tempPrincipal,
+                );
+              },
+              child: const Text('Aplicar'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Fechar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final newRot = tempRotation % 360;
-              setState(() => item.rotationDeg = newRot);
-              Navigator.pop(ctx);
-              _persistirEdicao(item, rotacao: newRot);
-            },
-            child: const Text('Aplicar'),
-          ),
-        ],
       ),
     );
   }
