@@ -720,26 +720,63 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
 
     try {
       if (_isEdicao) {
+        // MODO EDIÇÃO - apenas atualiza e volta
         await ObraService.editarObra(widget.obraId!, payload);
+
+        if (!mounted) return;
+
         AppUtils.showSuccessSnackBar(context, 'Obra alterada com sucesso!');
+        _camposComErro.clear();
+
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (mounted) {
+          context.go('/admin/obras/');
+        }
       } else {
-        await ObraService.criarObra(payload);
-        AppUtils.showSuccessSnackBar(context, 'Obra cadastrada com sucesso!');
+        // MODO CRIAÇÃO - cria e redireciona para edição
+        print('🔵 Criando obra...');
+        final obraCriada = await ObraService.criarObra(payload);
+
+        print('🔵 Obra criada: $obraCriada');
+        print('🔵 ID da obra: ${obraCriada?.id}');
+
+        if (!mounted) return;
+
+        if (obraCriada != null && obraCriada.id != null) {
+          AppUtils.showSuccessSnackBar(context, 'Obra cadastrada com sucesso!');
+          _camposComErro.clear();
+
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          if (mounted) {
+            final novaUrl = '/admin/obras/editar/${obraCriada.id}';
+            print('🔵 Redirecionando para: $novaUrl');
+            context.go(novaUrl);
+          }
+        } else {
+          print('🔴 Erro: Obra criada é null ou ID é null');
+          print('🔴 obraCriada: $obraCriada');
+          print('🔴 obraCriada?.id: ${obraCriada?.id}');
+          throw Exception('Erro ao obter ID da obra criada');
+        }
       }
+    } catch (e, stackTrace) {
+      print('💥 Erro ao salvar obra: $e');
+      print('💥 Stack trace: $stackTrace');
 
-      // Limpa os erros em caso de sucesso
-      _camposComErro.clear();
-
-      if (mounted) context.pop();
-    } catch (e) {
       // Trata erros específicos do backend
       String mensagemErro = 'Erro ao salvar obra';
 
       if (e.toString().contains('Campos obrigatórios')) {
         mensagemErro = 'Verifique os campos obrigatórios e tente novamente';
+      } else {
+        mensagemErro = 'Erro ao salvar obra: ${e.toString()}';
       }
 
-      AppUtils.showErrorSnackBar(context, mensagemErro);
+      if (mounted) {
+        AppUtils.showErrorSnackBar(context, mensagemErro);
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -1108,10 +1145,11 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
           const SizedBox(width: 24),
 
           // COLUNA DIREITA - IMAGEM DA CAPA
-          SizedBox(
-            width: 280,
-            child: _buildImagemCapaWidget(),
-          ),
+          if (_isEdicao)
+            SizedBox(
+              width: 280,
+              child: _buildImagemCapaWidget(),
+            ),
         ],
       ),
     );
@@ -1174,9 +1212,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
             icon: const Icon(Icons.photo_library_outlined),
             label: const Text('Ver todas as imagens'),
             onPressed: () {
-              setState(() {
-                _tabController.animateTo(3); // Vai para a aba Galeria
-              });
+              context.go('/admin/obras/galeria/${widget.obraId}');
             },
           ),
         ],
