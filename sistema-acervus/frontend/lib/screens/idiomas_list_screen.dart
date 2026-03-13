@@ -277,35 +277,66 @@ class _IdiomasScreenState extends State<IdiomasScreen>
       child: Column(
         children: [
           // Estatísticas rápidas
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Total de Status',
-                  (_pagination?['total'] ?? _idiomas.length).toString(),
-                  Icons.description,
-                  const Color(0xFF2E7D32),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  'Ativos',
-                  (_idiomas.where((s) => s.ativo).length).toString(),
-                  Icons.check_circle,
-                  const Color(0xFF1976D2),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  'Padrão',
-                  (_idiomas.where((s) => s.isDefault).length).toString(),
-                  Icons.star,
-                  const Color(0xFFED6C02),
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 500;
+              if (isMobile) {
+                return Column(
+                  children: [
+                    _buildStatCard(
+                      'Total de Status',
+                      (_pagination?['total'] ?? _idiomas.length).toString(),
+                      Icons.description,
+                      const Color(0xFF2E7D32),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildStatCard(
+                      'Ativos',
+                      (_idiomas.where((s) => s.ativo).length).toString(),
+                      Icons.check_circle,
+                      const Color(0xFF1976D2),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildStatCard(
+                      'Padrão',
+                      (_idiomas.where((s) => s.isDefault).length).toString(),
+                      Icons.star,
+                      const Color(0xFFED6C02),
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      'Total de Status',
+                      (_pagination?['total'] ?? _idiomas.length).toString(),
+                      Icons.description,
+                      const Color(0xFF2E7D32),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildStatCard(
+                      'Ativos',
+                      (_idiomas.where((s) => s.ativo).length).toString(),
+                      Icons.check_circle,
+                      const Color(0xFF1976D2),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildStatCard(
+                      'Padrão',
+                      (_idiomas.where((s) => s.isDefault).length).toString(),
+                      Icons.star,
+                      const Color(0xFFED6C02),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
 
@@ -340,7 +371,10 @@ class _IdiomasScreenState extends State<IdiomasScreen>
 
           // Configurações de paginação
           const SizedBox(height: 16),
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               const Text('Itens por página: ', style: TextStyle(fontSize: 14)),
               DropdownButton<int>(
@@ -363,7 +397,6 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                 underline: Container(),
                 isDense: true,
               ),
-              const SizedBox(width: 16),
               ElevatedButton.icon(
                 onPressed: () {
                   setState(() => _currentPage = 1);

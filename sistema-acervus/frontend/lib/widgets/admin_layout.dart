@@ -96,20 +96,14 @@ class _AdminLayoutState extends State<AdminLayout> {
             ),
           ),
         ),
-        body: Stack(
-          children: [
-            Container(color: background, child: widget.child),
-            Positioned(
-              top: MediaQuery.of(context).padding.top,
-              left: 0,
-              child: IconButton(
-                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                icon: const Icon(Icons.menu, color: Colors.white),
-                tooltip: 'Menu',
-              ),
-            ),
-          ],
+        floatingActionButton: FloatingActionButton.small(
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          backgroundColor: primary,
+          tooltip: 'Menu',
+          child: const Icon(Icons.menu, color: Colors.white),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+        body: Container(color: background, child: widget.child),
       );
     }
 

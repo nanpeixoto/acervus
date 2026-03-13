@@ -204,6 +204,8 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
   }
 
   Future<void> _abrirMovimentacaoDialog([_Movimentacao? mov]) async {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
     await _loadPaises();
     int? selPais = mov?.paisId;
     int? selEstado = mov?.estadoId;
@@ -237,7 +239,7 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                   mov == null ? 'Nova movimentação' : 'Editar movimentação'),
               content: SingleChildScrollView(
                 child: SizedBox(
-                  width: 520,
+                  width: isMobile ? screenWidth - 48 : 520,
                   child: Column(
                     children: [
                       DropdownButtonFormField<String>(
@@ -262,59 +264,105 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                             const InputDecoration(labelText: 'Descrição'),
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              value: selPais,
-                              isExpanded: true,
-                              decoration:
-                                  const InputDecoration(labelText: 'País'),
-                              items: _paises
-                                  .map((p) => DropdownMenuItem<int>(
-                                        value: p.id,
-                                        child: Text(p.nome),
-                                      ))
-                                  .toList(),
-                              onChanged: (v) async {
-                                setModal(() {
-                                  selPais = v;
-                                  selEstado = null;
-                                  selCidade = null;
-                                  _estados = [];
-                                  _cidades = [];
-                                });
-                                await _loadEstados(v);
-                                setModal(() {});
-                              },
+                      if (isMobile) ...[
+                        DropdownButtonFormField<int>(
+                          value: selPais,
+                          isExpanded: true,
+                          decoration: const InputDecoration(labelText: 'País'),
+                          items: _paises
+                              .map((p) => DropdownMenuItem<int>(
+                                    value: p.id,
+                                    child: Text(p.nome),
+                                  ))
+                              .toList(),
+                          onChanged: (v) async {
+                            setModal(() {
+                              selPais = v;
+                              selEstado = null;
+                              selCidade = null;
+                              _estados = [];
+                              _cidades = [];
+                            });
+                            await _loadEstados(v);
+                            setModal(() {});
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<int>(
+                          value: selEstado,
+                          isExpanded: true,
+                          decoration:
+                              const InputDecoration(labelText: 'Estado'),
+                          items: _estados
+                              .map((e) => DropdownMenuItem<int>(
+                                    value: e.id,
+                                    child: Text(e.nome),
+                                  ))
+                              .toList(),
+                          onChanged: (v) async {
+                            setModal(() {
+                              selEstado = v;
+                              selCidade = null;
+                              _cidades = [];
+                            });
+                            await _loadCidades(v);
+                            setModal(() {});
+                          },
+                        ),
+                      ] else
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<int>(
+                                value: selPais,
+                                isExpanded: true,
+                                decoration:
+                                    const InputDecoration(labelText: 'País'),
+                                items: _paises
+                                    .map((p) => DropdownMenuItem<int>(
+                                          value: p.id,
+                                          child: Text(p.nome),
+                                        ))
+                                    .toList(),
+                                onChanged: (v) async {
+                                  setModal(() {
+                                    selPais = v;
+                                    selEstado = null;
+                                    selCidade = null;
+                                    _estados = [];
+                                    _cidades = [];
+                                  });
+                                  await _loadEstados(v);
+                                  setModal(() {});
+                                },
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              value: selEstado,
-                              isExpanded: true,
-                              decoration:
-                                  const InputDecoration(labelText: 'Estado'),
-                              items: _estados
-                                  .map((e) => DropdownMenuItem<int>(
-                                        value: e.id,
-                                        child: Text(e.nome),
-                                      ))
-                                  .toList(),
-                              onChanged: (v) async {
-                                setModal(() {
-                                  selEstado = v;
-                                  selCidade = null;
-                                  _cidades = [];
-                                });
-                                await _loadCidades(v);
-                                setModal(() {});
-                              },
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: DropdownButtonFormField<int>(
+                                value: selEstado,
+                                isExpanded: true,
+                                decoration:
+                                    const InputDecoration(labelText: 'Estado'),
+                                items: _estados
+                                    .map((e) => DropdownMenuItem<int>(
+                                          value: e.id,
+                                          child: Text(e.nome),
+                                        ))
+                                    .toList(),
+                                onChanged: (v) async {
+                                  setModal(() {
+                                    selEstado = v;
+                                    selCidade = null;
+                                    _cidades = [];
+                                  });
+                                  await _loadCidades(v);
+                                  setModal(() {});
+                                },
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<int>(
                         value: selCidade,
@@ -329,59 +377,102 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
                         onChanged: (v) => setModal(() => selCidade = v),
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: InkWell(
-                              onTap: () async {
-                                final picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: dataIni ?? DateTime.now(),
-                                  firstDate: DateTime(1500),
-                                  lastDate: DateTime(2500),
-                                );
-                                if (picked != null) {
-                                  setModal(() => dataIni = picked);
-                                }
-                              },
-                              child: InputDecorator(
-                                decoration: const InputDecoration(
-                                    labelText: 'Data Inicial'),
-                                child: Text(
-                                  dataIni != null
-                                      ? '${dataIni!.day.toString().padLeft(2, '0')}/${dataIni!.month.toString().padLeft(2, '0')}/${dataIni!.year}'
-                                      : 'Selecionar',
+                      if (isMobile) ...[
+                        InkWell(
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: dataIni ?? DateTime.now(),
+                              firstDate: DateTime(1500),
+                              lastDate: DateTime(2500),
+                            );
+                            if (picked != null) setModal(() => dataIni = picked);
+                          },
+                          child: InputDecorator(
+                            decoration:
+                                const InputDecoration(labelText: 'Data Inicial'),
+                            child: Text(
+                              dataIni != null
+                                  ? '${dataIni!.day.toString().padLeft(2, '0')}/${dataIni!.month.toString().padLeft(2, '0')}/${dataIni!.year}'
+                                  : 'Selecionar',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: dataFim ?? DateTime.now(),
+                              firstDate: DateTime(1500),
+                              lastDate: DateTime(2500),
+                            );
+                            if (picked != null) setModal(() => dataFim = picked);
+                          },
+                          child: InputDecorator(
+                            decoration:
+                                const InputDecoration(labelText: 'Data Final'),
+                            child: Text(
+                              dataFim != null
+                                  ? '${dataFim!.day.toString().padLeft(2, '0')}/${dataFim!.month.toString().padLeft(2, '0')}/${dataFim!.year}'
+                                  : 'Selecionar',
+                            ),
+                          ),
+                        ),
+                      ] else
+                        Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                onTap: () async {
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: dataIni ?? DateTime.now(),
+                                    firstDate: DateTime(1500),
+                                    lastDate: DateTime(2500),
+                                  );
+                                  if (picked != null) {
+                                    setModal(() => dataIni = picked);
+                                  }
+                                },
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(
+                                      labelText: 'Data Inicial'),
+                                  child: Text(
+                                    dataIni != null
+                                        ? '${dataIni!.day.toString().padLeft(2, '0')}/${dataIni!.month.toString().padLeft(2, '0')}/${dataIni!.year}'
+                                        : 'Selecionar',
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: InkWell(
-                              onTap: () async {
-                                final picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: dataFim ?? DateTime.now(),
-                                  firstDate: DateTime(1500),
-                                  lastDate: DateTime(2500),
-                                );
-                                if (picked != null) {
-                                  setModal(() => dataFim = picked);
-                                }
-                              },
-                              child: InputDecorator(
-                                decoration: const InputDecoration(
-                                    labelText: 'Data Final'),
-                                child: Text(
-                                  dataFim != null
-                                      ? '${dataFim!.day.toString().padLeft(2, '0')}/${dataFim!.month.toString().padLeft(2, '0')}/${dataFim!.year}'
-                                      : 'Selecionar',
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: InkWell(
+                                onTap: () async {
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: dataFim ?? DateTime.now(),
+                                    firstDate: DateTime(1500),
+                                    lastDate: DateTime(2500),
+                                  );
+                                  if (picked != null) {
+                                    setModal(() => dataFim = picked);
+                                  }
+                                },
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(
+                                      labelText: 'Data Final'),
+                                  child: Text(
+                                    dataFim != null
+                                        ? '${dataFim!.day.toString().padLeft(2, '0')}/${dataFim!.month.toString().padLeft(2, '0')}/${dataFim!.year}'
+                                        : 'Selecionar',
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: valorCtrl,

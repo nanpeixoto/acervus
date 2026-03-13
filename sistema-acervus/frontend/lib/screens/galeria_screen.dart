@@ -169,11 +169,11 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
     );
   }
 
-  Widget _buildImagemCard(int index, _ObraImagem item) {
+  Widget _buildImagemCard(int index, _ObraImagem item, [double cardWidth = 200]) {
     final angleRad = item.rotationDeg * 3.1415926535 / 180;
 
     return Container(
-      width: 200,
+      width: cardWidth,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade300),
@@ -603,14 +603,23 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
                 style: TextStyle(color: Colors.grey),
               )
             else
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: _imagens
-                    .asMap()
-                    .entries
-                    .map((entry) => _buildImagemCard(entry.key, entry.value))
-                    .toList(),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 500;
+                  final cardWidth = isMobile
+                      ? (constraints.maxWidth - 12) / 2
+                      : 200.0;
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: _imagens
+                        .asMap()
+                        .entries
+                        .map((entry) =>
+                            _buildImagemCard(entry.key, entry.value, cardWidth))
+                        .toList(),
+                  );
+                },
               ),
           ],
         ),

@@ -819,302 +819,520 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
   // ABA CADASTRO
   // =========================
   Widget _buildAbaCadastro() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // COLUNA ESQUERDA - CAMPOS
-          Expanded(
-            flex: 3,
-            // child: Form(
-            // key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ID da Obra (Carimbo) em destaque
-                if ((_carimbo ?? '').isNotEmpty) ...[
-                  Center(
-                    child: Text(
-                      _carimbo!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                AppFormField(
-                  label: 'Título *',
-                  child: TextFormField(
-                    controller: _tituloController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                ),
-
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 650;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Imagem compacta no topo em mobile
+              if (isMobile) ...[
+                _buildCompactCoverImage(),
                 const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppFormField(
-                        label: 'Tipo de Obra *',
-                        child: DropdownButtonFormField<int>(
-                          value: cdTipoPeca,
-                          isExpanded: true,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 10),
-                          ),
-                          items: _tiposObra.map((tipo) {
-                            return DropdownMenuItem(
-                              value: tipo.id,
-                              child: Text(tipo.descricao),
-                            );
-                          }).toList(),
-                          onChanged: (v) async {
-                            setState(() {
-                              cdTipoPeca = v;
-                              cdSubtipoPeca = null;
-                            });
-
-                            if (v != null) {
-                              await _carregarSubtiposPorTipo(v);
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppFormField(
-                        label: 'Subtipo de Obra *',
-                        child: DropdownButtonFormField<int>(
-                          value: cdSubtipoPeca,
-                          isExpanded: true,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                          ),
-                          validator: (v) =>
-                              v == null ? 'Selecione o subtipo' : null,
-                          items: _subtiposObra.map((s) {
-                            return DropdownMenuItem<int>(
-                              value: s.id,
-                              child: Text(s.descricao),
-                            );
-                          }).toList(),
-                          onChanged: (_loadingSubtipo || cdTipoPeca == null)
-                              ? null
-                              : (value) =>
-                                  setState(() => cdSubtipoPeca = value),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppFormField(
-                        label: 'Assunto *',
-                        child: DropdownButtonFormField<int>(
-                          value: cdAssunto,
-                          isExpanded: true,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                          ),
-                          validator: (v) =>
-                              v == null ? 'Selecione o assunto' : null,
-                          items: _assuntos.map((a) {
-                            return DropdownMenuItem<int>(
-                              value: a.id,
-                              child: Text(a.descricao),
-                            );
-                          }).toList(),
-                          onChanged: (v) => setState(() => cdAssunto = v),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppFormField(
-                        label: 'Idioma *',
-                        child: DropdownButtonFormField<int>(
-                          value: cdIdioma,
-                          isExpanded: true,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                          ),
-                          validator: (v) =>
-                              v == null ? 'Selecione o idioma' : null,
-                          items: _idiomas.map((i) {
-                            return DropdownMenuItem<int>(
-                              value: i.id,
-                              child: Text(i.descricao),
-                            );
-                          }).toList(),
-                          onChanged: (v) => setState(() => cdIdioma = v),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppFormField(
-                        label: 'Material *',
-                        child: _dropdownMaterial(),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppFormField(
-                        label: 'Localização *',
-                        child: _dropdownLocalizacao(),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-                _dropdownAutor(),
-
-                const SizedBox(height: 12),
-                AppFormField(
-                  label: 'Subtítulo',
-                  child: CustomTextField(
-                    controller: _subtituloController,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Expanded(child: _dropdownEstadoConservacao()),
-                    const SizedBox(width: 12),
-                    Expanded(child: _dropdownEditora()),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppFormField(
-                        label: 'Dimensões',
-                        child: CustomTextField(
-                          controller: _medidaController,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppFormField(
-                        label: 'Conjunto',
-                        child: CustomTextField(
-                          controller: _conjuntoController,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                AppFormField(
-                  label: 'Origem',
-                  child: CustomTextField(
-                    controller: _origemController,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppFormField(
-                        label: 'Data',
-                        child: _dateField(),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppFormField(
-                        label: 'Número da Edição',
-                        child: CustomTextField(
-                          controller: _numeroEdicaoController,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppFormField(
-                        label: 'Qtd. Páginas',
-                        child: CustomTextField(
-                          controller: _qtdPaginasController,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppFormField(
-                        label: 'Volume',
-                        child: CustomTextField(
-                          controller: _volumeController,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
-            ),
-            // ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // ID da Obra (Carimbo) em destaque
+                        if ((_carimbo ?? '').isNotEmpty) ...[
+                          Center(
+                            child: Text(
+                              _carimbo!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: isMobile ? 22.0 : 40.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+
+                        AppFormField(
+                          label: 'Título *',
+                          child: TextFormField(
+                            controller: _tituloController,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Tipo / Subtipo
+                        if (isMobile) ...[
+                          AppFormField(
+                            label: 'Tipo de Obra *',
+                            child: DropdownButtonFormField<int>(
+                              value: cdTipoPeca,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                              ),
+                              items: _tiposObra.map((tipo) {
+                                return DropdownMenuItem(
+                                  value: tipo.id,
+                                  child: Text(tipo.descricao),
+                                );
+                              }).toList(),
+                              onChanged: (v) async {
+                                setState(() {
+                                  cdTipoPeca = v;
+                                  cdSubtipoPeca = null;
+                                });
+                                if (v != null) await _carregarSubtiposPorTipo(v);
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          AppFormField(
+                            label: 'Subtipo de Obra *',
+                            child: DropdownButtonFormField<int>(
+                              value: cdSubtipoPeca,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                              ),
+                              validator: (v) =>
+                                  v == null ? 'Selecione o subtipo' : null,
+                              items: _subtiposObra.map((s) {
+                                return DropdownMenuItem<int>(
+                                  value: s.id,
+                                  child: Text(s.descricao),
+                                );
+                              }).toList(),
+                              onChanged: (_loadingSubtipo || cdTipoPeca == null)
+                                  ? null
+                                  : (value) =>
+                                      setState(() => cdSubtipoPeca = value),
+                            ),
+                          ),
+                        ] else
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AppFormField(
+                                  label: 'Tipo de Obra *',
+                                  child: DropdownButtonFormField<int>(
+                                    value: cdTipoPeca,
+                                    isExpanded: true,
+                                    decoration: const InputDecoration(
+                                      border: OutlineInputBorder(),
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 10),
+                                    ),
+                                    items: _tiposObra.map((tipo) {
+                                      return DropdownMenuItem(
+                                        value: tipo.id,
+                                        child: Text(tipo.descricao),
+                                      );
+                                    }).toList(),
+                                    onChanged: (v) async {
+                                      setState(() {
+                                        cdTipoPeca = v;
+                                        cdSubtipoPeca = null;
+                                      });
+                                      if (v != null) {
+                                        await _carregarSubtiposPorTipo(v);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: AppFormField(
+                                  label: 'Subtipo de Obra *',
+                                  child: DropdownButtonFormField<int>(
+                                    value: cdSubtipoPeca,
+                                    isExpanded: true,
+                                    decoration: const InputDecoration(
+                                      border: OutlineInputBorder(),
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 10),
+                                    ),
+                                    validator: (v) =>
+                                        v == null ? 'Selecione o subtipo' : null,
+                                    items: _subtiposObra.map((s) {
+                                      return DropdownMenuItem<int>(
+                                        value: s.id,
+                                        child: Text(s.descricao),
+                                      );
+                                    }).toList(),
+                                    onChanged:
+                                        (_loadingSubtipo || cdTipoPeca == null)
+                                            ? null
+                                            : (value) => setState(
+                                                () => cdSubtipoPeca = value),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                        const SizedBox(height: 12),
+
+                        // Assunto / Idioma
+                        if (isMobile) ...[
+                          AppFormField(
+                            label: 'Assunto *',
+                            child: DropdownButtonFormField<int>(
+                              value: cdAssunto,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                              ),
+                              validator: (v) =>
+                                  v == null ? 'Selecione o assunto' : null,
+                              items: _assuntos.map((a) {
+                                return DropdownMenuItem<int>(
+                                  value: a.id,
+                                  child: Text(a.descricao),
+                                );
+                              }).toList(),
+                              onChanged: (v) => setState(() => cdAssunto = v),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          AppFormField(
+                            label: 'Idioma *',
+                            child: DropdownButtonFormField<int>(
+                              value: cdIdioma,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                              ),
+                              validator: (v) =>
+                                  v == null ? 'Selecione o idioma' : null,
+                              items: _idiomas.map((i) {
+                                return DropdownMenuItem<int>(
+                                  value: i.id,
+                                  child: Text(i.descricao),
+                                );
+                              }).toList(),
+                              onChanged: (v) => setState(() => cdIdioma = v),
+                            ),
+                          ),
+                        ] else
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AppFormField(
+                                  label: 'Assunto *',
+                                  child: DropdownButtonFormField<int>(
+                                    value: cdAssunto,
+                                    isExpanded: true,
+                                    decoration: const InputDecoration(
+                                      border: OutlineInputBorder(),
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 10),
+                                    ),
+                                    validator: (v) =>
+                                        v == null ? 'Selecione o assunto' : null,
+                                    items: _assuntos.map((a) {
+                                      return DropdownMenuItem<int>(
+                                        value: a.id,
+                                        child: Text(a.descricao),
+                                      );
+                                    }).toList(),
+                                    onChanged: (v) =>
+                                        setState(() => cdAssunto = v),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: AppFormField(
+                                  label: 'Idioma *',
+                                  child: DropdownButtonFormField<int>(
+                                    value: cdIdioma,
+                                    isExpanded: true,
+                                    decoration: const InputDecoration(
+                                      border: OutlineInputBorder(),
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 10),
+                                    ),
+                                    validator: (v) =>
+                                        v == null ? 'Selecione o idioma' : null,
+                                    items: _idiomas.map((i) {
+                                      return DropdownMenuItem<int>(
+                                        value: i.id,
+                                        child: Text(i.descricao),
+                                      );
+                                    }).toList(),
+                                    onChanged: (v) =>
+                                        setState(() => cdIdioma = v),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                        const SizedBox(height: 12),
+
+                        // Material / Localização
+                        if (isMobile) ...[
+                          AppFormField(
+                            label: 'Material *',
+                            child: _dropdownMaterial(),
+                          ),
+                          const SizedBox(height: 12),
+                          AppFormField(
+                            label: 'Localização *',
+                            child: _dropdownLocalizacao(),
+                          ),
+                        ] else
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AppFormField(
+                                  label: 'Material *',
+                                  child: _dropdownMaterial(),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: AppFormField(
+                                  label: 'Localização *',
+                                  child: _dropdownLocalizacao(),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                        const SizedBox(height: 12),
+                        _dropdownAutor(),
+
+                        const SizedBox(height: 12),
+                        AppFormField(
+                          label: 'Subtítulo',
+                          child: CustomTextField(
+                            controller: _subtituloController,
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Estado Conservação / Editora
+                        if (isMobile) ...[
+                          _dropdownEstadoConservacao(),
+                          const SizedBox(height: 12),
+                          _dropdownEditora(),
+                        ] else
+                          Row(
+                            children: [
+                              Expanded(child: _dropdownEstadoConservacao()),
+                              const SizedBox(width: 12),
+                              Expanded(child: _dropdownEditora()),
+                            ],
+                          ),
+
+                        const SizedBox(height: 12),
+
+                        // Dimensões / Conjunto
+                        if (isMobile) ...[
+                          AppFormField(
+                            label: 'Dimensões',
+                            child: CustomTextField(
+                              controller: _medidaController,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          AppFormField(
+                            label: 'Conjunto',
+                            child: CustomTextField(
+                              controller: _conjuntoController,
+                            ),
+                          ),
+                        ] else
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AppFormField(
+                                  label: 'Dimensões',
+                                  child: CustomTextField(
+                                    controller: _medidaController,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: AppFormField(
+                                  label: 'Conjunto',
+                                  child: CustomTextField(
+                                    controller: _conjuntoController,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                        const SizedBox(height: 12),
+
+                        AppFormField(
+                          label: 'Origem',
+                          child: CustomTextField(
+                            controller: _origemController,
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Data / Nº Edição / Qtd. Páginas / Volume
+                        if (isMobile) ...[
+                          AppFormField(
+                            label: 'Data',
+                            child: _dateField(),
+                          ),
+                          const SizedBox(height: 12),
+                          AppFormField(
+                            label: 'Número da Edição',
+                            child: CustomTextField(
+                              controller: _numeroEdicaoController,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          AppFormField(
+                            label: 'Qtd. Páginas',
+                            child: CustomTextField(
+                              controller: _qtdPaginasController,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          AppFormField(
+                            label: 'Volume',
+                            child: CustomTextField(
+                              controller: _volumeController,
+                            ),
+                          ),
+                        ] else
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AppFormField(
+                                  label: 'Data',
+                                  child: _dateField(),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: AppFormField(
+                                  label: 'Número da Edição',
+                                  child: CustomTextField(
+                                    controller: _numeroEdicaoController,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: AppFormField(
+                                  label: 'Qtd. Páginas',
+                                  child: CustomTextField(
+                                    controller: _qtdPaginasController,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: AppFormField(
+                                  label: 'Volume',
+                                  child: CustomTextField(
+                                    controller: _volumeController,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                  // Imagem lateral apenas no desktop
+                  if (!isMobile) ...[
+                    const SizedBox(width: 24),
+                    SizedBox(width: 280, child: _buildImagemCapaWidget()),
+                  ],
+                ],
+              ),
+            ],
           ),
+        );
+      },
+    );
+  }
 
-          const SizedBox(width: 24),
-
-          // COLUNA DIREITA - IMAGEM DA CAPA
-          SizedBox(
-            width: 280,
-            child: _buildImagemCapaWidget(),
+  Widget _buildCompactCoverImage() {
+    final img = _imagens.firstWhere(
+      (i) => i.isPrincipal,
+      orElse: () => _imagens.isNotEmpty ? _imagens.first : _ObraImagem(),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text(
+          'Imagem da Capa',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 140,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade400, width: 2),
+            borderRadius: BorderRadius.circular(4),
+            color: Colors.grey.shade100,
+          ),
+          child: _loadingGaleria
+              ? const Center(child: CircularProgressIndicator())
+              : (img.bytes != null || img.url != null)
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: _buildImagemPreview(img, BoxFit.contain),
+                    )
+                  : Center(
+                      child: Icon(
+                        Icons.image_outlined,
+                        size: 40,
+                        color: Colors.grey.shade400,
+                      ),
+                    ),
+        ),
+        if (_isEdicao) ...[
+          const SizedBox(height: 4),
+          TextButton.icon(
+            icon: const Icon(Icons.photo_library_outlined, size: 16),
+            label: const Text('Ver todas as imagens'),
+            onPressed: () => setState(() => _tabController.animateTo(1)),
           ),
         ],
-      ),
+      ],
     );
   }
 
@@ -1236,34 +1454,31 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
   }
 
   Widget _buildAbaInfComplementares() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 650;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: AppFormField(
+              if (isMobile) ...[
+                AppFormField(
                   label: 'Data Compra',
                   child: _dateFieldComplementar(
                     value: _dataCompraInfCompl,
                     onPicked: (d) => setState(() => _dataCompraInfCompl = d),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AppFormField(
+                const SizedBox(height: 12),
+                AppFormField(
                   label: 'Número Apólice',
                   child: CustomTextField(
                     controller: _numeroApoliceController,
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AppFormField(
+                const SizedBox(height: 12),
+                AppFormField(
                   label: 'Valor',
                   child: CustomTextField(
                     controller: _valorController,
@@ -1272,46 +1487,81 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                     prefixText: 'R\$ ',
                   ),
                 ),
+              ] else
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppFormField(
+                        label: 'Data Compra',
+                        child: _dateFieldComplementar(
+                          value: _dataCompraInfCompl,
+                          onPicked: (d) =>
+                              setState(() => _dataCompraInfCompl = d),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: AppFormField(
+                        label: 'Número Apólice',
+                        child: CustomTextField(
+                          controller: _numeroApoliceController,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: AppFormField(
+                        label: 'Valor',
+                        child: CustomTextField(
+                          controller: _valorController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          prefixText: 'R\$ ',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 16),
+              const Text(
+                'Observação',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              quill.QuillToolbar.simple(
+                configurations: quill.QuillSimpleToolbarConfigurations(
+                  controller: _quillInfoController,
+                  showAlignmentButtons: true,
+                  showBoldButton: true,
+                  showItalicButton: true,
+                  showUnderLineButton: true,
+                  showListBullets: true,
+                  showListNumbers: true,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 260,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: quill.QuillEditor.basic(
+                  controller: _quillInfoController,
+                  configurations: const quill.QuillEditorConfigurations(
+                    padding: EdgeInsets.all(12),
+                    placeholder: 'Digite observações complementares...',
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Observação',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          quill.QuillToolbar.simple(
-            configurations: quill.QuillSimpleToolbarConfigurations(
-              controller: _quillInfoController,
-              showAlignmentButtons: true,
-              showBoldButton: true,
-              showItalicButton: true,
-              showUnderLineButton: true,
-              showListBullets: true,
-              showListNumbers: true,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            height: 260,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: quill.QuillEditor.basic(
-              controller: _quillInfoController,
-              configurations: const quill.QuillEditorConfigurations(
-                padding: EdgeInsets.all(12),
-                placeholder: 'Digite observações complementares...',
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

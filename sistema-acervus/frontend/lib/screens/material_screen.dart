@@ -98,9 +98,17 @@ class _MateriaisScreenState extends State<MateriaisScreen>
         isLoading: _isLoading,
         child: Column(
           children: [
-            _buildHeader(),
-            if (_showForm) _buildFormulario(),
-            Expanded(child: _buildLista()),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildHeader(),
+                    if (_showForm) _buildFormulario(),
+                    _buildLista(),
+                  ],
+                ),
+              ),
+            ),
             _buildPaginationControls(),
           ],
         ),
@@ -162,10 +170,12 @@ class _MateriaisScreenState extends State<MateriaisScreen>
             ],
           ),
           const SizedBox(height: 16),
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               const Text('Itens por página:'),
-              const SizedBox(width: 8),
               DropdownButton<int>(
                 value: _pageSize,
                 items: _pageSizeOptions
@@ -179,7 +189,6 @@ class _MateriaisScreenState extends State<MateriaisScreen>
                   _load();
                 },
               ),
-              const SizedBox(width: 16),
               ElevatedButton.icon(
                 onPressed: () {
                   setState(() => _currentPage = 1);
@@ -277,6 +286,8 @@ class _MateriaisScreenState extends State<MateriaisScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: _materiais.length,
       itemBuilder: (_, i) => _buildMaterialCard(_materiais[i]),
     );

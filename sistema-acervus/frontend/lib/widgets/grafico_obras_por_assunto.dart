@@ -61,103 +61,108 @@ class GraficoObrasPorAssunto extends StatelessWidget {
                 // GRÁFICO (CENTRALIZADO)
                 // =========================
                 Expanded(
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      maxY: _calcularMaxY(topDados),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isMobile = constraints.maxWidth < 500;
+                      return BarChart(
+                        BarChartData(
+                          alignment: BarChartAlignment.spaceAround,
+                          maxY: _calcularMaxY(topDados),
 
-                      // 🚫 sem hover (anti-flicker / web-safe)
-                      barTouchData: BarTouchData(enabled: false),
+                          // 🚫 sem hover (anti-flicker / web-safe)
+                          barTouchData: BarTouchData(enabled: false),
 
-                      // 🧱 GRID SUAVE
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        horizontalInterval: _calcularIntervalo(topDados),
-                        getDrawingHorizontalLine: (value) => FlLine(
-                          color: Colors.grey.withOpacity(0.2),
-                          strokeWidth: 1,
-                        ),
-                      ),
-
-                      borderData: FlBorderData(show: false),
-
-                      titlesData: FlTitlesData(
-                        topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-
-                        // 🔹 Eixo Y
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 42,
-                            interval: _calcularIntervalo(topDados),
-                            getTitlesWidget: (value, meta) {
-                              return Text(
-                                value.toInt().toString(),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.black87,
-                                ),
-                              );
-                            },
+                          // 🧱 GRID SUAVE
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: false,
+                            horizontalInterval: _calcularIntervalo(topDados),
+                            getDrawingHorizontalLine: (value) => FlLine(
+                              color: Colors.grey.withOpacity(0.2),
+                              strokeWidth: 1,
+                            ),
                           ),
-                        ),
 
-                        // 🔹 Eixo X (Assuntos)
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 56,
-                            getTitlesWidget: (value, meta) {
-                              final index = value.toInt();
-                              if (index < 0 || index >= topDados.length) {
-                                return const SizedBox.shrink();
-                              }
+                          borderData: FlBorderData(show: false),
 
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: SizedBox(
-                                  width: 64,
-                                  child: Text(
-                                    topDados[index]['assunto'] ?? '',
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                          titlesData: FlTitlesData(
+                            topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+
+                            // 🔹 Eixo Y
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 42,
+                                interval: _calcularIntervalo(topDados),
+                                getTitlesWidget: (value, meta) {
+                                  return Text(
+                                    value.toInt().toString(),
                                     style: const TextStyle(
                                       fontSize: 11,
+                                      color: Colors.black87,
                                     ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-
-                      // 🔹 BARRAS
-                      barGroups: List.generate(topDados.length, (i) {
-                        final valor = double.parse(
-                          topDados[i]['total'].toString(),
-                        );
-
-                        return BarChartGroupData(
-                          x: i,
-                          barRods: [
-                            BarChartRodData(
-                              toY: valor,
-                              width: 18,
-                              borderRadius: BorderRadius.circular(6),
-                              color: _cores[i % _cores.length],
+                                  );
+                                },
+                              ),
                             ),
-                          ],
-                        );
-                      }),
-                    ),
+
+                            // 🔹 Eixo X (Assuntos)
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 56,
+                                getTitlesWidget: (value, meta) {
+                                  final index = value.toInt();
+                                  if (index < 0 || index >= topDados.length) {
+                                    return const SizedBox.shrink();
+                                  }
+
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: SizedBox(
+                                      width: 64,
+                                      child: Text(
+                                        topDados[index]['assunto'] ?? '',
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: isMobile ? 9 : 11,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+
+                          // 🔹 BARRAS
+                          barGroups: List.generate(topDados.length, (i) {
+                            final valor = double.parse(
+                              topDados[i]['total'].toString(),
+                            );
+
+                            return BarChartGroupData(
+                              x: i,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: valor,
+                                  width: isMobile ? 12 : 18,
+                                  borderRadius: BorderRadius.circular(6),
+                                  color: _cores[i % _cores.length],
+                                ),
+                              ],
+                            );
+                          }),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],

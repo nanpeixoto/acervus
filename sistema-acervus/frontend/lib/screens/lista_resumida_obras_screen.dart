@@ -201,8 +201,8 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
               child: CircularProgressIndicator(),
             )
           : Center(
-              child: SizedBox(
-                width: 900,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 900),
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Card(

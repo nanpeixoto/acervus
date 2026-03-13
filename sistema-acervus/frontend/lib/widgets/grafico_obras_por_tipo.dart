@@ -49,90 +49,102 @@ class _GraficoObrasPorTipoState extends State<GraficoObrasPorTipo> {
                 const SizedBox(height: 16),
 
                 Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // ======================
-                      // DONUT CENTRALIZADO
-                      // ======================
-                      Expanded(
-                        flex: 2,
-                        child: Center(
-                          child: AspectRatio(
-                            aspectRatio: 1,
-                            child: PieChart(
-                              PieChartData(
-                                centerSpaceRadius: 55,
-                                sectionsSpace: 2,
-                                sections: List.generate(dados.length, (i) {
-                                  final valor = double.parse(
-                                    dados[i]['total'].toString(),
-                                  );
-                                  return PieChartSectionData(
-                                    value: valor,
-                                    title: '',
-                                    radius: 72,
-                                    color: _cores[i % _cores.length],
-                                  );
-                                }),
-                              ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isMobile = constraints.maxWidth < 500;
+
+                      Widget donut = Center(
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: PieChart(
+                            PieChartData(
+                              centerSpaceRadius: 55,
+                              sectionsSpace: 2,
+                              sections: List.generate(dados.length, (i) {
+                                final valor = double.parse(
+                                  dados[i]['total'].toString(),
+                                );
+                                return PieChartSectionData(
+                                  value: valor,
+                                  title: '',
+                                  radius: 72,
+                                  color: _cores[i % _cores.length],
+                                );
+                              }),
                             ),
                           ),
                         ),
-                      ),
+                      );
 
-                      const SizedBox(width: 24),
+                      Widget legenda = ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: dados.length,
+                        itemBuilder: (context, i) {
+                          final valor = double.parse(
+                            dados[i]['total'].toString(),
+                          );
+                          final percentual =
+                              total > 0 ? (valor / total) * 100 : 0;
 
-                      // ======================
-                      // LEGENDA CENTRALIZADA
-                      // ======================
-                      Expanded(
-                        flex: 3,
-                        child: Center(
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: dados.length,
-                            itemBuilder: (context, i) {
-                              final valor = double.parse(
-                                dados[i]['total'].toString(),
-                              );
-                              final percentual =
-                                  total > 0 ? (valor / total) * 100 : 0;
-
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 6),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 10,
-                                      height: 10,
-                                      decoration: BoxDecoration(
-                                        color: _cores[i % _cores.length],
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        dados[i]['tipo'] ?? '',
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${percentual.toStringAsFixed(1)}%',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: _cores[i % _cores.length],
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              );
-                            },
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    dados[i]['tipo'] ?? '',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Text(
+                                  '${percentual.toStringAsFixed(1)}%',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+
+                      if (isMobile) {
+                        return SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                height: 180,
+                                child: donut,
+                              ),
+                              const SizedBox(height: 16),
+                              legenda,
+                            ],
                           ),
-                        ),
-                      ),
-                    ],
+                        );
+                      }
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(flex: 2, child: donut),
+                          const SizedBox(width: 24),
+                          Expanded(
+                            flex: 3,
+                            child: SingleChildScrollView(child: legenda),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],

@@ -180,10 +180,12 @@ class _SubtipoObraScreenState extends State<SubtipoObraScreen>
             ],
           ),
           const SizedBox(height: 16),
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               const Text('Itens por página:'),
-              const SizedBox(width: 8),
               DropdownButton<int>(
                 value: _pageSize,
                 items: _pageSizeOptions
@@ -200,7 +202,6 @@ class _SubtipoObraScreenState extends State<SubtipoObraScreen>
                   _loadSubtipos();
                 },
               ),
-              const SizedBox(width: 16),
               ElevatedButton.icon(
                 onPressed: () {
                   setState(() => _currentPage = 1);
