@@ -211,28 +211,43 @@ class ObraService {
   // ======================================================
   static Future<Obra?> criarObra(Map<String, dynamic> dados) async {
     try {
+      print('📤 Enviando requisição para criar obra...');
+      print('📤 Payload: $dados');
+
       final response = await http.post(
         Uri.parse('$baseUrl/obra/cadastrar'),
         headers: await _getHeaders(),
         body: jsonEncode(dados),
       );
 
+      print('📥 Status code: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
+
       final data = jsonDecode(response.body);
+      print('📥 Dados decodificados: $data');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final obraData =
             data['dados'] ?? data['data'] ?? (data is Map ? data : null);
 
+        print('📥 obraData extraído: $obraData');
+
         if (obraData != null) {
-          return Obra.fromJson(obraData);
+          final obra = Obra.fromJson(obraData);
+          print('✅ Obra criada com sucesso! ID: ${obra.id}');
+          return obra;
+        } else {
+          print('⚠️ obraData é null');
         }
       } else {
+        print('❌ Erro do servidor: ${data['erro'] ?? response.body}');
         throw Exception(data['erro'] ?? response.body);
       }
 
       return null;
-    } catch (e) {
-      print('Erro ao criar obra: $e');
+    } catch (e, stackTrace) {
+      print('💥 Erro ao criar obra: $e');
+      print('💥 Stack trace: $stackTrace');
       rethrow;
     }
   }
