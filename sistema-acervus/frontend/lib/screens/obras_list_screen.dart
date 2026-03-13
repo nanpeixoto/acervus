@@ -267,6 +267,139 @@ class _ObrasListScreenState extends State<ObrasListScreen>
   }
 
   Widget _buildObraCard(Obra obra) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 500;
+        return isMobile
+            ? _buildObraCardMobile(obra)
+            : _buildObraCardDesktop(obra);
+      },
+    );
+  }
+
+  PopupMenuButton<String> _buildPopupMenu(Obra obra) {
+    return PopupMenuButton<String>(
+      onSelected: (v) {
+        if (v == 'editar') {
+          context.go('/admin/obras/editar/${obra.id}');
+        } else if (v == 'galeria') {
+          context.go('/admin/obras/galeria/${obra.id}');
+        } else if (v == 'movimentacoes') {
+          context.go('/admin/obras/movimentacoes/${obra.id}');
+        } else if (v == 'ficha-obra') {
+          _gerarFichaPdf(obra);
+        }
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: 'editar',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 18),
+              SizedBox(width: 8),
+              Text('Editar'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'galeria',
+          child: Row(
+            children: [
+              Icon(Icons.photo_library_outlined, size: 18),
+              SizedBox(width: 8),
+              Text('Galeria'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'movimentacoes',
+          child: Row(
+            children: [
+              Icon(Icons.swap_horiz, size: 18),
+              SizedBox(width: 8),
+              Text('Movimentação'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'ficha-obra',
+          child: Row(
+            children: [
+              Icon(Icons.picture_as_pdf_outlined, size: 18),
+              SizedBox(width: 8),
+              Text('Ficha da Obra'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildObraCardMobile(Obra obra) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F7F2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE0E6DE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2E7D32).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF2E7D32)),
+                ),
+                child: Text(
+                  'ID ${obra.id}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2E7D32),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              _buildPopupMenu(obra),
+            ],
+          ),
+          if ((obra.titulo ?? '').isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              obra.titulo ?? '',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          if ((obra.subtitulo ?? '').isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              obra.subtitulo ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildObraCardDesktop(Obra obra) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
