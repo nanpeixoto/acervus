@@ -6,6 +6,17 @@ import 'package:sistema_estagio/models/obra.dart';
 
 import '../utils/app_config.dart';
 import 'storage_service.dart';
+import 'assunto_service.dart';
+import 'autor_service.dart';
+import 'editora_service.dart';
+import 'estado_conservacao_service.dart';
+import 'material_service.dart';
+import 'idioma_service.dart';
+import 'prateleira_service.dart';
+import 'tipo_obra_service.dart';
+import 'subtipo_obra_service.dart';
+
+import 'dart:html' as html;
 
 class ObraService {
   static const String baseUrl = AppConfig.devBaseUrl;
@@ -21,11 +32,83 @@ class ObraService {
     };
   }
 
+  static Future<Uint8List> listaResumida({
+    String? titulo,
+    int? autor,
+    int? material,
+    int? tipo,
+    int? subtipo,
+    int? editora,
+    int? conservacao,
+    int? localizacao,
+    int? assunto,
+    int? idioma,
+  }) async {
+    final body = {
+      if (titulo != null && titulo.isNotEmpty) 'titulo': titulo,
+      if (autor != null) 'autor': autor,
+      if (material != null) 'material': material,
+      if (tipo != null) 'tipo': tipo,
+      if (subtipo != null) 'subtipo': subtipo,
+      if (editora != null) 'editora': editora,
+      if (conservacao != null) 'conservacao': conservacao,
+      if (localizacao != null) 'localizacao': localizacao,
+      if (assunto != null) 'assunto': assunto,
+      if (idioma != null) 'idioma': idioma,
+    };
+    //imprimir todos os parametros recebidos
+    print("Gerando relatório com filtros: $body");
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/obra/relatorio/lista-resumida"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode(body),
+    );
+
+    print("STATUS: ${response.statusCode}");
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes; // 👈 retorna PDF
+    } else {
+      throw Exception("Erro ao gerar relatório: ${response.statusCode}");
+    }
+  }
+
   static Future<Map<String, String>> _getMultipartHeaders() async {
     final token = await StorageService.getToken();
     return {
       'Authorization': 'Bearer $token',
     };
+  }
+
+  static Future<void> baixarFichaPdf(int obraId) async {
+    final url = '$baseUrl/obra/relatorio/ficha/$obraId/pdf';
+
+    html.AnchorElement(href: url)
+      ..setAttribute("download", "ficha_obra.pdf")
+      ..click();
+  }
+
+  static Future<Map<String, dynamic>?> buscarFichaRelatorio(int obraId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/obra/relatorio/ficha/$obraId'),
+        headers: await _getHeaders(),
+      );
+      //imrpirmir resposta
+      print('🔍 [OBRA] Resposta da ficha: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+
+      return null;
+    } catch (e) {
+      print('Erro ao buscar ficha da obra: $e');
+      rethrow;
+    }
   }
 
   // ======================================================
@@ -168,15 +251,16 @@ class ObraService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final obraData =
-            data['dados'] ?? data['data'] ?? (data is Map ? data : null);
+        final obraData = data['obra'] ?? data['dados'] ?? data['data'];
 
         if (obraData != null) {
           return Obra.fromJson(obraData);
         }
+
+        return null;
       }
 
-      return null;
+      throw Exception(data['erro'] ?? 'Erro ao editar obra');
     } catch (e) {
       print('Erro ao editar obra: $e');
       rethrow;
@@ -473,5 +557,106 @@ class ObraService {
       'hasNextPage': false,
       'hasPrevPage': false,
     };
+  }
+
+// ======================================================
+// FILTROS PARA RELATÓRIOS
+// ======================================================
+
+  static Future<List> listarTipos() async {
+    final result = await TipoObraService.listar(
+      page: 1,
+      limit: 999,
+      ativo: true,
+    );
+
+    return result['TipoObras'] ?? [];
+  }
+
+  static Future<List> listarSubtipos() async {
+    final result = await SubtipoObraService.listar(
+      page: 1,
+      limit: 999,
+      ativo: true,
+    );
+
+    return result['Subtipos'] ?? [];
+  }
+
+  static Future<List> listarAssuntos() async {
+    final result = await AssuntoService.listarAssuntos(
+      page: 1,
+      limit: 999,
+      ativo: true,
+    );
+
+    return result['Assuntos'] ?? [];
+  }
+
+  static Future<List> listarIdiomas() async {
+    final result = await IdiomaService.listarIdiomas(
+      page: 1,
+      limit: 999,
+      ativo: true,
+    );
+
+    return result['idiomas'] ?? [];
+  }
+
+  static Future<List> listarMateriais() async {
+    final result = await MateriaisService.listarMateriais(
+      page: 1,
+      limit: 999,
+      ativo: true,
+    );
+
+    return result['materiais'] ?? [];
+  }
+
+  static Future<List> listarLocalizacoes() async {
+    return await PrateleiraService.listar();
+  }
+
+  static Future<List> listarAutores() async {
+    final result = await AutorService.listarAutores(
+      page: 1,
+      limit: 999,
+      ativo: true,
+    );
+
+    return result['autores'] ?? [];
+  }
+
+  static Future<List> listarEstadosConservacao() async {
+    final result = await EstadoConservacaoService.listar(
+      page: 1,
+      limit: 999,
+      ativo: true,
+    );
+
+    return result['estados'] ?? [];
+  }
+
+  static Future<List> listarEditoras() async {
+    final result = await EditoraService.listar(
+      page: 1,
+      limit: 999,
+      ativo: true,
+    );
+
+    return result['Editoras'] ?? [];
+  }
+
+  static Future<Map<String, dynamic>> carregarFiltros() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/obra/filtros'),
+      headers: await _getHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+
+    throw Exception("Erro ao carregar filtros");
   }
 }

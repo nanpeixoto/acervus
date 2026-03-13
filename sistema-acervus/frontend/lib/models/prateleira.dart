@@ -2,11 +2,13 @@ class Prateleira {
   final int? id;
   final int? cdEstante;
   final String descricao;
+  final String estante;
 
   Prateleira({
     this.id,
     this.cdEstante,
     required this.descricao,
+    required this.estante,
   });
 
   // ===============================
@@ -17,6 +19,7 @@ class Prateleira {
       id: json['cd_estante_prateleira'],
       cdEstante: json['cd_estante'],
       descricao: json['descricao_prateleira'] ?? '',
+      estante: json['estante'] ?? '',
     );
   }
 

@@ -146,6 +146,42 @@ router.get('/:cd_estante', tokenOpcional, async (req, res) => {
   }
 });
 
+router.get('/prateleira/listar', tokenOpcional, async (req, res) => {
+
+  try {
+
+    const result = await pool.query(
+      `SELECT
+        p.cd_estante_prateleira,
+        p.descricao_prateleira,
+        e.descricao as estante_descricao,
+         e.descricao as estante
+      FROM public.ace_estante_prateleira p
+      JOIN public.ace_estante e
+        ON e.cd_estante = p.cd_estante
+      ORDER BY e.descricao, p.descricao_prateleira
+    `
+    );
+
+    res.status(200).json({
+      dados: result.rows
+    });
+
+  } catch (err) {
+
+    logger.error(
+      'Erro ao listar prateleiras: ' + err.stack,
+      'Prateleira'
+    );
+
+    res.status(500).json({
+      erro: 'Erro ao listar prateleiras', motivo: err.message
+    });
+
+  }
+
+});
+
 /* =========================================================
    CADASTRAR (ESTANTE + PRATELEIRAS)
 ========================================================= */

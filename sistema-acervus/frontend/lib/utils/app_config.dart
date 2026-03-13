@@ -25,9 +25,10 @@ class AppConfig {
   static const String appName = 'Acervus - Portal WEB';
 
   // URLs base para diferentes ambientes
-  static const String prodBaseUrl = 'http://185.224.139.125:6001';
-  static const String devBaseUrl = 'http://185.224.139.125:6001';
-  static const String apiURLPRD = 'http://185.224.139.125:6001';
+  static const String prodBaseUrl = "https://apiacervus.wfsolucoes.tech";
+  //static const String devBaseUrl = 'http://185.224. 139.125:6001';
+  static const String devBaseUrl = "https://apiacervus.wfsolucoes.tech";
+  static const String apiURLPRD = "https://apiacervus.wfsolucoes.tech";
   static const String apiURL = 'http://185.224.139.125';
   static const String apiPORT = '6001';
   static const String stagingBaseUrl = 'https://staging-api.cideestagio.com.br';

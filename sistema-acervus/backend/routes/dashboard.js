@@ -75,26 +75,39 @@ router.get('/adm', verificarToken, async (req, res) => {
       client.query('SELECT COUNT(*) FROM ace_subtipo_peca'),
 
       // 🎬 Carrossel Netflix-style por Assunto
-      client.query(`
-        SELECT *
-        FROM (
-          SELECT
-            a.ds_assunto AS assunto,
-            o.cd_obra,
-            o.titulo,
-            NULL AS capa_url,
-            ROW_NUMBER() OVER (
-              PARTITION BY a.cd_assunto
-              ORDER BY o.cd_obra DESC
-            ) AS rn
-          FROM ace_obra o
-          JOIN ace_assunto a
-            ON a.cd_assunto = o.cd_assunto
-          WHERE a.sts_assunto = 'A'
-        ) t
-        WHERE t.rn <= 10
-        ORDER BY assunto, rn
-      `),
+       client.query(`
+SELECT *
+FROM (
+  SELECT
+    a.ds_assunto AS assunto,
+    o.cd_obra,
+    o.titulo,
+
+    gal.nome AS imagem_nome,
+
+    ROW_NUMBER() OVER (
+      PARTITION BY a.cd_assunto
+      ORDER BY o.cd_obra DESC
+    ) AS rn
+
+  FROM ace_obra o
+
+  JOIN ace_assunto a
+    ON a.cd_assunto = o.cd_assunto
+
+  LEFT JOIN LATERAL (
+    SELECT nome
+    FROM ace_obra_galeria
+    WHERE cd_obra = o.cd_obra
+    AND sts_principal = true
+    LIMIT 1
+  ) gal ON true
+
+  WHERE a.sts_assunto = 'A'
+) t
+WHERE t.rn <= 10
+ORDER BY assunto, rn
+`),
     ]);
 
     // 🔁 Agrupar por assunto
@@ -108,7 +121,9 @@ router.get('/adm', verificarToken, async (req, res) => {
       carrosselPorAssunto[row.assunto].push({
         cd_obra: row.cd_obra,
         titulo: row.titulo,
-        capa_url: row.capa_url,
+        capa_url: row.imagem_nome
+          ? `uploads/obras/${row.cd_obra}/${row.imagem_nome}`
+          : null
       });
     }
 

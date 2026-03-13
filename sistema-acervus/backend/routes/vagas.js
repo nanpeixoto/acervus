@@ -11,8 +11,7 @@ const { paginarConsulta, paginarConsultaComEndereco } = require('../helpers/pagi
 router.get('/listar', verificarToken, async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 50;
-  const { status, q, search, disponivel_web, setor, tipo_regime, sexo , com_candidatura } = req.query;
-
+  const { status, q, search, disponivel_web, setor, tipo_regime, sexo, com_candidatura, pcd } = req.query;
   const filtros = [];
   const valores = [];
 
@@ -86,6 +85,19 @@ router.get('/listar', verificarToken, async (req, res) => {
     valores.push(sexo);
     filtros.push(`vaga.sexo = $${valores.length}`);
   }
+
+  // 🔹 Filtro por PCD
+  if (typeof pcd !== 'undefined') {
+    const truthy = ['1', 'true', 't', 'yes', 'sim'];
+    const falsy = ['0', 'false', 'f', 'no', 'nao', 'não'];
+
+    const v = String(pcd).toLowerCase().trim();
+
+    if (truthy.includes(v) || falsy.includes(v)) {
+      valores.push(truthy.includes(v));
+      filtros.push(`vaga.pcd = $${valores.length}`);
+    }
+  }       
 
   // 🔹 WHERE final
   const where = filtros.length > 0 ? `WHERE ${filtros.join(' AND ')}` : '';
@@ -311,6 +323,8 @@ router.post('/cadastrar', verificarToken, async (req, res) => {
     exibir_salario = true,
     exibir_beneficios = true,
 
+    pcd = false,
+
     cursosids = [],
     nome_processo_seletivo
   } = req.body;
@@ -364,6 +378,7 @@ router.post('/cadastrar', verificarToken, async (req, res) => {
         carga_horaria, transporte, cesta_basica, duracao_meses, observacao_contrato,
         cd_empresa, cd_nivel_formacao, disponivel_web,
         exibir_empresa, exibir_salario, exibir_beneficios,
+        pcd,
         data_criacao, criado_por, nome_processo_seletivo
       )
       VALUES (
@@ -373,9 +388,10 @@ router.post('/cadastrar', verificarToken, async (req, res) => {
         $17, $18, $19, $20,
         $21, $22, $23, $24,
         $25, $26, $27, $28, $29,
-        $30, $31, $32,
+       $30, $31, $32,
         $33, $34, $35,
-        $36, $37, $38
+        $36,
+        $37, $38, $39
       )
       RETURNING cd_vaga;
     `;
@@ -389,6 +405,7 @@ router.post('/cadastrar', verificarToken, async (req, res) => {
       carga_horaria, transporte, cesta_basica, duracao_meses, observacao_contrato,
       cd_empresa, cd_nivel_formacao, Boolean(disponivel_web),
       Boolean(exibir_empresa), Boolean(exibir_salario), Boolean(exibir_beneficios),
+      Boolean(pcd),
       dataAtual, userId, nome_processo_seletivo
     ]);
 
@@ -452,6 +469,7 @@ router.put('/alterar/:cd_vaga', verificarToken, async (req, res) => {
   campos.exibir_empresa = normalizarBool(campos.exibir_empresa);
   campos.exibir_salario = normalizarBool(campos.exibir_salario);
   campos.exibir_beneficios = normalizarBool(campos.exibir_beneficios);
+  campos.pcd = normalizarBool(campos.pcd);
 
   const client = await pool.connect();
 
@@ -954,6 +972,8 @@ router.get('/listarDisponiveis', async (req, res) => {
       empresa.email,
       empresa.telefone,
       id_regime_contratacao,
+
+      vaga.pcd,
 
       COALESCE(
         ARRAY_AGG(

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:html' as html;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,7 @@ import 'package:sistema_estagio/models/assunto.dart';
 import 'package:sistema_estagio/models/autor.dart';
 import 'package:sistema_estagio/models/editora.dart';
 import 'package:sistema_estagio/models/estado_conservacao.dart';
+import 'package:sistema_estagio/models/estante.dart';
 import 'package:sistema_estagio/models/material.dart';
 import 'package:sistema_estagio/models/pais.dart';
 import 'package:sistema_estagio/models/estado.dart';
@@ -16,23 +18,27 @@ import 'package:sistema_estagio/models/subtipo_obra.dart';
 import 'package:sistema_estagio/models/idioma.dart';
 import 'package:sistema_estagio/services/assunto_service.dart';
 import 'package:sistema_estagio/services/autor_service.dart';
-import 'package:sistema_estagio/services/editora_service.dar.dart';
+import 'package:sistema_estagio/services/editora_service.dart';
 import 'package:sistema_estagio/services/estado_conservacao_service.dart';
+import 'package:sistema_estagio/services/estante_service.dart';
 import 'package:sistema_estagio/services/material_service.dart';
-import 'package:sistema_estagio/services/pais_service.dar.dart';
-import 'package:sistema_estagio/services/estado_service.dar.dart';
-import 'package:sistema_estagio/services/cidade_service.dar.dart';
-import 'package:sistema_estagio/services/subtipo_obra_service.dar.dart';
+import 'package:sistema_estagio/services/pais_service.dart';
+import 'package:sistema_estagio/services/estado_service.dart';
+import 'package:sistema_estagio/services/cidade_service.dart';
+import 'package:sistema_estagio/services/subtipo_obra_service.dart';
 import 'package:sistema_estagio/services/idioma_service.dart';
 import 'package:sistema_estagio/services/obra_service.dart';
 import 'package:sistema_estagio/models/obra.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
+import 'package:sistema_estagio/widgets/app_form_field.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/models/tipo_obra.dart';
 import 'package:sistema_estagio/services/tipo_obra_service.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:sistema_estagio/models/prateleira.dart';
+import 'package:sistema_estagio/services/prateleira_service.dart';
 
 class _ObraImagem {
   final int? id;
@@ -125,6 +131,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isLoading = false;
+  final _formKey = GlobalKey<FormState>();
 
   bool get _isEdicao => widget.obraId != null;
 
@@ -133,6 +140,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
   // =========================
   // Controllers
   // =========================
+  final _autorController = TextEditingController();
   final _tituloController = TextEditingController();
   final _subtituloController = TextEditingController();
   final _origemController = TextEditingController();
@@ -153,6 +161,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
 
   DateTime? _dataCompra;
   DateTime? _dataCompraInfCompl;
+  DateTime? _dataHistorica;
 
   // =========================
   // IDs (FKs)
@@ -191,6 +200,9 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
   List<Autor> _autores = [];
   bool _loadingAutores = false;
 
+  List<Prateleira> _prateleiras = [];
+  bool _loadingLocalizacao = false;
+
   // Combos localização
   List<Pais> _paises = [];
   List<Estado> _estados = [];
@@ -220,6 +232,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
 
     _loadAutores();
 
+    _loadLocalizacoes();
     _loadPaises();
 
     if (_isEdicao) {
@@ -237,10 +250,6 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
         limit: 999,
         ativo: true,
       );
-
-      setState(() {
-        _idiomas = result['idiomas'];
-      });
 
       setState(() {
         _idiomas = result['idiomas'];
@@ -272,6 +281,43 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       AppUtils.showErrorSnackBar(context, 'Erro ao carregar Assuntos');
     } finally {
       setState(() => _loadingAssuntos = false);
+    }
+  }
+
+  Map<String, List<Prateleira>> _agruparPorEstante() {
+    final Map<String, List<Prateleira>> grupos = {};
+
+    for (final p in _prateleiras) {
+      grupos.putIfAbsent(p.estante, () => []);
+      grupos[p.estante]!.add(p);
+    }
+
+    return grupos;
+  }
+
+  Future<void> _loadLocalizacoes() async {
+    setState(() => _loadingLocalizacao = true);
+
+    try {
+      final lista = await PrateleiraService.listar();
+
+      setState(() {
+        _prateleiras = lista;
+
+        if (cdEstantePrateleira != null &&
+            !_prateleiras.any((e) => e.id == cdEstantePrateleira)) {
+          cdEstantePrateleira = null;
+        }
+      });
+    } catch (e) {
+      print('Erro: $e'); // Adicione esta linha para logar o erro
+
+      AppUtils.showErrorSnackBar(
+        context,
+        'Erro ao carregar localizações',
+      );
+    } finally {
+      setState(() => _loadingLocalizacao = false);
     }
   }
 
@@ -578,6 +624,8 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
     setState(() => _isLoading = true);
 
     try {
+      await Future.wait([_loadEditoras()]);
+
       final Obra? obra = await ObraService.buscarObraPorId(widget.obraId!);
       if (obra == null) return;
 
@@ -590,7 +638,21 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       _qtdPaginasController.text =
           obra.qtdPaginas != null ? obra.qtdPaginas.toString() : '';
       _volumeController.text = obra.volume ?? '';
-      _resumoController.text = obra.resumoObra ?? '';
+
+      // ✅ Inicializa os Quill controllers corretamente
+      _quillController = quill.QuillController.basic();
+      _quillController.document = quill.Document()
+        ..insert(0, obra.resumoObra ?? '');
+
+      _quillInfoController = quill.QuillController.basic();
+      _quillInfoController.document = quill.Document()
+        ..insert(0, obra.observacao ?? '');
+
+      _numeroApoliceController.text = obra.numeroApolice ?? '';
+      _valorController.text = obra.valor != null
+          ? obra.valor!.toStringAsFixed(2).replaceAll('.', ',')
+          : '';
+
       _carimbo = obra.carimbo;
 
       cdTipoPeca = obra.cdTipoPeca;
@@ -602,15 +664,25 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       cdEstantePrateleira = obra.cdEstantePrateleira;
       cdAutor = obra.cdAutor;
       cdEditora = obra.cdEditora;
+      _autorController.text = obra.autorNome ?? '';
+
+      // ✅ CORRIGIDO: Carrega data_compra na aba Inf Complementares
+      if (obra.dataCompra != null && obra.dataCompra!.isNotEmpty) {
+        _dataCompra = DateTime.tryParse(obra.dataCompra!);
+      }
+
+      // ✅ ADICIONADO: Carrega data_historica na aba Cadastro
+      // Nota: Você precisa adicionar este campo ao modelo Obra
+      if (obra.dataHistorica != null && obra.dataHistorica!.isNotEmpty) {
+        _dataHistorica = DateTime.tryParse(obra.dataHistorica!);
+      }
 
       if (cdTipoPeca != null) {
         await _carregarSubtiposPorTipo(cdTipoPeca!);
         cdSubtipoPeca = obra.cdSubtipoPeca;
       }
 
-      if (obra.dataCompra != null) {
-        _dataCompra = DateTime.tryParse(obra.dataCompra!);
-      }
+      setState(() {});
     } catch (e) {
       AppUtils.showErrorSnackBar(context, 'Erro ao carregar obra');
     } finally {
@@ -622,8 +694,11 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
   // SAVE
   // =========================
   Future<void> _salvar() async {
-    if (_tituloController.text.trim().isEmpty) {
-      AppUtils.showErrorSnackBar(context, 'Título é obrigatório');
+    if (!_formKey.currentState!.validate()) {
+      AppUtils.showErrorSnackBar(
+        context,
+        'Preencha os campos obrigatórios',
+      );
       return;
     }
 
@@ -647,29 +722,51 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       'numero_edicao': _numeroEdicaoController.text.trim(),
       'qtd_paginas': int.tryParse(_qtdPaginasController.text),
       'volume': _volumeController.text.trim(),
-      'resumo_obra': _resumoController.text.trim(),
-      'data_compra': _dataCompra?.toIso8601String().substring(0, 10),
-      'data_compra_complementar':
-          _dataCompraInfCompl?.toIso8601String().substring(0, 10),
+      'resumo': _quillController.document.toPlainText().trim(),
+      // ✅ CORRIGIDO: data_historica vem da aba Cadastro
+      'data_historica': _dataHistorica != null
+          ? '${_dataHistorica!.year}-${_dataHistorica!.month.toString().padLeft(2, '0')}-${_dataHistorica!.day.toString().padLeft(2, '0')}'
+          : null,
       'numero_apolice': _numeroApoliceController.text.trim(),
       'valor': double.tryParse(_valorController.text.replaceAll(',', '.')),
-      'observacao_complementar':
-          _quillInfoController.document.toPlainText().trim(),
+      // ✅ CORRIGIDO: data_compra vem da aba Inf Complementares
+      'data_compra': _dataCompra != null
+          ? '${_dataCompra!.year}-${_dataCompra!.month.toString().padLeft(2, '0')}-${_dataCompra!.day.toString().padLeft(2, '0')}'
+          : null,
+      'observacao': _quillInfoController.document.toPlainText().trim(),
     };
 
     try {
+      Obra? obra;
       if (_isEdicao) {
-        await ObraService.editarObra(widget.obraId!, payload);
-        AppUtils.showSuccessSnackBar(context, 'Obra alterada com sucesso!');
+        obra = await ObraService.editarObra(widget.obraId!, payload);
       } else {
-        await ObraService.criarObra(payload);
-        AppUtils.showSuccessSnackBar(context, 'Obra cadastrada com sucesso!');
+        obra = await ObraService.criarObra(payload);
       }
-      context.pop();
+
+      if (!mounted) return;
+
+      if (obra == null) {
+        AppUtils.showErrorSnackBar(context, 'Erro ao salvar obra');
+        return;
+      }
+
+      AppUtils.showSuccessSnackBar(
+        context,
+        _isEdicao
+            ? 'Obra alterada com sucesso!'
+            : 'Obra cadastrada com sucesso!',
+      );
+      context.go('/admin/obras/');
     } catch (e) {
-      AppUtils.showErrorSnackBar(context, 'Erro ao salvar obra');
+      print('Erro ao salvar obra: $e');
+      if (mounted) {
+        AppUtils.showErrorSnackBar(context, 'Erro ao salvar obra');
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -686,11 +783,11 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
         ),
         title: Text(_isEdicao ? 'Editar Obra' : 'Cadastrar Obra'),
         actions: [
-          if (_isEdicao)
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _salvar,
-            ),
+          IconButton(
+            tooltip: _isEdicao ? 'Atualizar obra' : 'Cadastrar obra',
+            icon: Icon(_isEdicao ? Icons.save : Icons.add),
+            onPressed: _salvar,
+          ),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -703,13 +800,16 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       ),
       body: LoadingOverlay(
         isLoading: _isLoading,
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildAbaCadastro(),
-            _buildAbaResumo(),
-            _buildAbaInfComplementares(),
-          ],
+        child: Form(
+          key: _formKey,
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildAbaCadastro(),
+              _buildAbaResumo(),
+              _buildAbaInfComplementares(),
+            ],
+          ),
         ),
       ),
     );
@@ -727,6 +827,8 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
           // COLUNA ESQUERDA - CAMPOS
           Expanded(
             flex: 3,
+            // child: Form(
+            // key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -746,11 +848,17 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                   const SizedBox(height: 12),
                 ],
 
-                CustomTextField(
-                  controller: _tituloController,
+                AppFormField(
                   label: 'Título *',
-                  onChanged: (value) =>
-                      setState(() {}), // Atualiza a caixa azul
+                  child: TextFormField(
+                    controller: _tituloController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                  ),
                 ),
 
                 const SizedBox(height: 12),
@@ -758,44 +866,64 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                 Row(
                   children: [
                     Expanded(
-                      child: DropdownButtonFormField<int>(
-                        value: cdTipoPeca,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Tipo de Obra *',
-                          border: OutlineInputBorder(),
+                      child: AppFormField(
+                        label: 'Tipo de Obra *',
+                        child: DropdownButtonFormField<int>(
+                          value: cdTipoPeca,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                          ),
+                          items: _tiposObra.map((tipo) {
+                            return DropdownMenuItem(
+                              value: tipo.id,
+                              child: Text(tipo.descricao),
+                            );
+                          }).toList(),
+                          onChanged: (v) async {
+                            setState(() {
+                              cdTipoPeca = v;
+                              cdSubtipoPeca = null;
+                            });
+
+                            if (v != null) {
+                              await _carregarSubtiposPorTipo(v);
+                            }
+                          },
                         ),
-                        items: _tiposObra
-                            .map((tipo) => DropdownMenuItem<int>(
-                                  value: tipo.id,
-                                  child: Text(tipo.descricao),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setState(() => cdTipoPeca = value);
-                          _carregarSubtiposPorTipo(value);
-                        },
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: DropdownButtonFormField<int>(
-                        value: cdSubtipoPeca,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Subtipo de Obra *',
-                          border: OutlineInputBorder(),
+                      child: AppFormField(
+                        label: 'Subtipo de Obra *',
+                        child: DropdownButtonFormField<int>(
+                          value: cdSubtipoPeca,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                          ),
+                          validator: (v) =>
+                              v == null ? 'Selecione o subtipo' : null,
+                          items: _subtiposObra.map((s) {
+                            return DropdownMenuItem<int>(
+                              value: s.id,
+                              child: Text(s.descricao),
+                            );
+                          }).toList(),
+                          onChanged: (_loadingSubtipo || cdTipoPeca == null)
+                              ? null
+                              : (value) =>
+                                  setState(() => cdSubtipoPeca = value),
                         ),
-                        items: _subtiposObra
-                            .map((s) => DropdownMenuItem<int>(
-                                  value: s.id,
-                                  child: Text(s.descricao),
-                                ))
-                            .toList(),
-                        onChanged: (_loadingSubtipo || cdTipoPeca == null)
-                            ? null
-                            : (value) => setState(() => cdSubtipoPeca = value),
                       ),
                     ),
                   ],
@@ -806,40 +934,56 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                 Row(
                   children: [
                     Expanded(
-                      child: DropdownButtonFormField<int>(
-                        value: cdAssunto,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Assunto *',
-                          border: OutlineInputBorder(),
-                          isDense: true,
+                      child: AppFormField(
+                        label: 'Assunto *',
+                        child: DropdownButtonFormField<int>(
+                          value: cdAssunto,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                          ),
+                          validator: (v) =>
+                              v == null ? 'Selecione o assunto' : null,
+                          items: _assuntos.map((a) {
+                            return DropdownMenuItem<int>(
+                              value: a.id,
+                              child: Text(a.descricao),
+                            );
+                          }).toList(),
+                          onChanged: (v) => setState(() => cdAssunto = v),
                         ),
-                        items: _assuntos
-                            .map((a) => DropdownMenuItem<int>(
-                                  value: a.id,
-                                  child: Text(a.descricao),
-                                ))
-                            .toList(),
-                        onChanged: (v) => setState(() => cdAssunto = v),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: DropdownButtonFormField<int>(
-                        value: cdIdioma,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Idioma *',
-                          border: OutlineInputBorder(),
-                          isDense: true,
+                      child: AppFormField(
+                        label: 'Idioma *',
+                        child: DropdownButtonFormField<int>(
+                          value: cdIdioma,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                          ),
+                          validator: (v) =>
+                              v == null ? 'Selecione o idioma' : null,
+                          items: _idiomas.map((i) {
+                            return DropdownMenuItem<int>(
+                              value: i.id,
+                              child: Text(i.descricao),
+                            );
+                          }).toList(),
+                          onChanged: (v) => setState(() => cdIdioma = v),
                         ),
-                        items: _idiomas
-                            .map((i) => DropdownMenuItem<int>(
-                                  value: i.id,
-                                  child: Text(i.descricao),
-                                ))
-                            .toList(),
-                        onChanged: (v) => setState(() => cdIdioma = v),
                       ),
                     ),
                   ],
@@ -849,11 +993,18 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
 
                 Row(
                   children: [
-                    Expanded(child: _dropdownMaterial()),
+                    Expanded(
+                      child: AppFormField(
+                        label: 'Material *',
+                        child: _dropdownMaterial(),
+                      ),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _dropdown('Localização *', cdEstantePrateleira,
-                          (v) => setState(() => cdEstantePrateleira = v)),
+                      child: AppFormField(
+                        label: 'Localização *',
+                        child: _dropdownLocalizacao(),
+                      ),
                     ),
                   ],
                 ),
@@ -862,9 +1013,11 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                 _dropdownAutor(),
 
                 const SizedBox(height: 12),
-                CustomTextField(
-                  controller: _subtituloController,
+                AppFormField(
                   label: 'Subtítulo',
+                  child: CustomTextField(
+                    controller: _subtituloController,
+                  ),
                 ),
 
                 const SizedBox(height: 12),
@@ -878,61 +1031,79 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                 ),
 
                 const SizedBox(height: 12),
-
                 Row(
                   children: [
                     Expanded(
-                      child: CustomTextField(
-                        controller: _medidaController,
+                      child: AppFormField(
                         label: 'Dimensões',
+                        child: CustomTextField(
+                          controller: _medidaController,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: CustomTextField(
-                        controller: _conjuntoController,
+                      child: AppFormField(
                         label: 'Conjunto',
+                        child: CustomTextField(
+                          controller: _conjuntoController,
+                        ),
                       ),
                     ),
                   ],
                 ),
 
                 const SizedBox(height: 12),
-                CustomTextField(
-                  controller: _origemController,
+
+                AppFormField(
                   label: 'Origem',
+                  child: CustomTextField(
+                    controller: _origemController,
+                  ),
                 ),
 
                 const SizedBox(height: 12),
 
                 Row(
                   children: [
-                    Expanded(child: _dateField()),
+                    Expanded(
+                      child: AppFormField(
+                        label: 'Data',
+                        child: _dateField(),
+                      ),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: CustomTextField(
-                        controller: _numeroEdicaoController,
+                      child: AppFormField(
                         label: 'Número da Edição',
+                        child: CustomTextField(
+                          controller: _numeroEdicaoController,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: CustomTextField(
-                        controller: _qtdPaginasController,
+                      child: AppFormField(
                         label: 'Qtd. Páginas',
+                        child: CustomTextField(
+                          controller: _qtdPaginasController,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: CustomTextField(
-                        controller: _volumeController,
+                      child: AppFormField(
                         label: 'Volume',
+                        child: CustomTextField(
+                          controller: _volumeController,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ],
             ),
+            // ),
           ),
 
           const SizedBox(width: 24),
@@ -1005,7 +1176,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
             label: const Text('Ver todas as imagens'),
             onPressed: () {
               setState(() {
-                _tabController.animateTo(3); // Vai para a aba Galeria
+                _tabController.animateTo(1); // Vai para a aba Galeria
               });
             },
           ),
@@ -1073,32 +1244,32 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
           Row(
             children: [
               Expanded(
-                child: _dateFieldComplementar(
+                child: AppFormField(
                   label: 'Data Compra',
-                  value: _dataCompraInfCompl,
-                  onPicked: (d) => setState(() => _dataCompraInfCompl = d),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _numeroApoliceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Número Apólice',
-                    border: OutlineInputBorder(),
+                  child: _dateFieldComplementar(
+                    value: _dataCompraInfCompl,
+                    onPicked: (d) => setState(() => _dataCompraInfCompl = d),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: TextFormField(
-                  controller: _valorController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Valor',
+                child: AppFormField(
+                  label: 'Número Apólice',
+                  child: CustomTextField(
+                    controller: _numeroApoliceController,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AppFormField(
+                  label: 'Valor',
+                  child: CustomTextField(
+                    controller: _valorController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     prefixText: 'R\$ ',
-                    border: OutlineInputBorder(),
                   ),
                 ),
               ),
@@ -1107,7 +1278,10 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
           const SizedBox(height: 16),
           const Text(
             'Observação',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
           quill.QuillToolbar.simple(
@@ -1141,116 +1315,6 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
     );
   }
 
-  Widget _buildAbaGaleria() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Imagens da Obra',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              Row(
-                children: [
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.file_upload_outlined),
-                    label: const Text('Adicionar arquivo'),
-                    onPressed: _adicionarImagemArquivoWeb,
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.add_photo_alternate_outlined),
-                    label: const Text('Adicionar URL'),
-                    onPressed: _adicionarImagemPorUrl,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          if (_loadingGaleria) ...[
-            const SizedBox(height: 12),
-            const LinearProgressIndicator(minHeight: 3),
-          ],
-          const SizedBox(height: 12),
-          if (_imagens.isEmpty)
-            const Text(
-              'Nenhuma imagem adicionada.',
-              style: TextStyle(color: Colors.grey),
-            )
-          else
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: _imagens
-                  .asMap()
-                  .entries
-                  .map((entry) => _buildImagemCard(entry.key, entry.value))
-                  .toList(),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAbaMovimentacao() {
-    if (!_isEdicao) {
-      return const Center(
-        child: Text('Salve a obra primeiro para gerenciar movimentações.'),
-      );
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Movimentações',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Nova movimentação'),
-                onPressed: () => _abrirMovimentacaoDialog(),
-              ),
-            ],
-          ),
-          if (_loadingMovimentacoes) ...[
-            const SizedBox(height: 12),
-            const LinearProgressIndicator(minHeight: 3),
-          ],
-          const SizedBox(height: 12),
-          if (_movimentacoes.isEmpty)
-            const Text(
-              'Nenhuma movimentação cadastrada.',
-              style: TextStyle(color: Colors.grey),
-            )
-          else
-            Column(
-              children: _movimentacoes
-                  .asMap()
-                  .entries
-                  .map((entry) => _buildMovimentacaoCard(entry.value))
-                  .toList(),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAbaLocalizar() {
-    return Center(
-      child: Text('Localizar - Em desenvolvimento'),
-    );
-  }
-
   // =========================
   // HELPERS
   // =========================
@@ -1267,40 +1331,70 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
   }
 
   Widget _dropdownMaterial() {
-    if (_loadingMateriais) {
-      return const LinearProgressIndicator(minHeight: 2);
-    }
-
-    if (_materiais.isEmpty) {
-      return const Text(
-        'Nenhum material disponível',
-        style: TextStyle(color: Colors.grey),
-      );
-    }
-
     return DropdownButtonFormField<int>(
       value: cdMaterial,
       isExpanded: true,
-      dropdownColor: Colors.white,
-      style: const TextStyle(color: Colors.black),
       decoration: const InputDecoration(
-        labelText: 'Material *',
+        border: OutlineInputBorder(),
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
+      ),
+      items: _materiais.map((m) {
+        return DropdownMenuItem<int>(
+          value: m.id,
+          child: Text(m.descricao),
+        );
+      }).toList(),
+      onChanged: (v) => setState(() => cdMaterial = v),
+    );
+  }
+
+  Widget _dropdownLocalizacao() {
+    final grupos = _agruparPorEstante();
+
+    List<DropdownMenuItem<int>> items = [];
+
+    grupos.forEach((estante, prateleiras) {
+      // CABEÇALHO DA ESTANTE
+      items.add(
+        DropdownMenuItem<int>(
+          enabled: false,
+          child: Text(
+            '──── $estante ────',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+        ),
+      );
+
+      // PRATELEIRAS
+      for (final p in prateleiras) {
+        items.add(
+          DropdownMenuItem<int>(
+            value: p.id,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Text(p.descricao),
+            ),
+          ),
+        );
+      }
+    });
+
+    return DropdownButtonFormField<int>(
+      value: cdEstantePrateleira,
+      isExpanded: true,
+      decoration: const InputDecoration(
         border: OutlineInputBorder(),
         isDense: true,
       ),
-      items: _materiais
-          .map(
-            (m) => DropdownMenuItem<int>(
-              value: m.id,
-              child: Text(
-                m.descricao,
-                style: const TextStyle(color: Colors.black),
-              ),
-            ),
-          )
-          .toList(),
-      onChanged: (v) => setState(() => cdMaterial = v),
-      validator: (v) => v == null ? 'Material é obrigatório' : null,
+      items: items,
+      onChanged: (v) => setState(() => cdEstantePrateleira = v),
     );
   }
 
@@ -1316,30 +1410,32 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       );
     }
 
-    return DropdownButtonFormField<int>(
-      value: cdEstadoConservacao,
-      isExpanded: true,
-      dropdownColor: Colors.white,
-      style: const TextStyle(color: Colors.black),
-      decoration: const InputDecoration(
-        labelText: 'Estado de Conservação *',
-        border: OutlineInputBorder(),
-        isDense: true,
-      ),
-      items: _estadosConservacao
-          .map(
-            (e) => DropdownMenuItem<int>(
-              value: e.id,
-              child: Text(
-                e.descricao,
-                style: const TextStyle(color: Colors.black),
+    return AppFormField(
+      label: 'Estado de Conservação *',
+      child: DropdownButtonFormField<int>(
+        value: cdEstadoConservacao,
+        isExpanded: true,
+        dropdownColor: Colors.white,
+        style: const TextStyle(color: Colors.black),
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+        items: _estadosConservacao
+            .map(
+              (e) => DropdownMenuItem<int>(
+                value: e.id,
+                child: Text(
+                  e.descricao,
+                  style: const TextStyle(color: Colors.black),
+                ),
               ),
-            ),
-          )
-          .toList(),
-      onChanged: (v) => setState(() => cdEstadoConservacao = v),
-      validator: (v) =>
-          v == null ? 'Estado de Conservação é obrigatório' : null,
+            )
+            .toList(),
+        onChanged: (v) => setState(() => cdEstadoConservacao = v),
+        validator: (v) =>
+            v == null ? 'Estado de Conservação é obrigatório' : null,
+      ),
     );
   }
 
@@ -1355,67 +1451,126 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       );
     }
 
-    return DropdownButtonFormField<int>(
-      value: cdEditora,
-      isExpanded: true,
-      dropdownColor: Colors.white,
-      style: const TextStyle(color: Colors.black),
-      decoration: const InputDecoration(
-        labelText: 'Editora *',
-        border: OutlineInputBorder(),
-        isDense: true,
-      ),
-      items: _editoras
-          .map(
-            (e) => DropdownMenuItem<int>(
-              value: e.id,
-              child: Text(
-                e.descricao,
-                style: const TextStyle(color: Colors.black),
-              ),
+    return AppFormField(
+      label: 'Editora *',
+      child: DropdownButtonFormField<int>(
+        value: cdEditora,
+        isExpanded: true,
+        dropdownColor: Colors.white,
+        style: const TextStyle(color: Colors.black),
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+        ),
+        items: _editoras.map((e) {
+          return DropdownMenuItem<int>(
+            value: e.id,
+            child: Text(
+              e.descricao,
+              style: const TextStyle(color: Colors.black),
             ),
-          )
-          .toList(),
-      onChanged: (v) => setState(() => cdEditora = v),
-      validator: (v) => v == null ? 'Editora é obrigatória' : null,
+          );
+        }).toList(),
+        onChanged: (v) => setState(() => cdEditora = v),
+        validator: (v) => v == null ? 'Editora é obrigatória' : null,
+      ),
     );
   }
 
-  Widget _dropdownAutor() {
-    if (_loadingAutores) {
-      return const LinearProgressIndicator(minHeight: 2);
-    }
+  Future<List<Autor>> _buscarAutores(String texto) async {
+    if (texto.trim().isEmpty) return [];
 
-    if (_autores.isEmpty) {
-      return const Text(
-        'Nenhum autor disponível',
-        style: TextStyle(color: Colors.grey),
+    try {
+      final result = await AutorService.listarAutores(
+        page: 1,
+        limit: 10,
+        search: texto,
+        ativo: true,
       );
-    }
 
-    return DropdownButtonFormField<int>(
-      value: cdAutor,
-      isExpanded: true,
-      dropdownColor: Colors.white,
-      style: const TextStyle(color: Colors.black),
-      decoration: const InputDecoration(
-        labelText: 'Autor *',
-        border: OutlineInputBorder(),
-        isDense: true,
-      ),
-      items: _autores
-          .map(
-            (a) => DropdownMenuItem<int>(
-              value: a.id,
-              child: Text(
-                a.nome,
-                style: const TextStyle(color: Colors.black),
+      return List<Autor>.from(result['autores'] ?? []);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Widget _dropdownAutor() {
+    return AppFormField(
+      label: 'Autor *',
+      child: Autocomplete<Autor>(
+        displayStringForOption: (Autor a) => a.nome,
+        optionsBuilder: (TextEditingValue textEditingValue) async {
+          if (textEditingValue.text.isEmpty) {
+            return const Iterable<Autor>.empty();
+          }
+
+          final autores = await _buscarAutores(textEditingValue.text);
+          return autores;
+        },
+        onSelected: (Autor autor) {
+          setState(() {
+            cdAutor = autor.id;
+            _autorController.text = autor.nome;
+          });
+        },
+        fieldViewBuilder:
+            (context, fieldController, focusNode, onEditingComplete) {
+          // Sincroniza o controller interno do Autocomplete com o _autorController
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (fieldController.text != _autorController.text) {
+              fieldController.text = _autorController.text;
+              fieldController.selection = TextSelection.fromPosition(
+                TextPosition(offset: _autorController.text.length),
+              );
+            }
+          });
+
+          return TextFormField(
+            controller: fieldController,
+            focusNode: focusNode,
+            onChanged: (value) {
+              _autorController.text = value;
+            },
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
               ),
             ),
-          )
-          .toList(),
-      onChanged: (v) => setState(() => cdAutor = v),
-      validator: (v) => v == null ? 'Autor é obrigatório' : null,
+          );
+        },
+        optionsViewBuilder: (context, onSelected, options) {
+          return Align(
+            alignment: Alignment.topLeft,
+            child: Material(
+              elevation: 4,
+              child: SizedBox(
+                width: 600,
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: options.length,
+                  shrinkWrap: true,
+                  itemBuilder: (context, index) {
+                    final autor = options.elementAt(index);
+                    return ListTile(
+                      title: Text(autor.nome),
+                      onTap: () => onSelected(autor),
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -1484,6 +1639,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
     }
 
     String selTipo = mov?.tipoMovimento ?? 'Entrada';
+    final TextEditingController _autorController = TextEditingController();
     final descCtrl = TextEditingController(text: mov?.descricao ?? '');
     final valorCtrl = TextEditingController(
       text: mov?.valor != null ? mov!.valor!.toStringAsFixed(2) : '',
@@ -1984,37 +2140,45 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
     );
   }
 
+  // Atualize _dateField() para usar _dataHistorica:
   Widget _dateField() {
     return InkWell(
       onTap: () async {
         final date = await showDatePicker(
           context: context,
-          initialDate: _dataCompra ?? DateTime.now(),
+          initialDate: _dataHistorica ?? DateTime.now(),
           firstDate: DateTime(1500),
           lastDate: DateTime.now(),
         );
+
         if (date != null) {
-          setState(() => _dataCompra = date);
+          setState(
+              () => _dataHistorica = date); // ✅ ALTERADO: usa _dataHistorica
         }
       },
       child: InputDecorator(
         decoration: const InputDecoration(
-          labelText: 'Data',
           border: OutlineInputBorder(),
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 14,
+          ),
         ),
         child: Text(
-          _dataCompra != null
-              ? '${_dataCompra!.day.toString().padLeft(2, '0')}/'
-                  '${_dataCompra!.month.toString().padLeft(2, '0')}/'
-                  '${_dataCompra!.year}'
+          _dataHistorica != null // ✅ ALTERADO: usa _dataHistorica
+              ? '${_dataHistorica!.day.toString().padLeft(2, '0')}/'
+                  '${_dataHistorica!.month.toString().padLeft(2, '0')}/'
+                  '${_dataHistorica!.year}'
               : 'Selecionar',
+          style: const TextStyle(color: Colors.black),
         ),
       ),
     );
   }
 
+// Atualize _dateFieldComplementar() para usar _dataCompra:
   Widget _dateFieldComplementar({
-    required String label,
     required DateTime? value,
     required ValueChanged<DateTime?> onPicked,
   }) {
@@ -2026,14 +2190,19 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
           firstDate: DateTime(1500),
           lastDate: DateTime.now(),
         );
+
         if (date != null) {
           onPicked(date);
         }
       },
       child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 14,
+          ),
         ),
         child: Text(
           value != null
@@ -2041,6 +2210,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                   '${value.month.toString().padLeft(2, '0')}/'
                   '${value.year}'
               : 'Selecionar',
+          style: const TextStyle(color: Colors.black),
         ),
       ),
     );

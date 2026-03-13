@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:sistema_estagio/models/sala_obra.dart';
 import 'package:sistema_estagio/services/sala_service.dar.dart';
+
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
 
-// ================= SCREEN =================
 class SalaScreen extends StatefulWidget {
   const SalaScreen({super.key});
 
@@ -24,6 +24,7 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
   bool _isLoadingPage = false;
 
   late TabController _tabController;
+
   int _currentPage = 1;
   int _pageSize = 10;
   Map<String, dynamic>? _pagination;
@@ -33,11 +34,13 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
 
   bool _showForm = false;
   Sala? _editando;
+
   final _formKey = GlobalKey<FormState>();
 
   final _codigoController = TextEditingController();
   final _descricaoController = TextEditingController();
   final _observacaoController = TextEditingController();
+
   bool _ativo = true;
 
   @override
@@ -97,7 +100,6 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ================= LISTA =================
   Widget _buildListaTab() {
     return Column(
       children: [
@@ -109,7 +111,6 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ================= HEADER =================
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -155,57 +156,30 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Text('Itens por página:'),
-              const SizedBox(width: 8),
-              DropdownButton<int>(
-                value: _pageSize,
-                items: _pageSizeOptions
-                    .map((s) => DropdownMenuItem(
-                          value: s,
-                          child: Text('$s'),
-                        ))
-                    .toList(),
-                onChanged: (v) {
-                  setState(() {
-                    _pageSize = v!;
-                    _currentPage = 1;
-                  });
-                  _loadSalas();
-                },
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 
-  // ================= FORMULÁRIO =================
   Widget _buildFormulario() {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
       ),
       child: Form(
         key: _formKey,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: Column(children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 _editando == null ? 'Cadastro de Sala' : 'Editar Sala',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1976D2),
-                ),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -214,91 +188,47 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Código + Situação
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 120,
-                child: CustomTextField(
-                  controller: _codigoController,
-                  label: 'Código',
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.blue),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Situação'),
-                    Row(
-                      children: [
-                        Radio<bool>(
-                          value: true,
-                          groupValue: _ativo,
-                          onChanged: (v) => setState(() => _ativo = true),
-                        ),
-                        const Text('Ativo'),
-                        Radio<bool>(
-                          value: false,
-                          groupValue: _ativo,
-                          onChanged: (v) => setState(() => _ativo = false),
-                        ),
-                        const Text('Inativo'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
           CustomTextField(
             controller: _descricaoController,
             label: 'Descrição *',
             validator: (v) => Validators.validateRequired(v, 'Descrição'),
           ),
           const SizedBox(height: 16),
-
           CustomTextField(
             controller: _observacaoController,
             label: 'Observação',
-            maxLines: 4,
+            maxLines: 3,
           ),
           const SizedBox(height: 16),
-
+          CheckboxListTile(
+            title: const Text("Ativo"),
+            value: _ativo,
+            onChanged: (v) => setState(() => _ativo = v ?? true),
+          ),
           Row(
             children: [
               ElevatedButton(
                 onPressed: _cancelar,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[600],
+                  backgroundColor: Colors.grey,
                 ),
-                child: const Text('Cancelar'),
+                child: const Text("Cancelar"),
               ),
               const SizedBox(width: 16),
               ElevatedButton(
                 onPressed: _salvar,
-                child: Text(_editando == null ? 'Salvar' : 'Atualizar'),
-              ),
+                child: Text(_editando == null ? "Salvar" : "Atualizar"),
+              )
             ],
-          ),
+          )
         ]),
       ),
     );
   }
 
-  // ================= LIST =================
   Widget _buildList() {
     if (_salas.isEmpty) {
-      return const Center(child: Text('Nenhuma sala cadastrada'));
+      return const Center(child: Text("Nenhuma sala cadastrada"));
     }
 
     return ListView.builder(
@@ -306,14 +236,79 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
       itemCount: _salas.length,
       itemBuilder: (_, i) {
         final s = _salas[i];
-        return Card(
+
+        return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            title: Text(s.descricao),
-            subtitle: Text(s.ativo ? 'Ativo' : 'Inativo'),
-            trailing: IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _editar(s),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              )
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          s.descricao,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: s.ativo
+                                    ? Colors.green.withOpacity(0.12)
+                                    : Colors.grey.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                s.ativo ? "ATIVO" : "INATIVO",
+                                style: TextStyle(
+                                  color: s.ativo ? Colors.green : Colors.grey,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              "ID: ${s.id}",
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 12,
+                              ),
+                            )
+                          ],
+                        )
+                      ]),
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (v) {
+                    if (v == "editar") _editar(s);
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: "editar",
+                      child: Text("Editar"),
+                    ),
+                  ],
+                )
+              ],
             ),
           ),
         );
@@ -337,11 +332,7 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
         ]),
         Text(
           v,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: c,
-          ),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: c),
         ),
       ]),
     );
@@ -349,12 +340,14 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
 
   Widget _buildPaginationControls() {
     if (_pagination == null) return const SizedBox.shrink();
-    return Text(
-      'Página $_currentPage de ${_pagination!['totalPages']}',
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Text(
+        'Página $_currentPage de ${_pagination!['totalPages']}',
+      ),
     );
   }
 
-  // ================= ACTIONS =================
   void _novo() {
     _limpar();
     setState(() => _showForm = true);
@@ -363,7 +356,6 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
   void _editar(Sala s) {
     setState(() {
       _editando = s;
-      _codigoController.text = s.id?.toString() ?? '';
       _descricaoController.text = s.descricao;
       _observacaoController.text = s.observacao ?? '';
       _ativo = s.ativo;

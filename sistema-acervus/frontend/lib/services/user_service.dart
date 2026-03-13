@@ -4,9 +4,10 @@ import 'package:http/http.dart' as http;
 import '../models/usuario.dart';
 
 import 'storage_service.dart';
+import '../utils/app_config.dart';
 
 class UserService {
-  static const String baseUrl = 'http://localhost:3001/api';
+  static const String baseUrl = AppConfig.devBaseUrl;
 
   // Headers com autenticação
   static Future<Map<String, String>> _getHeaders() async {

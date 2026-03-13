@@ -125,7 +125,7 @@ class _ObrasListScreenState extends State<ObrasListScreen>
         ],
       ),
       body: LoadingOverlay(
-        isLoading: _isLoading,
+        isLoading: _isLoading || _gerandoFicha,
         child: Column(
           children: [
             _buildHeader(),
@@ -299,7 +299,13 @@ class _ObrasListScreenState extends State<ObrasListScreen>
           ),
           _vDivider(),
           _infoItem(
-            icon: Icons.title,
+            icon: Icons.subtitles,
+            text: obra.carimbo ?? '',
+            flex: 4,
+          ),
+          _vDivider(),
+          _infoItem(
+            icon: Icons.book,
             text: obra.titulo ?? '',
             flex: 4,
             bold: true,
@@ -310,9 +316,33 @@ class _ObrasListScreenState extends State<ObrasListScreen>
             text: obra.subtitulo ?? '',
             flex: 4,
           ),
+          _vDivider(),
+          _infoItem(
+            icon: Icons.category,
+            text: obra.dsTipoPeca ?? '',
+            flex: 4,
+          ),
+          _vDivider(),
+          _infoItem(
+            icon: Icons.tiktok_sharp,
+            text: obra.dsSubtipoPeca ?? '',
+            flex: 4,
+          ),
+          _vDivider(),
+          _infoItem(
+            icon: Icons.category,
+            text: obra.dsAssunto ?? '',
+            flex: 4,
+          ),
+          _vDivider(),
+          _infoItem(
+            icon: Icons.person,
+            text: obra.dsAutor ?? '',
+            flex: 4,
+          ),
           const SizedBox(width: 8),
           PopupMenuButton<String>(
-            onSelected: (v) {
+            onSelected: (v) async {
               if (v == 'editar') {
                 context.go('/admin/obras/editar/${obra.id}');
               } else if (v == 'galeria') {
@@ -320,7 +350,19 @@ class _ObrasListScreenState extends State<ObrasListScreen>
               } else if (v == 'movimentacoes') {
                 context.go('/admin/obras/movimentacoes/${obra.id}');
               } else if (v == 'ficha-obra') {
-                _gerarFichaPdf(obra);
+                Future.delayed(Duration.zero, () async {
+                  setState(() {
+                    _gerandoFicha = true;
+                  });
+
+                  await ObraService.baixarFichaPdf(obra.id);
+
+                  if (mounted) {
+                    setState(() {
+                      _gerandoFicha = false;
+                    });
+                  }
+                });
               }
             },
             itemBuilder: (context) => const [
@@ -331,6 +373,16 @@ class _ObrasListScreenState extends State<ObrasListScreen>
                     Icon(Icons.edit, size: 18),
                     SizedBox(width: 8),
                     Text('Editar'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'ficha-obra',
+                child: Row(
+                  children: [
+                    Icon(Icons.picture_as_pdf_outlined, size: 18),
+                    SizedBox(width: 8),
+                    Text('Ficha da Obra'),
                   ],
                 ),
               ),
@@ -354,16 +406,6 @@ class _ObrasListScreenState extends State<ObrasListScreen>
                   ],
                 ),
               ),
-              PopupMenuItem(
-                value: 'ficha-obra',
-                child: Row(
-                  children: [
-                    Icon(Icons.picture_as_pdf_outlined, size: 18),
-                    SizedBox(width: 8),
-                    Text('Ficha da Obra'),
-                  ],
-                ),
-              ),
             ],
           ),
         ],
@@ -381,7 +423,7 @@ class _ObrasListScreenState extends State<ObrasListScreen>
   }
 
   Widget _infoItem({
-    required IconData icon,
+    required IconData? icon,
     required String text,
     required int flex,
     bool bold = false,
@@ -420,6 +462,154 @@ class _ObrasListScreenState extends State<ObrasListScreen>
     } catch (_) {
       return null;
     }
+  }
+
+  Future<void> _imprimirFichaObra(int obraId) async {
+    try {
+      final dados = await ObraService.buscarFichaRelatorio(obraId);
+
+      if (dados == null) {
+        throw Exception('Dados da obra não encontrados');
+      }
+
+      final html = _gerarHtmlFicha(dados!);
+
+      await Printing.layoutPdf(
+        onLayout: (format) async {
+          final doc = pw.Document();
+
+          final pdf = await Printing.convertHtml(
+            format: format,
+            html: html,
+          );
+
+          return pdf;
+        },
+      );
+    } catch (e) {
+      AppUtils.showErrorSnackBar(context, 'Erro ao gerar ficha: $e');
+    }
+  }
+
+  String _gerarHtmlFicha(Map<String, dynamic> dados) {
+    return """
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+
+<style>
+
+body{
+ font-family: Arial;
+ font-size:12px;
+}
+
+.titulo{
+ text-align:center;
+ font-size:22px;
+ font-weight:bold;
+}
+
+.carimbo{
+ text-align:center;
+ color:red;
+ font-weight:bold;
+ font-size:16px;
+}
+
+.section{
+ background:#dcdcdc;
+ padding:4px;
+ font-weight:bold;
+ margin-top:12px;
+}
+
+.row{
+ display:flex;
+ justify-content:space-between;
+}
+
+.col{
+ width:48%;
+}
+
+img{
+ max-width:120px;
+ border:1px solid #aaa;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="titulo">
+FICHA DA OBRA
+</div>
+
+<div class="carimbo">
+${dados['carimbo']}
+</div>
+
+<h3 style="text-align:center">
+${dados['titulo']}
+</h3>
+
+<div style="text-align:center">
+${dados['subtitulo'] ?? ''}
+</div>
+
+
+<div class="section">DADOS DA OBRA</div>
+
+<div class="row">
+
+<div class="col">
+
+<p><b>Tipo de Obra:</b> ${dados['tipo_obra']}</p>
+<p><b>Assunto:</b> ${dados['assunto']}</p>
+<p><b>Localização:</b> ${dados['localizacao']}</p>
+<p><b>Material:</b> ${dados['material']}</p>
+<p><b>Origem:</b> ${dados['origem']}</p>
+
+</div>
+
+<div class="col">
+
+<p><b>Subtipo:</b> ${dados['subtipo_obra']}</p>
+<p><b>Idioma:</b> ${dados['idioma']}</p>
+<p><b>Conservação:</b> ${dados['conservacao']}</p>
+<p><b>Data:</b> ${dados['data']}</p>
+<p><b>Qtd Páginas:</b> ${dados['qtd_paginas']}</p>
+
+</div>
+
+</div>
+
+
+<div class="section">AUTOR</div>
+
+<p><b>Autor:</b> ${dados['autor']}</p>
+
+
+<div class="section">RESUMO</div>
+
+<p>
+${dados['resumo'] ?? ''}
+</p>
+
+
+<div class="section">INFORMAÇÕES COMPLEMENTARES</div>
+
+<p><b>Data da Compra:</b> ${dados['data_compra']}</p>
+<p><b>Nº Apólice:</b> ${dados['numero_apolice']}</p>
+<p><b>Valor:</b> ${dados['valor']}</p>
+
+
+</body>
+</html>
+""";
   }
 
   Future<Uint8List?> _buscarPrimeiraImagem(int obraId) async {

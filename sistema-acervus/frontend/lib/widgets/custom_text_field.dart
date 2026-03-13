@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
-  final String label;
+  final String? label;
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
   final bool obscureText;
@@ -15,11 +15,12 @@ class CustomTextField extends StatelessWidget {
   final Widget? prefixIcon;
   final int? maxLines;
   final String? hintText;
+  final String? prefixText;
 
   const CustomTextField({
     super.key,
     required this.controller,
-    required this.label,
+    this.label,
     this.validator,
     this.keyboardType,
     this.obscureText = false,
@@ -31,12 +32,14 @@ class CustomTextField extends StatelessWidget {
     this.prefixIcon,
     this.maxLines = 1,
     this.hintText,
+    this.prefixText,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 8), // Espaço extra para o label flutuante
+      margin:
+          const EdgeInsets.only(top: 8), // Espaço extra para o label flutuante
       child: TextFormField(
         controller: controller,
         validator: validator,
@@ -50,6 +53,7 @@ class CustomTextField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           hintText: hintText,
+          prefixText: prefixText,
           suffixIcon: suffixIcon,
           prefixIcon: prefixIcon,
           floatingLabelBehavior: FloatingLabelBehavior.auto,
@@ -63,7 +67,7 @@ class CustomTextField extends StatelessWidget {
             color: Color(0xFF2E7D9A),
           ),
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16, 
+            horizontal: 16,
             vertical: 20, // Aumentei ainda mais: de 16 para 20
           ),
           border: OutlineInputBorder(

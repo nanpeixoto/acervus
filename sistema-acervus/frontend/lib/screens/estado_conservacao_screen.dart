@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+
 import 'package:sistema_estagio/models/estado_conservacao.dart';
 import 'package:sistema_estagio/services/estado_conservacao_service.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
+
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';
+
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
-import 'package:sistema_estagio/widgets/loading_overlay.dart';
+import 'package:sistema_estagio/widgets/crud_page.dart';
+import 'package:sistema_estagio/widgets/crud_header.dart';
+import 'package:sistema_estagio/widgets/crud_form_container.dart';
+import 'package:sistema_estagio/widgets/crud_pagination.dart';
 
 class EstadoConservacaoScreen extends StatefulWidget {
   const EstadoConservacaoScreen({super.key});
@@ -15,42 +21,40 @@ class EstadoConservacaoScreen extends StatefulWidget {
       _EstadoConservacaoScreenState();
 }
 
-class _EstadoConservacaoScreenState extends State<EstadoConservacaoScreen>
-    with TickerProviderStateMixin {
+class _EstadoConservacaoScreenState extends State<EstadoConservacaoScreen> {
   final _searchController = TextEditingController();
+  final _descricaoController = TextEditingController();
+
+  final _formKey = GlobalKey<FormState>();
 
   List<EstadoConservacao> _itens = [];
+
   bool _isLoading = false;
-  bool _isLoadingPage = false;
+  bool _showForm = false;
 
   bool? _filtroAtivo;
 
-  late TabController _tabController;
   int _currentPage = 1;
   int _pageSize = 10;
+
   Map<String, dynamic>? _pagination;
+
   String _currentSearch = '';
 
-  final List<int> _pageSizeOptions = [5, 10, 20, 50, 100];
-
-  bool _showForm = false;
   EstadoConservacao? _editando;
-  final _formKey = GlobalKey<FormState>();
 
-  final _descricaoController = TextEditingController();
   bool _ativo = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 1, vsync: this);
     _load();
   }
 
-  Future<void> _load({bool showLoading = true}) async {
-    setState(() {
-      showLoading ? _isLoading = true : _isLoadingPage = true;
-    });
+  // ================= LOAD =================
+
+  Future<void> _load() async {
+    setState(() => _isLoading = true);
 
     try {
       final result = await EstadoConservacaoService.listar(
@@ -65,216 +69,119 @@ class _EstadoConservacaoScreenState extends State<EstadoConservacaoScreen>
         _pagination = result['pagination'];
       });
     } catch (e) {
-      AppUtils.showErrorSnackBar(context, 'Erro ao carregar dados: $e');
+      AppUtils.showErrorSnackBar(context, 'Erro ao carregar dados');
     } finally {
-      setState(() {
-        _isLoading = false;
-        _isLoadingPage = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
+
+  // ================= BUILD =================
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Estado de Conservação'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFiltrosDialog,
+    return CrudPage(
+      title: "Estado de Conservação",
+      isLoading: _isLoading,
+      onAdd: _novo,
+      header: _buildHeader(),
+      form: _showForm ? CrudFormContainer(child: _buildFormulario()) : null,
+      list: _buildList(),
+      pagination: CrudPagination(
+        currentPage: _currentPage,
+        totalPages: _pagination?['totalPages'] ?? 1,
+        onPageChange: _go,
+      ),
+    );
+  }
+
+  // ================= HEADER =================
+
+  Widget _buildHeader() {
+    return CrudHeader(
+      stats: Row(
+        children: [
+          Expanded(
+            child: _statCard(
+              "Total",
+              (_pagination?['totalItems'] ?? _itens.length).toString(),
+              Icons.inventory_2,
+              Colors.green,
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _novo,
+          const SizedBox(width: 16),
+          Expanded(
+            child: _statCard(
+              "Páginas",
+              (_pagination?['totalPages'] ?? 0).toString(),
+              Icons.layers,
+              Colors.blue,
+            ),
           ),
         ],
       ),
-      body: LoadingOverlay(
-        isLoading: _isLoading,
-        child: TabBarView(
-          controller: _tabController,
-          children: [_buildListaTab()],
-        ),
+      search: Row(
+        children: [
+          Expanded(
+            child: CustomTextField(
+              controller: _searchController,
+              label: "Buscar",
+              prefixIcon: const Icon(Icons.search),
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: _buscar,
+            child: const Text("Buscar"),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildListaTab() {
-    return Column(
-      children: [
-        _buildHeader(),
-        if (_showForm) _buildFormulario(),
-        Expanded(child: _buildList()),
-        _buildPaginationControls(),
-      ],
-    );
-  }
+  // ================= FORM =================
 
-  // ================= HEADER (CLONE ASSUNTO) =================
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
+  Widget _buildFormulario() {
+    return Form(
+      key: _formKey,
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _statCard(
-                  'Total de Registros',
-                  (_pagination?['totalItems'] ?? _itens.length).toString(),
-                  Icons.inventory_2,
-                  const Color(0xFF2E7D32),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _statCard(
-                  'Total de Páginas',
-                  (_pagination?['totalPages'] ?? 0).toString(),
-                  Icons.check_circle,
-                  const Color(0xFF1976D2),
-                ),
-              ),
-            ],
+          CustomTextField(
+            controller: _descricaoController,
+            label: "Descrição",
+            validator: (v) => Validators.validateRequired(v, "Descrição"),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: CustomTextField(
-                  controller: _searchController,
-                  label: 'Buscar por descrição',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: _clearSearch,
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: _buscar,
-                icon: const Icon(Icons.search),
-                label: const Text('Buscar'),
-              ),
-            ],
+          CheckboxListTile(
+            title: const Text("Ativo"),
+            value: _ativo,
+            onChanged: (v) => setState(() => _ativo = v ?? true),
           ),
-          const SizedBox(height: 16),
           Row(
             children: [
-              const Text('Itens por página:'),
-              const SizedBox(width: 8),
-              DropdownButton<int>(
-                value: _pageSize,
-                items: _pageSizeOptions
-                    .map((s) => DropdownMenuItem(value: s, child: Text('$s')))
-                    .toList(),
-                onChanged: (v) {
-                  setState(() {
-                    _pageSize = v!;
-                    _currentPage = 1;
-                  });
-                  _load();
-                },
+              ElevatedButton(
+                onPressed: _cancelar,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey,
+                ),
+                child: const Text("Cancelar"),
               ),
               const SizedBox(width: 16),
-              ElevatedButton.icon(
-                onPressed: () {
-                  setState(() => _currentPage = 1);
-                  _load();
-                },
-                icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Atualizar'),
+              ElevatedButton(
+                onPressed: _salvar,
+                child: Text(_editando == null ? "Salvar" : "Atualizar"),
               ),
             ],
-          ),
+          )
         ],
       ),
     );
   }
 
-  // ================= FORM (CLONE ASSUNTO) =================
-  Widget _buildFormulario() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _editando == null
-                      ? 'Novo Estado de Conservação'
-                      : 'Editar Estado de Conservação',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E7D32),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: _cancelar,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            CustomTextField(
-              controller: _descricaoController,
-              label: 'Descrição *',
-              validator: (v) => Validators.validateRequired(v, 'Descrição'),
-            ),
-            const SizedBox(height: 16),
-            CheckboxListTile(
-              title: const Text('Ativo'),
-              value: _ativo,
-              onChanged: (v) => setState(() => _ativo = v ?? true),
-              controlAffinity: ListTileControlAffinity.leading,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: _cancelar,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[600],
-                  ),
-                  child: const Text('Cancelar'),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: _salvar,
-                  child: Text(_editando == null ? 'Criar' : 'Atualizar'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // ================= LIST =================
 
-  // ================= LIST (CLONE ASSUNTO) =================
   Widget _buildList() {
-    if (_isLoadingPage) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     if (_itens.isEmpty) {
-      return const Center(child: Text('Nenhum registro encontrado'));
+      return const Center(child: Text("Nenhum registro encontrado"));
     }
 
     return ListView.builder(
@@ -282,46 +189,82 @@ class _EstadoConservacaoScreenState extends State<EstadoConservacaoScreen>
       itemCount: _itens.length,
       itemBuilder: (_, i) {
         final e = _itens[i];
-        return Card(
+
+        return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          elevation: 2,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              )
+            ],
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
                         e.descricao,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 16),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    PopupMenuButton<String>(
-                      onSelected: (v) => _menu(v, e),
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(
-                          value: 'editar',
-                          child: Text('Editar'),
-                        ),
-                        PopupMenuItem(
-                          value: 'toggle',
-                          child: Text(e.ativo ? 'Desativar' : 'Ativar'),
-                        ),
-                      ],
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: e.ativo
+                                  ? Colors.green.withOpacity(0.12)
+                                  : Colors.grey.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              e.ativo ? "ATIVO" : "INATIVO",
+                              style: TextStyle(
+                                color: e.ativo ? Colors.green : Colors.grey,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            "ID: ${e.id}",
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _statusChip(e.ativo),
-                    const Spacer(),
-                    Text(
-                      'ID: ${e.id}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (v) => _menu(v, e),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'editar',
+                      child: Text('Editar'),
+                    ),
+                    PopupMenuItem(
+                      value: 'toggle',
+                      child: Text(e.ativo ? 'Desativar' : 'Ativar'),
                     ),
                   ],
                 ),
@@ -333,74 +276,13 @@ class _EstadoConservacaoScreenState extends State<EstadoConservacaoScreen>
     );
   }
 
-  Widget _statusChip(bool ativo) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: ativo
-            ? Colors.green.withOpacity(0.1)
-            : Colors.grey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ativo ? Colors.green : Colors.grey),
-      ),
-      child: Text(
-        ativo ? 'ATIVO' : 'INATIVO',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: ativo ? Colors.green : Colors.grey,
-        ),
-      ),
-    );
-  }
-
-  Widget _statCard(String t, String v, IconData i, Color c) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: c.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: c.withOpacity(0.3)),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Icon(i, color: c, size: 20),
-          const SizedBox(width: 8),
-          Text(t, style: TextStyle(fontSize: 12, color: c)),
-        ]),
-        const SizedBox(height: 4),
-        Text(v,
-            style:
-                TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: c)),
-      ]),
-    );
-  }
-
-  Widget _buildPaginationControls() {
-    if (_pagination == null) return const SizedBox.shrink();
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.chevron_left),
-          onPressed: _currentPage > 1 ? () => _go(_currentPage - 1) : null,
-        ),
-        Text('Página $_currentPage de ${_pagination!['totalPages']}'),
-        IconButton(
-          icon: const Icon(Icons.chevron_right),
-          onPressed: _currentPage < _pagination!['totalPages']
-              ? () => _go(_currentPage + 1)
-              : null,
-        ),
-      ],
-    );
-  }
-
   // ================= ACTIONS =================
+
   void _novo() {
     _descricaoController.clear();
     _ativo = true;
     _editando = null;
+
     setState(() => _showForm = true);
   }
 
@@ -413,8 +295,10 @@ class _EstadoConservacaoScreenState extends State<EstadoConservacaoScreen>
         _showForm = true;
       });
     } else {
-      EstadoConservacaoService.atualizar(e.id!, {'ativo': !e.ativo})
-          .then((_) => _load(showLoading: false));
+      EstadoConservacaoService.atualizar(
+        e.id!,
+        {'ativo': !e.ativo},
+      ).then((_) => _load());
     }
   }
 
@@ -432,8 +316,10 @@ class _EstadoConservacaoScreenState extends State<EstadoConservacaoScreen>
       await EstadoConservacaoService.atualizar(_editando!.id!, dados);
     }
 
-    AppUtils.showSuccessSnackBar(context, 'Registro salvo com sucesso!');
+    AppUtils.showSuccessSnackBar(context, "Registro salvo com sucesso");
+
     _cancelar();
+
     _load();
   }
 
@@ -442,29 +328,34 @@ class _EstadoConservacaoScreenState extends State<EstadoConservacaoScreen>
   }
 
   void _buscar() {
-    _currentSearch = _searchController.text.trim();
+    _currentSearch = _searchController.text;
+
     _currentPage = 1;
+
     _load();
   }
 
-  void _clearSearch() {
-    _searchController.clear();
-    _currentSearch = '';
+  void _go(int page) {
+    _currentPage = page;
+
     _load();
   }
 
-  void _go(int p) {
-    _currentPage = p;
-    _load(showLoading: false);
-  }
-
-  void _showFiltrosDialog() {}
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _descricaoController.dispose();
-    _tabController.dispose();
-    super.dispose();
+  Widget _statCard(String t, String v, IconData i, Color c) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: c.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Icon(i, color: c),
+          const SizedBox(height: 4),
+          Text(v, style: TextStyle(fontSize: 20, color: c)),
+          Text(t),
+        ],
+      ),
+    );
   }
 }

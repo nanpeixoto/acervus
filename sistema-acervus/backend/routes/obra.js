@@ -6,6 +6,7 @@ const logger = require('../utils/logger');
 const { paginarConsulta } = require('../helpers/paginador');
 const path = require('path');
 const fs = require('fs');
+const puppeteer = require('puppeteer');
  
  
  
@@ -73,52 +74,84 @@ router.get('/listar', tokenOpcional, async (req, res) => {
       filtros.push(`
         unaccent(lower(o.titulo)) ILIKE unaccent(lower($${valores.length}))
         OR unaccent(lower(o.subtitulo)) ILIKE unaccent(lower($${valores.length}))
+        OR  unaccent(lower(a.ds_assunto)) ILIKE unaccent(lower($${valores.length}))
+         OR  unaccent(lower(tp.ds_tipo_peca)) ILIKE unaccent(lower($${valores.length}))
+          OR  unaccent(lower(st.descricao)) ILIKE unaccent(lower($${valores.length}))
+            OR  unaccent(lower(au.ds_autor)) ILIKE unaccent(lower($${valores.length}))
       `);
     }
   }
 
-  const where = filtros.length ? `WHERE (${filtros.join(' OR ')})` : '';
+const where = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';
 
   const countQuery = `
     SELECT COUNT(*)
     FROM public.ace_obra o
+    INNER JOIN ace_tipo_peca tp  ON tp.cd_tipo_peca = o.cd_tipo_peca
+
+    INNER JOIN ace_subtipo_peca st  ON st.cd_subtipo_peca = o.cd_subtipo_peca
+
+    INNER JOIN ace_assunto a  ON a.cd_assunto = o.cd_assunto
+
+    INNER JOIN ace_idioma i  ON i.cd_idioma = o.cd_idioma
+
+    INNER JOIN ace_estado_conservacao ec  ON ec.cd_estado_conservacao = o.cd_estado_conservacao
+
+    INNER JOIN ace_autor au  ON au.cd_autor = o.cd_autor
     ${where}
   `;
 
   const baseQuery = `
      
       SELECT
-      cd_obra,
+      o.cd_obra,
       cd_material,
-      cd_tipo_peca,
-      cd_subtipo_peca,
-      cd_assunto,
-      cd_idioma,
-      titulo,
-      subtitulo,
-      cd_estado_conservacao,
-      data_compra,
-      numero_apolice,
-      valor,
-      cd_estante_prateleira,
-      cd_editora,
-      numero_edicao,
-      qtd_paginas,
-      volume,
-      resumo,
-      observacao,
-      carimbo,
-      cd_autor,
-      cd_autor_2,
-      medida,
-      conjunto,
-      origem,
-      data_historica,
-      codigo_obra_tipo,
+      o.cd_tipo_peca,
+      o.cd_subtipo_peca,
+      o.cd_assunto,
+      o.cd_idioma,
+      o.titulo,
+      o.subtitulo,
+      o.cd_estado_conservacao,
+      o.data_compra,
+      o.numero_apolice,
+      o.valor,
+      o.cd_estante_prateleira,
+      o.cd_editora,
+      o.numero_edicao,
+      o.qtd_paginas,
+      o.volume,
+      o.resumo,
+      o.observacao,
+      o.carimbo,
+      o.cd_autor,
+      o.cd_autor_2,
+      o.medida,
+      o.conjunto,
+      o.origem,
+      o.data_historica,
+      o.codigo_obra_tipo,
       posicao_obra,
-      nr_carimbo,
-      cd_estante_prateleira_from
-    FROM public.ace_obra o
+      o.nr_carimbo,
+      o.cd_estante_prateleira
+      , a.ds_assunto AS dsAssunto
+      , i.ds_idioma AS dsIdioma
+      , ec.ds_estado_conservacao AS dsEstadoConservacao
+      , tp.ds_tipo_peca AS dsTipoPeca
+      , st.descricao AS dsSubtipoPeca
+      , au.ds_autor AS dsAutor
+          FROM public.ace_obra o
+    INNER JOIN ace_tipo_peca tp  ON tp.cd_tipo_peca = o.cd_tipo_peca
+
+    INNER JOIN ace_subtipo_peca st  ON st.cd_subtipo_peca = o.cd_subtipo_peca
+
+    INNER JOIN ace_assunto a  ON a.cd_assunto = o.cd_assunto
+
+    INNER JOIN ace_idioma i  ON i.cd_idioma = o.cd_idioma
+
+    INNER JOIN ace_estado_conservacao ec  ON ec.cd_estado_conservacao = o.cd_estado_conservacao
+
+    INNER JOIN ace_autor au  ON au.cd_autor = o.cd_autor
     ${where}
     ORDER BY o.cd_obra DESC
   `;
@@ -555,39 +588,42 @@ router.get('/buscar/:id', verificarToken, async (req, res) => {
 
    const query = `
     SELECT
-      cd_obra,
-      cd_material,
-      cd_tipo_peca,
-      cd_subtipo_peca,
-      cd_assunto,
-      cd_idioma,
-      titulo,
-      subtitulo,
-      cd_estado_conservacao,
-      data_compra,
-      numero_apolice,
-      valor,
-      cd_estante_prateleira,
-      cd_editora,
-      numero_edicao,
-      qtd_paginas,
-      volume,
-      resumo,
-      observacao,
-      carimbo,
-      cd_autor,
-      cd_autor_2,
-      medida,
-      conjunto,
-      origem,
-      data_historica,
-      codigo_obra_tipo,
-      posicao_obra,
-      nr_carimbo,
-      cd_estante_prateleira_from
-    FROM public.ace_obra
-    WHERE cd_obra = $1
-    LIMIT 1
+  o.cd_obra,
+  o.cd_material,
+  o.cd_tipo_peca,
+  o.cd_subtipo_peca,
+  o.cd_assunto,
+  o.cd_idioma,
+  o.titulo,
+  o.subtitulo,
+  o.cd_estado_conservacao,
+  o.data_compra,
+  o.numero_apolice,
+  o.valor,
+  o.cd_estante_prateleira,
+  o.cd_editora,
+  o.numero_edicao,
+  o.qtd_paginas,
+  o.volume,
+  o.resumo,
+  o.observacao,
+  o.carimbo,
+  o.cd_autor,
+  a.ds_autor AS autor_nome,
+  o.cd_autor_2,
+  o.medida,
+  o.conjunto,
+  o.origem,
+  o.data_historica,
+  o.codigo_obra_tipo,
+  o.posicao_obra,
+  o.nr_carimbo,
+  o.cd_estante_prateleira_from
+FROM public.ace_obra o
+LEFT JOIN public.ace_autor a
+  ON a.cd_autor = o.cd_autor
+WHERE o.cd_obra = $1
+LIMIT 1
   `;
 
 
@@ -602,7 +638,7 @@ router.get('/buscar/:id', verificarToken, async (req, res) => {
   } catch (err) {
     console.error('Erro ao buscar obra:', err);
     logger.error('Erro ao buscar obra: ' + err.stack, 'obras');
-    res.status(500).json({ erro: 'Erro ao buscar obra.' });
+    res.status(500).json({ erro: 'Erro ao buscar obra.' , motivo: err.message });
   }
 });
 
@@ -618,43 +654,46 @@ router.post('/cadastrar', verificarToken, async (req, res) => {
     });
   }
 
+  
+
   const query = `
-    INSERT INTO public.ace_obra (
-      cd_material,
-      cd_tipo_peca,
-      cd_subtipo_peca,
-      cd_assunto,
-      cd_idioma,
-      titulo,
-      subtitulo,
-      cd_estado_conservacao,
-      data_compra,
-      numero_apolice,
-      valor,
-      cd_estante_prateleira,
-      cd_editora,
-      numero_edicao,
-      qtd_paginas,
-      volume,
-      resumo,
-      observacao,
-      carimbo,
-      cd_autor,
-      cd_autor_2,
-      medida,
-      conjunto,
-      origem,
-      data_historica,
-      codigo_obra_tipo,
-      posicao_obra,
-      nr_carimbo,
-      cd_estante_prateleira_from
-    ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-      $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
-      $21,$22,$23,$24,$25,$26,$27,$28
-    )
-    RETURNING cd_obra
+   INSERT INTO public.ace_obra (
+  cd_material,
+  cd_tipo_peca,
+  cd_subtipo_peca,
+  cd_assunto,
+  cd_idioma,
+  titulo,
+  subtitulo,
+  cd_estado_conservacao,
+  data_compra,
+  numero_apolice,
+  valor,
+  cd_estante_prateleira,
+  cd_editora,
+  numero_edicao,
+  qtd_paginas,
+  volume,
+  resumo,
+  observacao,
+  carimbo,
+  cd_autor,
+  cd_autor_2,
+  medida,
+  conjunto,
+  origem,
+  data_historica,
+  codigo_obra_tipo,
+  posicao_obra,
+  nr_carimbo,
+  cd_estante_prateleira_from
+) VALUES (
+  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+  $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
+  $21,$22,$23,$24,$25,$26,$27,$28,$29
+)
+RETURNING cd_obra
+
   `;
 
   const values = [
@@ -698,10 +737,10 @@ router.post('/cadastrar', verificarToken, async (req, res) => {
     });
   } catch (err) {
     logger.error('Erro ao cadastrar obra: ' + err.stack, 'obras');
-    res.status(500).json({ erro: 'Erro ao cadastrar obra.' });
+    res.status(500).json({ erro: 'Erro ao cadastrar obra.', motivo: err.message });
   }
 });
-
+ 
 // =====================
 // PUT /obra/alterar/:id
 // =====================
@@ -781,7 +820,7 @@ router.put('/alterar/:id', verificarToken, async (req, res) => {
     });
   } catch (err) {
     logger.error('Erro ao alterar obra: ' + err.stack, 'obras');
-    res.status(500).json({ erro: 'Erro ao alterar obra.' });
+    res.status(500).json({ erro: 'Erro ao alterar obra.', motivo    : err.message });
   }
 });
 
@@ -886,6 +925,976 @@ router.post(  '/galeria/adicionar/:cdObra',
     }
   }
 );
+
+
+router.get('/relatorio/ficha/:id', verificarToken, async (req, res) => {
+
+
+  const { id } = req.params;
+
+  const query = `
+ SELECT
+o.cd_obra,
+o.titulo,
+o.subtitulo,
+o.carimbo,
+o.numero_edicao,
+o.qtd_paginas,
+o.volume,
+o.resumo,
+o.observacao,
+o.data_compra,
+o.numero_apolice,
+o.valor,
+o.origem,
+o.medida,
+o.data_historica,
+
+tp.ds_tipo_peca        AS tipo_obra,
+st.descricao     AS subtipo_obra,
+a.ds_assunto           AS assunto,
+i.ds_idioma            AS idioma,
+ec.ds_estado_conservacao AS conservacao,
+ed.ds_editora          AS editora,
+au.ds_autor            AS autor,
+
+CONCAT_WS('-',
+    UPPER(est.nome),
+    UPPER(cid.nome),
+    sal.ds_sala,
+    e.descricao,
+    ep.descricao_prateleira
+)  as ds_localizacao,
+
+g.nome AS imagem_capa
+
+FROM ace_obra o
+
+INNER JOIN ace_tipo_peca tp  ON tp.cd_tipo_peca = o.cd_tipo_peca
+
+INNER JOIN ace_subtipo_peca st  ON st.cd_subtipo_peca = o.cd_subtipo_peca
+
+INNER JOIN ace_assunto a  ON a.cd_assunto = o.cd_assunto
+
+INNER JOIN ace_idioma i  ON i.cd_idioma = o.cd_idioma
+
+INNER JOIN ace_estado_conservacao ec  ON ec.cd_estado_conservacao = o.cd_estado_conservacao
+
+INNER JOIN ace_autor au  ON au.cd_autor = o.cd_autor
+
+INNER JOIN ace_editora ed  ON ed.cd_editora = o.cd_editora
+
+INNER JOIN ace_estante_prateleira ep  ON ep.cd_estante_prateleira = o.cd_estante_prateleira
+
+ inner join public.ace_estante  e on e.cd_estante = ep.cd_estante  
+ inner join public.ger_estado est on  est.id = e.estado_id
+ inner join public.ger_cidade cid on cid.id = e.cidade_id
+ inner join public.ace_sala sal  on sal.cd_sala = e.cd_sala
+
+LEFT JOIN ace_obra_galeria g
+  ON g.cd_obra = o.cd_obra
+  AND g.sts_principal = true
+
+WHERE o.cd_obra = $1
+LIMIT 1
+`;
+
+  try {
+
+    const result = await pool.query(query, [id]);
+
+    if(result.rowCount === 0){
+      return res.status(404).json({erro:'Obra não encontrada'});
+    }
+
+    res.json(result.rows[0]);
+
+  } catch(err){
+
+    logger.error('Erro ficha obra: ' + err.stack,'obras');
+    res.status(500).json({
+      erro:'Erro ao gerar ficha da obra',
+      motivo:err.message
+    });
+
+  }
+
+});
+
+router.get('/relatorio/ficha/:id/pdf', async (req, res) => {
+
+  
+  const fs = require('fs');
+
+  const logo = fs.readFileSync('/var/www/sistema-acervus/img/logo_acervus.png');
+  const logoBase64 = logo.toString('base64');
+
+
+  const id = req.params.id;
+
+  const query = `
+ SELECT
+    o.cd_obra,
+    o.titulo,
+    o.subtitulo,
+    o.qtd_paginas,
+
+    tp.ds_tipo_peca AS tipo,
+    st.descricao AS subtipo,
+
+    a.ds_assunto AS assunto,
+    i.ds_idioma AS idioma,
+
+    ec.ds_estado_conservacao AS conservacao,
+
+    au.ds_autor AS autor,
+     
+
+    ed.ds_editora AS editora,
+
+    trim(mat.descricao) AS material,
+    o.medida ,
+    o.origem,
+    o.numero_edicao,
+    o.volume,
+    o.conjunto,
+    o.resumo,
+    o.observacao ,
+
+    o.data_compra,
+    o.numero_apolice,
+    o.valor,
+
+    
+
+    CONCAT_WS(' - ',
+        UPPER(est.nome),
+        UPPER(cid.nome),
+        sal.ds_sala,
+        e.descricao,
+        ep.descricao_prateleira
+    ) AS localizacao, o.nr_carimbo, carimbo
+
+FROM ace_obra o
+
+INNER JOIN ace_tipo_peca tp ON tp.cd_tipo_peca = o.cd_tipo_peca
+
+INNER JOIN ace_subtipo_peca st ON st.cd_subtipo_peca = o.cd_subtipo_peca
+
+INNER JOIN ace_assunto a ON a.cd_assunto = o.cd_assunto
+
+INNER JOIN ace_idioma i  ON i.cd_idioma = o.cd_idioma
+
+INNER JOIN ace_estado_conservacao ec ON ec.cd_estado_conservacao = o.cd_estado_conservacao
+
+INNER JOIN ace_autor au ON au.cd_autor = o.cd_autor
+
+INNER JOIN ace_editora ed ON ed.cd_editora = o.cd_editora
+
+INNER JOIN ace_estante_prateleira ep ON ep.cd_estante_prateleira = o.cd_estante_prateleira
+
+INNER JOIN ace_estante e ON e.cd_estante = ep.cd_estante
+
+INNER JOIN ace_sala sal ON sal.cd_sala = e.cd_sala
+
+INNER JOIN ger_estado est ON est.id = e.estado_id
+
+INNER JOIN ger_cidade cid ON cid.id = e.cidade_id
+ inner join public.ace_material mat ON mat.cd_material = o.cd_material
+
+WHERE o.cd_obra = $1
+`;
+
+const result = await pool.query(query, [id]);
+
+const obra = result.rows[0];
+
+ const capaQuery = `
+SELECT nome, extensao
+FROM ace_obra_galeria
+WHERE cd_obra = $1
+AND sts_principal = true
+LIMIT 1
+`;
+
+const capaResult = await pool.query(capaQuery, [id]);
+
+let capaPath = '';
+
+
+let capaBase64 = '';
+
+ if (capaResult.rows.length > 0) {
+
+  const nomeArquivo = capaResult.rows[0].nome;
+
+  const caminho = path.join(
+    __dirname,
+    '..',
+    'uploads',
+    'obras',
+    id.toString(),
+    nomeArquivo
+  );
+
+  const buffer = fs.readFileSync(caminho);
+
+  capaBase64 = `data:image/jpeg;base64,${buffer.toString('base64')}`;
+}
+
+
+   
+
+  const html = `<html>
+<head>
+<meta charset="UTF-8">
+
+<style>
+
+body{
+  font-family: Arial, Helvetica, sans-serif;
+  margin:40px;
+  font-size:12px;
+}
+
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+}
+.logo img{
+  height:60px;
+}
+
+.top-right{
+  text-align:right;
+  font-size:11px;
+}
+
+.titulo{
+  text-align:center;
+  margin-top:10px;
+}
+
+.titulo h1{
+  margin:0;
+  font-size:20px;
+}
+
+.codigo{
+  color:red;
+  font-weight:bold;
+  font-size:16px;
+  margin-top:5px;
+}
+
+.idobra{
+  position:absolute;
+  right:40px;
+  margin-top:-20px;
+  font-weight:bold;
+}
+
+.subtitulo{
+  font-size:16px;
+  font-weight:bold;
+}
+
+.subtitulo2{
+  font-size:11px;
+}
+
+.section-title{
+  margin-top:15px;
+  background:#cfcfcf;
+  text-align:center;
+  font-weight:bold;
+  padding:4px;
+  border:1px solid #999;
+   page-break-after:avoid;
+  
+}
+
+.dados{
+  display:flex;
+  margin-top:10px;
+}
+
+.col1{
+  width:40%;
+}
+
+.col2{
+  width:30%;
+}
+
+.img{
+  width:30%;
+  text-align:right;
+}
+
+.img img{
+  width:150px;
+  height:auto;
+  object-fit:contain;
+  border:1px solid #999;
+}
+
+.linha{
+  margin:3px 0;
+}
+
+.autor-box{
+  border:1px solid #999;
+  padding:6px;
+}
+
+.autor-row{
+  display:flex;
+  justify-content:space-between;
+}
+
+.resumo-box{
+   border:1px solid #999;
+  padding:6px;
+  text-align:justify;
+  line-height:1.4;
+  page-break-inside:avoid;
+}
+
+.info-box{
+  border:1px solid #999;
+  padding:6px;
+}
+
+.info-row{
+  display:flex;
+  justify-content:space-between;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+
+<div class="logo">
+<img src="data:image/png;base64,${logoBase64}">
+</div>
+
+<div class="top-right">
+Página: 1 de 1<br>
+Impressão: ${new Date().toLocaleString()}
+</div>
+
+</div>
+
+<div class="titulo">
+
+<h1>FICHA DA OBRA</h1>
+
+<div class="codigo">
+${obra.carimbo}
+</div>
+
+<div class="idobra">
+${obra.cd_obra}
+</div>
+
+<div class="subtitulo">
+${obra.titulo}
+</div>
+
+<div class="subtitulo2">
+${obra.subtitulo || ''}
+</div>
+
+</div>
+
+<div class="section-title">DADOS DA OBRA</div>
+
+<div class="dados">
+
+<div class="col1">
+
+<div class="linha"><b>Tipo de Obra:</b> ${obra.tipo}</div>
+<div class="linha"><b>Assunto:</b> ${obra.assunto}</div>
+<div class="linha"><b>Localização:</b> ${obra.localizacao}</div>
+<div class="linha"><b>Material:</b> ${obra.material || ''}</div>
+<div class="linha"><b>Dimensões:</b> ${obra.medida || ''}</div>
+<div class="linha"><b>Origem:</b> ${obra.origem || ''}</div>
+<div class="linha"><b>Nº Edição:</b> ${obra.numero_edicao || ''}</div>
+<div class="linha"><b>Volume:</b> ${obra.volume || ''}</div>
+<div class="linha"><b>Conjunto:</b> ${obra.conjunto || ''}</div>
+
+</div>
+
+<div class="col2">
+
+<div class="linha"><b>Subtipo de Obra:</b> ${obra.subtipo || ''}</div>
+<div class="linha"><b>Idioma:</b> ${obra.idioma || ''}</div>
+<div class="linha"><b>Conservação:</b> ${obra.conservacao || ''}</div>
+<div class="linha"><b>Data:</b> ${obra.data_historica || ''}</div>
+<div class="linha"><b>Qtd Páginas:</b> ${obra.qtd_paginas || ''}</div>
+
+</div>
+
+<div class="img">
+
+<img src="${capaBase64}">
+
+</div>
+
+</div>
+
+<div class="section-title">AUTOR</div>
+
+<div class="autor-box">
+
+<b>Autor:</b> ${obra.autor || ''}
+
+<div class="autor-row">
+
+<div>
+<b>Data de Nascimento:</b> ${obra.data_nascimento || ''}
+</div>
+
+<div>
+<b>Data de Falecimento:</b> ${obra.data_falecimento || ''}
+</div>
+
+</div>
+
+</div>
+
+<div class="section-title">RESUMO</div>
+
+<div class="resumo-box">
+${obra.resumo || ''}
+</div>
+
+<div class="section-title">INFORMAÇÕES COMPLEMENTARES</div>
+
+<div class="info-box">
+
+<div class="info-row">
+
+<div>
+<b>Data da Compra:</b> ${obra.data_compra || ''}
+</div>
+
+<div>
+<b>Nº Apólice:</b> ${obra.numero_apolice || ''}
+</div>
+
+<div>
+<b>Valor:</b> ${obra.valor || ''}
+</div>
+
+</div>
+
+<div style="margin-top:6px;">
+<b>Observações:</b> ${obra.observacao || ''}
+</div>
+
+</div>
+
+</body>
+</html>`;
+
+   const browser = await puppeteer.launch({
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
+
+  const page = await browser.newPage();
+
+  await page.setContent(html, { waitUntil: 'networkidle0' });
+
+ const pdf = await page.pdf({
+  format: 'A4',
+  printBackground: true,
+  margin: {
+    top: '20px',
+    bottom: '20px',
+    left: '20px',
+    right: '20px'
+  }
+});
+
+  await browser.close();
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'attachment; filename=ficha_obra.pdf');
+
+  res.send(pdf);
+});
+
+
+router.get('/filtros', async (req, res) => {
+  try {
+
+    const [
+      tipos,
+      subtipos,
+      assuntos,
+      idiomas,
+      materiais,
+      localizacoes,
+      estados,
+      editoras
+    ] = await Promise.all([
+      pool.query('SELECT cd_tipo_peca id, ds_tipo_peca descricao FROM ace_tipo_peca ORDER BY ds_tipo_peca'),
+      pool.query('SELECT cd_subtipo_peca id, descricao FROM ace_subtipo_peca ORDER BY descricao'),
+      pool.query('SELECT  cd_assunto id, ds_assunto descricao FROM ace_assunto ORDER BY ds_assunto'),
+      pool.query('SELECT cd_idioma id, ds_idioma descricao FROM ace_idioma ORDER BY descricao'),
+      pool.query('SELECT  cd_material id,  descricao FROM ace_material ORDER BY descricao'),
+      pool.query(`
+              SELECT 
+                  cd_estante_prateleira id,
+                  CONCAT_WS(
+                      ' - ',
+                      UPPER(est.nome),
+                      UPPER(cid.nome),
+                      sal.ds_sala,
+                      e.descricao,
+                      ep.descricao_prateleira
+                  ) AS descricao
+              FROM ace_estante_prateleira ep
+              INNER JOIN ace_estante e 
+                  ON e.cd_estante = ep.cd_estante
+              INNER JOIN ace_sala sal 
+                  ON sal.cd_sala = e.cd_sala
+              INNER JOIN ger_estado est 
+                  ON est.id = e.estado_id
+              INNER JOIN ger_cidade cid 
+                  ON cid.id = e.cidade_id
+              ORDER BY  CONCAT_WS(
+                      ' - ',
+                      UPPER(est.nome),
+                      UPPER(cid.nome),
+                      sal.ds_sala,
+                      e.descricao,
+                      ep.descricao_prateleira
+                  )
+              `),
+      pool.query('SELECT cd_estado_conservacao id, ds_estado_conservacao descricao FROM ace_estado_conservacao ORDER BY descricao'),
+      pool.query('SELECT cd_editora id, ds_editora descricao FROM ace_editora ORDER BY descricao')
+    ]);
+
+    res.json({
+      tipos: tipos.rows,
+      subtipos: subtipos.rows,
+      assuntos: assuntos.rows,
+      idiomas: idiomas.rows,
+      materiais: materiais.rows,
+      localizacoes: localizacoes.rows,
+      estados: estados.rows,
+      editoras: editoras.rows
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: 'Erro ao carregar filtros' });
+  }
+});
+
+
+
+ function gerarListaObrasHTML(obras) {
+return `
+<html>
+<head>
+
+<style>
+
+body{
+    font-family: Arial;
+    font-size:9px;
+}
+
+.container{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+}
+
+.card{
+    border:1px solid #444;
+    padding:5px;
+    height:130px; /* permite 4 por coluna */
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.topo{
+    display:flex;
+    justify-content:space-between;
+    font-size:8px;
+}
+
+.codigo{
+    font-size:8px;
+}
+
+.carimbo{
+    text-align:center;
+    font-size:14px;
+    font-weight:bold;
+    color:#c00000;
+    margin-bottom:2px;
+}
+
+.titulo{
+    text-align:center;
+    font-weight:bold;
+    font-size:10px;
+}
+
+.subtitulo{
+    text-align:center;
+    font-size:8px;
+    margin-bottom:3px;
+}
+
+.dados{
+    background:#d9d9d9;
+    text-align:center;
+    font-weight:bold;
+    padding:2px;
+    margin-bottom:3px;
+}
+
+.linha{
+    display:flex;
+}
+
+.info{
+    flex:1;
+    font-size:8px;
+    line-height:1.2;
+}
+
+.galeria{
+    width:50px;
+    height:65px;
+    border:1px solid #999;
+    margin-left:5px;
+}
+
+.galeria img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+${obras.map(o => `
+
+<div class="card">
+
+<div class="topo">
+<div></div>
+<div class="codigo">${o.cd_obra ?? ''}</div>
+</div>
+
+<div class="carimbo">${o.carimbo ?? ''}</div>
+
+<div class="titulo">${o.titulo ?? '(SEM TÍTULO)'}</div>
+
+<div class="subtitulo">${o.subtitulo ?? ''}</div>
+
+<div class="dados">DADOS DA OBRA</div>
+
+<div class="linha">
+
+<div class="info">
+
+<div><b>Tipo:</b> ${o.tipo ?? ''}</div>
+<div><b>Subtipo:</b> ${o.subtipo ?? ''}</div>
+<div><b>Assunto:</b> ${o.assunto ?? ''}</div>
+<div><b>Localização:</b> ${o.localizacao ?? ''}</div>
+<div><b>Editora:</b> ${o.editora ?? ''}</div>
+<div><b>Autor:</b> ${o.autor ?? ''}</div>
+
+</div>
+
+<div class="galeria">
+
+${o.imagem
+? `<img src="${o.imagem}"/>`
+: ''}
+
+</div>
+
+</div>
+
+</div>
+
+`).join('')}
+
+</div>
+
+</body>
+</html>
+`;
+}
+
+ async function buscarObras(filtros) {
+
+  console.time("TEMPO TOTAL buscarObras");
+
+  const fs = require('fs');
+  const path = require('path');
+
+  const valores = [];
+  const where = [];
+
+  console.time("MONTAGEM FILTROS");
+
+  if (filtros.titulo) {
+    valores.push(`%${filtros.titulo}%`);
+    where.push(`LOWER(o.titulo) LIKE LOWER($${valores.length})`);
+  }
+
+  if (filtros.autor) {
+    valores.push(filtros.autor);
+    where.push(`o.cd_autor = $${valores.length}`);
+  }
+
+  if (filtros.material) {
+    valores.push(filtros.material);
+    where.push(`o.cd_material = $${valores.length}`);
+  }
+
+  if (filtros.tipo) {
+    valores.push(filtros.tipo);
+    where.push(`o.cd_tipo_peca = $${valores.length}`);
+  }
+
+  if (filtros.subtipo) {
+    valores.push(filtros.subtipo);
+    where.push(`o.cd_subtipo_peca = $${valores.length}`);
+  }
+
+  if (filtros.editora) {
+    valores.push(filtros.editora);
+    where.push(`o.cd_editora = $${valores.length}`);
+  }
+
+  if (filtros.conservacao) {
+    valores.push(filtros.conservacao);
+    where.push(`o.cd_estado_conservacao = $${valores.length}`);
+  }
+
+  if (filtros.localizacao) {
+    valores.push(filtros.localizacao);
+    where.push(`o.cd_estante_prateleira = $${valores.length}`);
+  }
+
+  if (filtros.assunto) {
+    valores.push(filtros.assunto);
+    where.push(`o.cd_assunto = $${valores.length}`);
+  }
+
+  if (filtros.idioma) {
+    valores.push(filtros.idioma);
+    where.push(`o.cd_idioma = $${valores.length}`);
+  }
+
+  console.timeEnd("MONTAGEM FILTROS");
+
+  console.time("MONTAGEM QUERY");
+
+  let query = `
+
+SELECT
+    o.cd_obra,
+    o.titulo,
+    o.subtitulo,
+    o.qtd_paginas,
+
+    tp.ds_tipo_peca AS tipo,
+    st.descricao AS subtipo,
+
+    a.ds_assunto AS assunto,
+    i.ds_idioma AS idioma,
+
+    ec.ds_estado_conservacao AS conservacao,
+
+    au.ds_autor AS autor,
+    ed.ds_editora AS editora,
+
+    trim(mat.descricao) AS material,
+    o.medida,
+    o.origem,
+    o.numero_edicao,
+    o.volume,
+    o.conjunto,
+    o.resumo,
+    o.observacao,
+
+    o.data_compra,
+    o.numero_apolice,
+    o.valor,
+
+    CONCAT_WS(' - ',
+        UPPER(est.nome),
+        UPPER(cid.nome),
+        sal.ds_sala,
+        e.descricao,
+        ep.descricao_prateleira
+    ) AS localizacao,
+
+    o.nr_carimbo,
+    o.carimbo,
+
+    gal.nome AS imagem_nome
+
+FROM ace_obra o
+
+INNER JOIN ace_tipo_peca tp ON tp.cd_tipo_peca = o.cd_tipo_peca
+INNER JOIN ace_subtipo_peca st ON st.cd_subtipo_peca = o.cd_subtipo_peca
+INNER JOIN ace_assunto a ON a.cd_assunto = o.cd_assunto
+INNER JOIN ace_idioma i ON i.cd_idioma = o.cd_idioma
+INNER JOIN ace_estado_conservacao ec ON ec.cd_estado_conservacao = o.cd_estado_conservacao
+INNER JOIN ace_autor au ON au.cd_autor = o.cd_autor
+INNER JOIN ace_editora ed ON ed.cd_editora = o.cd_editora
+INNER JOIN ace_estante_prateleira ep ON ep.cd_estante_prateleira = o.cd_estante_prateleira
+INNER JOIN ace_estante e ON e.cd_estante = ep.cd_estante
+INNER JOIN ace_sala sal ON sal.cd_sala = e.cd_sala
+INNER JOIN ger_estado est ON est.id = e.estado_id
+INNER JOIN ger_cidade cid ON cid.id = e.cidade_id
+INNER JOIN ace_material mat ON mat.cd_material = o.cd_material
+
+LEFT JOIN LATERAL (
+    SELECT nome
+    FROM ace_obra_galeria
+    WHERE cd_obra = o.cd_obra
+    AND sts_principal = true
+    LIMIT 1
+) gal ON true
+`;
+
+  if (where.length > 0) {
+    query += ` WHERE ` + where.join(" AND ");
+  }
+
+  query += ` ORDER BY o.titulo`;
+
+  //impirmit query 
+  console.log("QUERY MONTADA:", query);
+  console.log("VALORES:", valores);
+
+  console.timeEnd("MONTAGEM QUERY");
+
+  console.time("EXECUÇÃO QUERY BANCO");
+
+  const result = await pool.query(query, valores);
+  //qtd de registros
+  const totalRegistros = result.rowCount;
+      console.log ("REGISTROS ENCONTRADOS:", totalRegistros);
+
+  console.timeEnd("EXECUÇÃO QUERY BANCO");
+
+  const obras = result.rows;
+
+  console.log("TOTAL OBRAS:", obras.length);
+
+  console.time("CARREGAMENTO IMAGENS");
+
+  let contadorImagens = 0;
+
+  for (const obra of obras) {
+
+    if (obra.imagem_nome) {
+
+      const caminho = path.join(
+        __dirname,
+        '..',
+        'uploads',
+        'obras',
+        obra.cd_obra.toString(),
+        obra.imagem_nome
+      );
+
+      if (fs.existsSync(caminho)) {
+
+        const buffer = fs.readFileSync(caminho);
+
+        obra.imagem = `data:image/jpeg;base64,${buffer.toString('base64')}`;
+
+        contadorImagens++;
+      }
+
+    }
+
+  }
+
+  console.timeEnd("CARREGAMENTO IMAGENS");
+
+  console.log("IMAGENS CARREGADAS:", contadorImagens);
+
+  console.timeEnd("TEMPO TOTAL buscarObras");
+
+  return obras;
+
+}
+ 
+
+async function gerarPDF(html) {
+
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ['--no-sandbox']
+  });
+
+  const page = await browser.newPage();
+
+  await page.setContent(html, { waitUntil: 'networkidle0' });
+
+  const pdf = await page.pdf({
+  format: 'A4',
+  landscape: false,
+  printBackground: true,
+  margin: {
+    top: '10mm',
+    right: '10mm',
+    bottom: '10mm',
+    left: '10mm'
+  }
+});
+
+  await browser.close();
+
+  return pdf;
+}
+
+
+  
+
+router.post('/relatorio/lista-resumida', async (req, res) => {
+
+  const obras = await buscarObras(req.body);
+
+  const html = gerarListaObrasHTML(obras);
+
+  const pdf = await gerarPDF(html);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition','attachment; filename=lista_obras.pdf');
+
+  res.send(pdf);
+
+});
+
 
 
 

@@ -1561,7 +1561,10 @@ router.get('/exportar/contratos-seguro', verificarToken, async (req, res) => {
     SELECT
       ce.cd_contrato,
       to_char(ce.data_inicio,  'DD/MM/YYYY')  AS data_inicio,
-      to_char(ce.data_termino, 'DD/MM/YYYY')  AS data_termino,
+       to_char(  (SELECT MAX(ca.data_termino)                                                  
+                     FROM contrato ca
+                     WHERE (ca.cd_contrato = ce.cd_contrato OR ca.cd_contrato_origem = ce.cd_contrato)
+                       AND ca.data_termino IS NOT NULL) , 'DD/MM/YYYY')    AS data_termino,
       CASE 
         WHEN ce.status = 'A' THEN 'ATIVO'
         WHEN ce.status = 'D' THEN 'DESLIGADO'

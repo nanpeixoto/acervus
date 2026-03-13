@@ -1,7 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sistema_estagio/services/dashboard_service.dart';
 import 'package:sistema_estagio/utils/app_colors.dart';
+import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/widgets/dashboard_card.dart';
 import 'package:sistema_estagio/services/storage_service.dart';
 import 'package:sistema_estagio/widgets/grafico_obras_por_assunto.dart';
@@ -240,50 +242,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
 // ==========================================================
 // 🎴 CARD DA OBRA
 // ==========================================================
-class CardObraCarousel extends StatelessWidget {
+class CardObraCarousel extends StatefulWidget {
   final Map<String, dynamic> obra;
 
   const CardObraCarousel({super.key, required this.obra});
 
   @override
-  Widget build(BuildContext context) {
-    final titulo = obra['titulo'] ?? 'Sem título';
-    final capaUrl = obra['capa_url'];
+  State<CardObraCarousel> createState() => _CardObraCarouselState();
+}
 
-    return SizedBox(
-      width: 180,
-      child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: capaUrl != null
-                  ? Image.network(
-                      capaUrl,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      errorBuilder: (_, __, ___) => _placeholder(),
-                    )
-                  : _placeholder(),
+class _CardObraCarouselState extends State<CardObraCarousel> {
+  bool hover = false;
+
+  @override
+  @override
+  Widget build(BuildContext context) {
+    final titulo = widget.obra['titulo'] ?? 'Sem título';
+    final int id = widget.obra['cd_obra'];
+
+    final capaUrl = widget.obra['capa_url'] != null
+        ? "${AppConfig.prodBaseUrl}/${widget.obra['capa_url']}"
+        : null;
+
+    return GestureDetector(
+      onTap: () {
+        context.go('/admin/obras/editar/$id');
+      },
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => hover = true),
+        onExit: (_) => setState(() => hover = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 180,
+          transform: hover
+              ? (Matrix4.identity()
+                ..translate(0, -6)
+                ..scale(1.04))
+              : Matrix4.identity(),
+          child: Card(
+            elevation: hover ? 10 : 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
             ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Text(
-                titulo,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: capaUrl != null
+                      ? Image.network(
+                          capaUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _placeholder(),
+                        )
+                      : _placeholder(),
                 ),
-              ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black87,
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                    child: Text(
+                      titulo,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -293,7 +337,7 @@ class CardObraCarousel extends StatelessWidget {
     return Container(
       color: const Color(0xFFEAEAEA),
       child: const Center(
-        child: Icon(Icons.book_outlined, size: 48, color: Colors.grey),
+        child: Icon(Icons.menu_book_rounded, size: 48, color: Colors.grey),
       ),
     );
   }

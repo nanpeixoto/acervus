@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sistema_estagio/models/assunto.dart';
+import 'package:sistema_estagio/screens/lista_resumida_obras_screen.dart';
 import 'package:sistema_estagio/screens/material_screen.dart';
 import 'package:sistema_estagio/screens/assunto_form_screen.dart';
 import 'package:sistema_estagio/screens/editora_screen.dart';
@@ -157,6 +158,10 @@ class AppRouter {
               GoRoute(
                 path: '/admin/estantes',
                 builder: (context, state) => const EstanteScreen(),
+              ),
+              GoRoute(
+                path: '/relatorios/lista/resumida',
+                builder: (context, state) => const ListaResumidaObrasScreen(),
               ),
             ],
           ),
