@@ -79,53 +79,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // ===============================
                 // 🔹 CARDS DE TOTAIS
                 // ===============================
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
-                  children: [
-                    DashboardCard(
-                      titulo: 'Obras',
-                      valor: totais['obras'].toString(),
-                      icone: Icons.book_outlined,
-                      cor: AppColors.cardBlue,
-                    ),
-                    DashboardCard(
-                      titulo: 'Assuntos',
-                      valor: totais['assuntos'].toString(),
-                      icone: Icons.label_outline,
-                      cor: AppColors.cardGreen,
-                    ),
-                    DashboardCard(
-                      titulo: 'Autores',
-                      valor: totais['autores'].toString(),
-                      icone: Icons.person_outline,
-                      cor: AppColors.cardPurple,
-                    ),
-                    DashboardCard(
-                      titulo: 'Salas',
-                      valor: totais['salas'].toString(),
-                      icone: Icons.meeting_room_outlined,
-                      cor: AppColors.cardGray,
-                    ),
-                    DashboardCard(
-                      titulo: 'Estantes',
-                      valor: totais['estantes'].toString(),
-                      icone: Icons.inventory_2_outlined,
-                      cor: AppColors.cardBlue,
-                    ),
-                    DashboardCard(
-                      titulo: 'Tipos',
-                      valor: totais['tipos'].toString(),
-                      icone: Icons.category_outlined,
-                      cor: AppColors.cardGreen,
-                    ),
-                    DashboardCard(
-                      titulo: 'Subtipos',
-                      valor: totais['subtipos'].toString(),
-                      icone: Icons.layers_outlined,
-                      cor: AppColors.cardPurple,
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isMobile = constraints.maxWidth < 500;
+                    final cardWidth = isMobile
+                        ? (constraints.maxWidth - 16) / 2
+                        : 180.0;
+                    return Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: [
+                        DashboardCard(
+                          titulo: 'Obras',
+                          valor: totais['obras'].toString(),
+                          icone: Icons.book_outlined,
+                          cor: AppColors.cardBlue,
+                          width: cardWidth,
+                        ),
+                        DashboardCard(
+                          titulo: 'Assuntos',
+                          valor: totais['assuntos'].toString(),
+                          icone: Icons.label_outline,
+                          cor: AppColors.cardGreen,
+                          width: cardWidth,
+                        ),
+                        DashboardCard(
+                          titulo: 'Autores',
+                          valor: totais['autores'].toString(),
+                          icone: Icons.person_outline,
+                          cor: AppColors.cardPurple,
+                          width: cardWidth,
+                        ),
+                        DashboardCard(
+                          titulo: 'Salas',
+                          valor: totais['salas'].toString(),
+                          icone: Icons.meeting_room_outlined,
+                          cor: AppColors.cardGray,
+                          width: cardWidth,
+                        ),
+                        DashboardCard(
+                          titulo: 'Estantes',
+                          valor: totais['estantes'].toString(),
+                          icone: Icons.inventory_2_outlined,
+                          cor: AppColors.cardBlue,
+                          width: cardWidth,
+                        ),
+                        DashboardCard(
+                          titulo: 'Tipos',
+                          valor: totais['tipos'].toString(),
+                          icone: Icons.category_outlined,
+                          cor: AppColors.cardGreen,
+                          width: cardWidth,
+                        ),
+                        DashboardCard(
+                          titulo: 'Subtipos',
+                          valor: totais['subtipos'].toString(),
+                          icone: Icons.layers_outlined,
+                          cor: AppColors.cardPurple,
+                          width: cardWidth,
+                        ),
+                      ],
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 32),

@@ -25,6 +25,7 @@ class _AdminLayoutState extends State<AdminLayout> {
 
   final double _sidebarExpandedW = 260.0;
   final double _sidebarCollapsedW = 64.0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   // 🎨 Paleta Acervus
   static const Color primary = Color(0xFF1F3B5B);
@@ -54,6 +55,64 @@ class _AdminLayoutState extends State<AdminLayout> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 650;
+
+    if (isMobile) {
+      return Scaffold(
+        key: _scaffoldKey,
+        drawer: Drawer(
+          width: 280,
+          child: SafeArea(
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: divider)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'ACERVUS',
+                        style: TextStyle(
+                          color: primary,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close, color: textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(child: _buildMenu(false)),
+                _buildFooter(false),
+              ],
+            ),
+          ),
+        ),
+        body: Stack(
+          children: [
+            Container(color: background, child: widget.child),
+            Positioned(
+              top: MediaQuery.of(context).padding.top,
+              left: 0,
+              child: IconButton(
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                icon: const Icon(Icons.menu, color: Colors.white),
+                tooltip: 'Menu',
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Shortcuts(
       shortcuts: {
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB):

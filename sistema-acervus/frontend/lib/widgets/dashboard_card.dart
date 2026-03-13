@@ -5,6 +5,7 @@ class DashboardCard extends StatelessWidget {
   final String valor;
   final IconData icone;
   final Color cor;
+  final double? width;
 
   const DashboardCard({
     super.key,
@@ -12,12 +13,13 @@ class DashboardCard extends StatelessWidget {
     required this.valor,
     required this.icone,
     required this.cor,
+    this.width,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 180,
+      width: width ?? 180,
       height: 120,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
