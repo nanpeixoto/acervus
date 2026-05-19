@@ -178,6 +178,39 @@ class _EstadoConservacaoScreenState extends State<EstadoConservacaoScreen> {
   }
 
   // ================= LIST =================
+  Widget _statusMeta(bool ativo) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: ativo ? Colors.green : Colors.grey,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          ativo ? 'Ativo' : 'Inativo',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _metaText(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.grey[500],
+      ),
+    );
+  }
 
   Widget _buildList() {
     if (_itens.isEmpty) {
@@ -191,91 +224,83 @@ class _EstadoConservacaoScreenState extends State<EstadoConservacaoScreen> {
         final e = _itens[i];
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withOpacity(0.02),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               )
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        e.descricao,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: e.ativo
-                                  ? Colors.green.withOpacity(0.12)
-                                  : Colors.grey.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              e.ativo ? "ATIVO" : "INATIVO",
-                              style: TextStyle(
-                                color: e.ativo ? Colors.green : Colors.grey,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            "ID: ${e.id}",
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
+          child: Row(
+            children: [
+              // Ícone padrão
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.orange.withOpacity(0.1),
+                child: const Icon(
+                  Icons.inventory_2,
+                  color: Colors.orange,
+                  size: 18,
                 ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
-                  onSelected: (v) => _menu(v, e),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'editar',
-                      child: Text('Editar'),
+              ),
+
+              const SizedBox(width: 12),
+
+              // CONTEÚDO
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // TÍTULO
+                    Text(
+                      e.descricao,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    PopupMenuItem(
-                      value: 'toggle',
-                      child: Text(e.ativo ? 'Desativar' : 'Ativar'),
+
+                    const SizedBox(height: 4),
+
+                    // META
+                    Row(
+                      children: [
+                        _statusMeta(e.ativo),
+                        const SizedBox(width: 12),
+                        _metaText('ID ${e.id}'),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+
+              // MENU
+              PopupMenuButton<String>(
+                onSelected: (v) => _menu(v, e),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'editar',
+                    child: Text('Editar'),
+                  ),
+                  PopupMenuItem(
+                    value: 'toggle',
+                    child: Text(e.ativo ? 'Desativar' : 'Ativar'),
+                  ),
+                ],
+              ),
+            ],
           ),
         );
       },
     );
   }
-
   // ================= ACTIONS =================
 
   void _novo() {

@@ -46,7 +46,7 @@ async function listarEstantes(req, res) {
   const baseQuery = `
     	SELECT
       e.cd_estante,
-      e.descricao,
+      TRIM(e.descricao) AS descricao,
       e.cd_sala,
       e.pais_id,
       e.estado_id,
@@ -67,7 +67,7 @@ async function listarEstantes(req, res) {
       e.pais_id,
       e.estado_id,
       e.cidade_id,  gp.nome, ge.nome, gc.nome, sala.ds_sala 
-    ORDER BY unaccent(e.descricao)
+    ORDER BY sala.ds_sala, unaccent(e.descricao)
   `;
 
   try {
@@ -154,12 +154,14 @@ router.get('/prateleira/listar', tokenOpcional, async (req, res) => {
       `SELECT
         p.cd_estante_prateleira,
         p.descricao_prateleira,
-        e.descricao as estante_descricao,
-         e.descricao as estante
+        TRIM(e.descricao) as estante_descricao,
+         TRIM(e.descricao) as estante,
+          s.ds_sala AS sala,
+       e.cd_sala
       FROM public.ace_estante_prateleira p
-      JOIN public.ace_estante e
-        ON e.cd_estante = p.cd_estante
-      ORDER BY e.descricao, p.descricao_prateleira
+      JOIN public.ace_estante e  ON e.cd_estante = p.cd_estante
+      JOIN public.ace_sala s ON s.cd_sala = e.cd_sala
+      ORDER BY  s.ds_sala , e.descricao, p.descricao_prateleira
     `
     );
 
@@ -332,25 +334,100 @@ router.put('/alterar/:cd_estante', verificarToken, async (req, res) => {
       ]
     );
 
+    const idsRecebidos = prateleiras
+  .filter(p => p.id)
+  .map(p => p.id);
+
+  const atuais = await client.query(
+  `
+  SELECT cd_estante_prateleira
+  FROM public.ace_estante_prateleira
+  WHERE cd_estante = $1
+  `,
+  [cd_estante]
+);
+
+const idsBanco = atuais.rows.map(
+  r => r.cd_estante_prateleira
+);
+
+const idsRemovidos = idsBanco.filter(
+  id => !idsRecebidos.includes(id)
+);
+
+for (const id of idsRemovidos) {
+
+  const vinculo = await client.query(
+    `
+    SELECT 1
+    FROM public.ace_obra
+    WHERE cd_estante_prateleira = $1
+    LIMIT 1
+    `,
+    [id]
+  );
+
+  // possui obra vinculada
+  if (vinculo.rowCount > 0) {
+
+    throw new Error(
+      `A prateleira ${id} possui obras vinculadas e não pode ser removida.`
+    );
+  }
+
+  // pode remover
+  await client.query(
+    `
+    DELETE FROM public.ace_estante_prateleira
+    WHERE cd_estante_prateleira = $1
+    `,
+    [id]
+  );
+}
+
     // remove prateleiras antigas
+     // atualiza ou cria prateleiras
+for (const p of prateleiras) {
+
+  if (!p.descricao_prateleira) continue;
+
+  // ===================================
+  // UPDATE
+  // ===================================
+  if (p.id) {
+
     await client.query(
-      `DELETE FROM public.ace_estante_prateleira WHERE cd_estante = $1`,
-      [cd_estante]
+      `
+      UPDATE public.ace_estante_prateleira
+      SET descricao_prateleira = $1
+      WHERE cd_estante_prateleira = $2
+      `,
+      [
+        p.descricao_prateleira.trim(),
+        p.id
+      ]
     );
 
-    // recria prateleiras
-    for (const p of prateleiras) {
-      if (!p.descricao_prateleira) continue;
+  }
 
-      await client.query(
-        `
-        INSERT INTO public.ace_estante_prateleira
-          (cd_estante, descricao_prateleira)
-        VALUES ($1, $2)
-        `,
-        [cd_estante, p.descricao_prateleira.trim()]
-      );
-    }
+  // ===================================
+  // INSERT
+  // ===================================
+  else {
+
+    await client.query(
+      `
+      INSERT INTO public.ace_estante_prateleira
+        (cd_estante, descricao_prateleira)
+      VALUES ($1, $2)
+      `,
+      [
+        cd_estante,
+        p.descricao_prateleira.trim()
+      ]
+    );
+  }
+}
 
     await client.query('COMMIT');
 
@@ -366,7 +443,9 @@ router.put('/alterar/:cd_estante', verificarToken, async (req, res) => {
       'Estante'
     );
 
-    res.status(500).json({ erro: 'Erro ao atualizar estante.' });
+    res.status(500).json({
+  erro: err.message || 'Erro ao atualizar estante.'
+});
   } finally {
     client.release();
   }

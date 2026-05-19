@@ -3,12 +3,14 @@ class Prateleira {
   final int? cdEstante;
   final String descricao;
   final String estante;
+  final String? sala;
 
   Prateleira({
     this.id,
     this.cdEstante,
     required this.descricao,
     required this.estante,
+    this.sala,
   });
 
   // ===============================
@@ -20,6 +22,7 @@ class Prateleira {
       cdEstante: json['cd_estante'],
       descricao: json['descricao_prateleira'] ?? '',
       estante: json['estante'] ?? '',
+      sala: json['sala'] ?? '',
     );
   }
 
@@ -28,12 +31,15 @@ class Prateleira {
   // ===============================
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
+      'cd_estante': cdEstante,
       'descricao_prateleira': descricao,
+      'sala': sala,
     };
   }
 
   @override
   String toString() {
-    return 'Prateleira{id: $id, descricao: $descricao}';
+    return 'Prateleira{id: $id, descricao: $descricao, sala: $sala}';
   }
 }

@@ -43,6 +43,10 @@ class _EstanteScreenState extends State<EstanteScreen> {
   List<Cidade> _cidades = [];
   List<Sala> _salas = [];
 
+  List<Sala> _salasFiltro = [];
+  List<Sala> _salasFormulario = [];
+
+  Sala? _salaFiltro;
   Pais? _pais;
   Estado? _estado;
   Cidade? _cidade;
@@ -65,6 +69,7 @@ class _EstanteScreenState extends State<EstanteScreen> {
     super.initState();
     _loadPaises();
     _loadLista();
+    _loadTodasSalas();
   }
 
   // ========================
@@ -74,6 +79,14 @@ class _EstanteScreenState extends State<EstanteScreen> {
   Future<void> _loadPaises() async {
     final r = await PaisService.listar(page: 1, limit: 999, ativo: true);
     setState(() => _paises = List<Pais>.from(r['paises'] ?? []));
+  }
+
+  Future<void> _loadTodasSalas() async {
+    final r = await SalaService.listar(page: 1, limit: 999);
+
+    setState(() {
+      _salasFiltro = List<Sala>.from(r['Salas'] ?? []);
+    });
   }
 
   Future<void> _loadEstados(int paisId) async {
@@ -97,7 +110,7 @@ class _EstanteScreenState extends State<EstanteScreen> {
 
   Future<void> _loadSalas(int cidadeId) async {
     final r = await SalaService.listarPorCidade(cidadeId);
-    setState(() => _salas = r);
+    setState(() => _salasFormulario = r);
   }
 
   // ========================
@@ -112,6 +125,7 @@ class _EstanteScreenState extends State<EstanteScreen> {
         page: _currentPage,
         limit: _pageSize,
         search: _currentSearch.isEmpty ? null : _currentSearch,
+        salaId: _salaFiltro?.id,
       );
 
       setState(() {
@@ -136,7 +150,14 @@ class _EstanteScreenState extends State<EstanteScreen> {
       isLoading: _isLoading,
       onAdd: _novo,
       header: _buildHeader(),
-      form: _showForm ? CrudFormContainer(child: _buildFormulario()) : null,
+      form: _showForm
+          ? SizedBox(
+              height: MediaQuery.of(context).size.height * 0.70,
+              child: CrudFormContainer(
+                child: _buildFormulario(),
+              ),
+            )
+          : null,
       list: _buildList(),
       pagination: CrudPagination(
         currentPage: _currentPage,
@@ -173,19 +194,57 @@ class _EstanteScreenState extends State<EstanteScreen> {
           ),
         ],
       ),
-      search: Row(
+      search: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: CustomTextField(
-              controller: _searchController,
-              label: "Buscar estante",
-              prefixIcon: const Icon(Icons.search),
+          DropdownButtonFormField<Sala?>(
+            value: _salaFiltro,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: 'Sala',
+              border: OutlineInputBorder(),
+              isDense: true,
             ),
+            items: [
+              const DropdownMenuItem<Sala?>(
+                value: null,
+                child: Text('Todas as salas'),
+              ),
+              ..._salasFiltro.map((s) {
+                return DropdownMenuItem<Sala?>(
+                  value: s,
+                  child: Text(
+                    s.descricao,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }),
+            ],
+            onChanged: (v) {
+              setState(() {
+                _salaFiltro = v;
+              });
+            },
           ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: _search,
-            child: const Text("Buscar"),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: CustomTextField(
+                  controller: _searchController,
+                  label: "Buscar estante",
+                  prefixIcon: const Icon(Icons.search),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _search,
+                  child: const Text("Buscar"),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -197,107 +256,109 @@ class _EstanteScreenState extends State<EstanteScreen> {
   // ========================
 
   Widget _buildFormulario() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          CustomTextField(
-            controller: _descricaoController,
-            label: "Descrição",
-            validator: (v) => Validators.validateRequired(v, "Descrição"),
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<Pais>(
-            value: _pais,
-            items: _paises
-                .map((p) => DropdownMenuItem(
-                      value: p,
-                      child: Text(p.nome),
-                    ))
-                .toList(),
-            onChanged: (v) async {
-              if (v == null) return;
-              setState(() => _pais = v);
-              await _loadEstados(v.id!);
-            },
-            decoration: const InputDecoration(
-              labelText: "País",
-              border: OutlineInputBorder(),
+    return SingleChildScrollView(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            CustomTextField(
+              controller: _descricaoController,
+              label: "Descrição",
+              validator: (v) => Validators.validateRequired(v, "Descrição"),
             ),
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<Estado>(
-            value: _estado,
-            items: _estados
-                .map((e) => DropdownMenuItem(
-                      value: e,
-                      child: Text(e.nome),
-                    ))
-                .toList(),
-            onChanged: (v) async {
-              if (v == null) return;
-              setState(() => _estado = v);
-              await _loadCidades(v.id!);
-            },
-            decoration: const InputDecoration(
-              labelText: "Estado",
-              border: OutlineInputBorder(),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<Pais>(
+              value: _pais,
+              items: _paises
+                  .map((p) => DropdownMenuItem(
+                        value: p,
+                        child: Text(p.nome),
+                      ))
+                  .toList(),
+              onChanged: (v) async {
+                if (v == null) return;
+                setState(() => _pais = v);
+                await _loadEstados(v.id!);
+              },
+              decoration: const InputDecoration(
+                labelText: "País",
+                border: OutlineInputBorder(),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<Cidade>(
-            value: _cidade,
-            items: _cidades
-                .map((c) => DropdownMenuItem(
-                      value: c,
-                      child: Text(c.nome),
-                    ))
-                .toList(),
-            onChanged: (v) async {
-              if (v == null) return;
-              setState(() => _cidade = v);
-              await _loadSalas(v.id!);
-            },
-            decoration: const InputDecoration(
-              labelText: "Cidade",
-              border: OutlineInputBorder(),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<Estado>(
+              value: _estado,
+              items: _estados
+                  .map((e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e.nome),
+                      ))
+                  .toList(),
+              onChanged: (v) async {
+                if (v == null) return;
+                setState(() => _estado = v);
+                await _loadCidades(v.id!);
+              },
+              decoration: const InputDecoration(
+                labelText: "Estado",
+                border: OutlineInputBorder(),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<Sala>(
-            value: _sala,
-            items: _salas
-                .map((s) => DropdownMenuItem(
-                      value: s,
-                      child: Text(s.descricao),
-                    ))
-                .toList(),
-            onChanged: (v) => setState(() => _sala = v),
-            decoration: const InputDecoration(
-              labelText: "Sala",
-              border: OutlineInputBorder(),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<Cidade>(
+              value: _cidade,
+              items: _cidades
+                  .map((c) => DropdownMenuItem(
+                        value: c,
+                        child: Text(c.nome),
+                      ))
+                  .toList(),
+              onChanged: (v) async {
+                if (v == null) return;
+                setState(() => _cidade = v);
+                await _loadSalas(v.id!);
+              },
+              decoration: const InputDecoration(
+                labelText: "Cidade",
+                border: OutlineInputBorder(),
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          _listaPrateleiras(),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              ElevatedButton(
-                onPressed: _cancelar,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey,
+            const SizedBox(height: 16),
+            DropdownButtonFormField<Sala>(
+              value: _sala,
+              items: _salasFormulario
+                  .map((s) => DropdownMenuItem(
+                        value: s,
+                        child: Text(s.descricao),
+                      ))
+                  .toList(),
+              onChanged: (v) => setState(() => _sala = v),
+              decoration: const InputDecoration(
+                labelText: "Sala",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 24),
+            _listaPrateleiras(),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: _cancelar,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey,
+                  ),
+                  child: const Text("Cancelar"),
                 ),
-                child: const Text("Cancelar"),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: _salvar,
-                child: Text(_editando == null ? "Salvar" : "Atualizar"),
-              ),
-            ],
-          )
-        ],
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: _salvar,
+                  child: Text(_editando == null ? "Salvar" : "Atualizar"),
+                ),
+              ],
+            )
+          ],
+        ),
       ),
     );
   }
@@ -315,6 +376,7 @@ class _EstanteScreenState extends State<EstanteScreen> {
         const SizedBox(height: 8),
         ListView.builder(
           shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           itemCount: _prateleiras.length,
           itemBuilder: (_, i) {
             final p = _prateleiras[i];
@@ -351,105 +413,143 @@ class _EstanteScreenState extends State<EstanteScreen> {
   // ========================
   // LISTA
   // ========================
-
   Widget _buildList() {
     if (_estantes.isEmpty) {
       return const Center(child: Text('Nenhuma estante cadastrada'));
     }
 
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       itemCount: _estantes.length,
       itemBuilder: (_, i) {
         final e = _estantes[i];
 
+        // LOCALIZAÇÃO (usando seu model correto)
+        final localizacao = [
+          e.sala_descricao,
+          e.estado_descricao,
+          e.cidade_descricao,
+        ].whereType<String>().where((v) => v.isNotEmpty).join(' • ');
+
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withOpacity(0.02),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               )
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              children: [
-                // LADO ESQUERDO
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        e.descricao,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              "ATIVO",
-                              style: TextStyle(
-                                color: Colors.green,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            "ID: ${e.id}",
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
+          child: Row(
+            children: [
+              // ÍCONE PADRÃO
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.teal.withOpacity(0.1),
+                child: const Icon(
+                  Icons.storage,
+                  color: Colors.teal,
+                  size: 18,
                 ),
+              ),
 
-                // MENU AÇÕES
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
-                  onSelected: (value) {
-                    if (value == 'editar') {
-                      _editar(e.id!);
-                    }
-                  },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(
-                      value: 'editar',
-                      child: Text('Editar'),
+              const SizedBox(width: 12),
+
+              // CONTEÚDO
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // TÍTULO
+                    Text(
+                      e.descricao,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    // META INFO
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 4,
+                      children: [
+                        _statusMeta(true), // ajuste se tiver campo ativo
+                        _metaText('ID ${e.id}'),
+
+                        if (localizacao.isNotEmpty) _metaText(localizacao),
+
+                        _metaText('${e.totalPrateleiras} prateleiras'),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+
+              // MENU
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'editar') {
+                    _editar(e.id!);
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'editar',
+                    child: Text('Editar'),
+                  ),
+                ],
+              ),
+            ],
           ),
         );
       },
     );
   }
 
+  Widget _statusMeta(bool ativo) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: ativo ? Colors.green : Colors.grey,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          ativo ? 'Ativo' : 'Inativo',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _metaText(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.grey[500],
+      ),
+    );
+  }
   // ========================
   // ACTIONS
   // ========================
@@ -469,6 +569,46 @@ class _EstanteScreenState extends State<EstanteScreen> {
 
     _descricaoController.text = estante.descricao;
 
+    // ===== PRATELEIRAS =====
+    _prateleiras.clear();
+
+    for (final p in estante.prateleiras) {
+      _prateleiras.add(PrateleiraForm(
+        id: p.id,
+        descricao: p.descricao,
+      ));
+    }
+
+    // ===== PAÍS =====
+    _pais = _paises.firstWhere(
+      (p) => p.id == estante.paisId,
+    );
+
+    // ===== ESTADOS =====
+    await _loadEstados(estante.paisId);
+
+    _estado = _estados.firstWhere(
+      (e) => e.id == estante.estadoId,
+    );
+
+    // ===== CIDADES =====
+    await _loadCidades(estante.estadoId);
+
+    _cidade = _cidades.firstWhere(
+      (c) => c.id == estante.cidadeId,
+    );
+
+    // ===== SALAS =====
+    await _loadSalas(estante.cidadeId);
+
+    final salaEncontrada = _salasFormulario.where(
+      (s) => s.id == estante.cdSala,
+    );
+
+    if (salaEncontrada.isNotEmpty) {
+      _sala = salaEncontrada.first;
+    }
+
     setState(() {
       _editando = estante;
       _showForm = true;
@@ -477,28 +617,48 @@ class _EstanteScreenState extends State<EstanteScreen> {
 
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) return;
+    try {
+      final estante = Estante(
+        id: _editando?.id,
+        descricao: _descricaoController.text,
+        paisId: _pais!.id!,
+        estadoId: _estado!.id!,
+        cidadeId: _cidade!.id!,
+        cdSala: _sala!.id!,
+        prateleiras: _prateleiras
+            .map((p) => Prateleira(
+                  id: p.id,
+                  descricao: p.controller.text,
+                  estante: _descricaoController.text,
+                ))
+            .toList(),
+      );
 
-    final estante = Estante(
-      id: _editando?.id,
-      descricao: _descricaoController.text,
-      paisId: _pais!.id!,
-      estadoId: _estado!.id!,
-      cidadeId: _cidade!.id!,
-      cdSala: _sala!.id!,
-      prateleiras: _prateleiras
-          .map((p) => Prateleira(
-              descricao: p.controller.text, estante: _descricaoController.text))
-          .toList(),
-    );
+      if (_editando == null) {
+        await EstanteService.criar(estante);
+      } else {
+        await EstanteService.atualizar(_editando!.id!, estante);
+      }
 
-    if (_editando == null) {
-      await EstanteService.criar(estante);
-    } else {
-      await EstanteService.atualizar(_editando!.id!, estante);
+      await _loadLista();
+
+      if (mounted) {
+        setState(() {
+          _showForm = false;
+          _editando = null;
+        });
+      }
+
+      AppUtils.showSuccessSnackBar(
+        context,
+        'Estante salva com sucesso!',
+      );
+    } catch (e) {
+      AppUtils.showErrorSnackBar(
+        context,
+        e.toString().replaceAll('Exception: ', ''),
+      );
     }
-
-    _cancelar();
-    _loadLista();
   }
 
   void _cancelar() {

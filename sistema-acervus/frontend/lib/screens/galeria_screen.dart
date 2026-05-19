@@ -169,7 +169,8 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
     );
   }
 
-  Widget _buildImagemCard(int index, _ObraImagem item, [double cardWidth = 200]) {
+  Widget _buildImagemCard(int index, _ObraImagem item,
+      [double cardWidth = 200]) {
     final angleRad = item.rotationDeg * 3.1415926535 / 180;
 
     return Container(
@@ -550,7 +551,7 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin/obras/'),
+          onPressed: () => context.pop(),
         ),
         title: Text(titulo != null ? 'Galeria - $titulo' : 'Galeria da Obra'),
         actions: [
@@ -606,9 +607,8 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final isMobile = constraints.maxWidth < 500;
-                  final cardWidth = isMobile
-                      ? (constraints.maxWidth - 12) / 2
-                      : 200.0;
+                  final cardWidth =
+                      isMobile ? (constraints.maxWidth - 12) / 2 : 200.0;
                   return Wrap(
                     spacing: 12,
                     runSpacing: 12,

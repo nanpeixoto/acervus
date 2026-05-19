@@ -281,11 +281,11 @@ class _ObrasListScreenState extends State<ObrasListScreen>
     return PopupMenuButton<String>(
       onSelected: (v) {
         if (v == 'editar') {
-          context.go('/admin/obras/editar/${obra.id}');
+          context.push('/admin/obras/editar/${obra.id}');
         } else if (v == 'galeria') {
-          context.go('/admin/obras/galeria/${obra.id}');
+          context.push('/admin/obras/galeria/${obra.id}');
         } else if (v == 'movimentacoes') {
-          context.go('/admin/obras/movimentacoes/${obra.id}');
+          context.push('/admin/obras/movimentacoes/${obra.id}');
         } else if (v == 'ficha-obra') {
           _gerarFichaPdf(obra);
         }
@@ -402,145 +402,89 @@ class _ObrasListScreenState extends State<ObrasListScreen>
   Widget _buildObraCardDesktop(Obra obra) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F7F2),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E6DE)),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          )
+        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: _idPillWidth,
-            child: Container(
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withOpacity(0.08),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF2E7D32)),
-              ),
-              child: Text(
-                'ID ${obra.id}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2E7D32),
-                ),
+          // ID (menos chamativo)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'ID ${obra.id}',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
               ),
             ),
           ),
-          _vDivider(),
-          _infoItem(
-            icon: Icons.subtitles,
-            text: obra.carimbo ?? '',
-            flex: 4,
-          ),
-          _vDivider(),
-          _infoItem(
-            icon: Icons.book,
-            text: obra.titulo ?? '',
-            flex: 4,
-            bold: true,
-          ),
-          _vDivider(),
-          _infoItem(
-            icon: Icons.subtitles,
-            text: obra.subtitulo ?? '',
-            flex: 4,
-          ),
-          _vDivider(),
-          _infoItem(
-            icon: Icons.category,
-            text: obra.dsTipoPeca ?? '',
-            flex: 4,
-          ),
-          _vDivider(),
-          _infoItem(
-            icon: Icons.tiktok_sharp,
-            text: obra.dsSubtipoPeca ?? '',
-            flex: 4,
-          ),
-          _vDivider(),
-          _infoItem(
-            icon: Icons.category,
-            text: obra.dsAssunto ?? '',
-            flex: 4,
-          ),
-          _vDivider(),
-          _infoItem(
-            icon: Icons.person,
-            text: obra.dsAutor ?? '',
-            flex: 4,
-          ),
-          const SizedBox(width: 8),
-          PopupMenuButton<String>(
-            onSelected: (v) async {
-              if (v == 'editar') {
-                context.go('/admin/obras/editar/${obra.id}');
-              } else if (v == 'galeria') {
-                context.go('/admin/obras/galeria/${obra.id}');
-              } else if (v == 'movimentacoes') {
-                context.go('/admin/obras/movimentacoes/${obra.id}');
-              } else if (v == 'ficha-obra') {
-                Future.delayed(Duration.zero, () async {
-                  setState(() {
-                    _gerandoFicha = true;
-                  });
 
-                  await ObraService.baixarFichaPdf(obra.id);
+          const SizedBox(width: 16),
 
-                  if (mounted) {
-                    setState(() {
-                      _gerandoFicha = false;
-                    });
-                  }
-                });
-              }
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'editar',
-                child: Row(
+          // CONTEÚDO PRINCIPAL
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // TÍTULO (protagonista)
+                Text(
+                  obra.titulo ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+
+                // SUBTÍTULO
+                if ((obra.subtitulo ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    obra.subtitulo ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 6),
+
+                // META INFO (linha leve)
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
                   children: [
-                    Icon(Icons.edit, size: 18),
-                    SizedBox(width: 8),
-                    Text('Editar'),
+                    _meta('👤', obra.dsAutor),
+                    _meta('📚', obra.dsTipoPeca),
+                    _meta('🏷️', obra.dsAssunto),
                   ],
                 ),
-              ),
-              PopupMenuItem(
-                value: 'ficha-obra',
-                child: Row(
-                  children: [
-                    Icon(Icons.picture_as_pdf_outlined, size: 18),
-                    SizedBox(width: 8),
-                    Text('Ficha da Obra'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'galeria',
-                child: Row(
-                  children: [
-                    Icon(Icons.photo_library_outlined, size: 18),
-                    SizedBox(width: 8),
-                    Text('Galeria'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'movimentacoes',
-                child: Row(
-                  children: [
-                    Icon(Icons.swap_horiz, size: 18),
-                    SizedBox(width: 8),
-                    Text('Movimentação'),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
+
+          // MENU
+          _buildPopupMenu(obra),
         ],
       ),
     );
@@ -1138,5 +1082,24 @@ ${dados['resumo'] ?? ''}
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  Widget _meta(String icon, String? text) {
+    if (text == null || text.isEmpty) return const SizedBox();
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(icon, style: const TextStyle(fontSize: 12)),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
   }
 }

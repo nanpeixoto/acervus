@@ -357,70 +357,102 @@ class _AutoresScreenState extends State<AutoresScreen>
   }
 
   Widget _buildAutorCard(Autor autor) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          )
+        ],
+      ),
+      child: Row(
+        children: [
+          // Avatar fake (fica MUITO melhor visualmente)
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: const Color(0xFF2E7D32).withOpacity(0.1),
+            child: Text(
+              autor.nome.isNotEmpty ? autor.nome[0].toUpperCase() : '?',
+              style: const TextStyle(
+                color: Color(0xFF2E7D32),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // CONTEÚDO
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    autor.nome,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
+                Text(
+                  autor.nome,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                PopupMenuButton<String>(
-                  onSelected: (v) => _menuAction(v, autor),
-                  itemBuilder: (_) => [
-                    const PopupMenuItem(
-                      value: 'editar',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit, size: 18),
-                          SizedBox(width: 8),
-                          Text('Editar'),
-                        ],
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    _statusDot(autor.ativo),
+                    const SizedBox(width: 6),
+                    Text(
+                      autor.ativo ? 'Ativo' : 'Inativo',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
                       ),
                     ),
-                    PopupMenuItem(
-                      value: autor.ativo ? 'desativar' : 'ativar',
-                      child: Row(
-                        children: [
-                          Icon(
-                            autor.ativo
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(autor.ativo ? 'Desativar' : 'Ativar'),
-                        ],
+                    const SizedBox(width: 12),
+                    Text(
+                      'ID ${autor.id}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[500],
                       ),
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _statusChip(autor.ativo),
-                const Spacer(),
-                Text(
-                  'ID: ${autor.id}',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+
+          // MENU
+          PopupMenuButton<String>(
+            onSelected: (v) => _menuAction(v, autor),
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'editar',
+                child: Text('Editar'),
+              ),
+              PopupMenuItem(
+                value: autor.ativo ? 'desativar' : 'ativar',
+                child: Text(autor.ativo ? 'Desativar' : 'Ativar'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusDot(bool ativo) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: ativo ? Colors.green : Colors.grey,
+        shape: BoxShape.circle,
       ),
     );
   }

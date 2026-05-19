@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
 class PrateleiraForm {
+  final int? id;
+
   final TextEditingController controller;
 
-  PrateleiraForm({String descricao = ''})
-      : controller = TextEditingController(text: descricao);
+  PrateleiraForm({
+    this.id,
+    String descricao = '',
+  }) : controller = TextEditingController(text: descricao);
 }

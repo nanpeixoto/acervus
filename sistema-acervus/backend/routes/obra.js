@@ -618,10 +618,11 @@ router.get('/buscar/:id', verificarToken, async (req, res) => {
   o.codigo_obra_tipo,
   o.posicao_obra,
   o.nr_carimbo,
-  o.cd_estante_prateleira_from
+  o.cd_estante_prateleira_from,
+  e.ds_editora AS ds_editora
 FROM public.ace_obra o
-LEFT JOIN public.ace_autor a
-  ON a.cd_autor = o.cd_autor
+  LEFT JOIN public.ace_autor a ON a.cd_autor = o.cd_autor
+  LEFT JOIN public.ace_editora e ON e.cd_editora = o.cd_editora
 WHERE o.cd_obra = $1
 LIMIT 1
   `;
@@ -982,7 +983,7 @@ INNER JOIN ace_estado_conservacao ec  ON ec.cd_estado_conservacao = o.cd_estado_
 
 INNER JOIN ace_autor au  ON au.cd_autor = o.cd_autor
 
-INNER JOIN ace_editora ed  ON ed.cd_editora = o.cd_editora
+LEFT JOIN ace_editora ed  ON ed.cd_editora = o.cd_editora
 
 INNER JOIN ace_estante_prateleira ep  ON ep.cd_estante_prateleira = o.cd_estante_prateleira
 
@@ -1089,7 +1090,7 @@ INNER JOIN ace_estado_conservacao ec ON ec.cd_estado_conservacao = o.cd_estado_c
 
 INNER JOIN ace_autor au ON au.cd_autor = o.cd_autor
 
-INNER JOIN ace_editora ed ON ed.cd_editora = o.cd_editora
+LEFT JOIN ace_editora ed ON ed.cd_editora = o.cd_editora
 
 INNER JOIN ace_estante_prateleira ep ON ep.cd_estante_prateleira = o.cd_estante_prateleira
 
@@ -1501,91 +1502,153 @@ router.get('/filtros', async (req, res) => {
 
 
 
- function gerarListaObrasHTML(obras) {
+function gerarListaObrasHTML(obras) {
+
 return `
 <html>
+
 <head>
 
 <style>
 
 body{
-    font-family: Arial;
+    font-family: Arial, Helvetica, sans-serif;
     font-size:9px;
+    color:#222;
+    margin:15px;
 }
 
 .container{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:8px;
+    gap:10px;
 }
 
 .card{
-    border:1px solid #444;
-    padding:5px;
-    height:130px; /* permite 4 por coluna */
+    border:1px solid #cfcfcf;
+    border-radius:8px;
+    padding:10px;
+    height:135px;
     break-inside: avoid;
     page-break-inside: avoid;
+    background:#fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
+
+/* =========================
+   TOPO
+========================= */
 
 .topo{
     display:flex;
     justify-content:space-between;
-    font-size:8px;
+    align-items:flex-start;
+    margin-bottom:4px;
 }
 
 .codigo{
     font-size:8px;
+    color:#888;
 }
 
 .carimbo{
-    text-align:center;
-    font-size:14px;
-    font-weight:bold;
-    color:#c00000;
-    margin-bottom:2px;
+    font-size:10px;
+    font-weight:600;
+    color:#777;
+    letter-spacing:0.5px;
 }
+
+/* =========================
+   TÍTULO
+========================= */
 
 .titulo{
     text-align:center;
     font-weight:bold;
-    font-size:10px;
+    font-size:12px;
+    color:#111;
+    line-height:1.1;
+    margin-top:2px;
+}
+
+.autor{
+    text-align:center;
+    font-size:9px;
+    font-weight:bold;
+    color:#444;
+    margin-top:2px;
 }
 
 .subtitulo{
     text-align:center;
-    font-size:8px;
-    margin-bottom:3px;
+    font-size:7px;
+    color:#666;
+    margin-top:1px;
+    margin-bottom:4px;
+    font-style:italic;
 }
 
+/* =========================
+   DADOS
+========================= */
+
 .dados{
-    background:#d9d9d9;
+    background:#f2f2f2;
     text-align:center;
     font-weight:bold;
-    padding:2px;
-    margin-bottom:3px;
+    padding:4px;
+    margin-bottom:6px;
+    border-radius:4px;
+    color:#333;
 }
 
 .linha{
-    display:flex;
+    position:relative;
+    min-height:68px;
 }
 
 .info{
-    flex:1;
+    padding-right:60px;
     font-size:8px;
-    line-height:1.2;
+    line-height:1.35;
 }
 
+.info div{
+    margin-bottom:1px;
+}
+
+.info b{
+    color:#111;
+}
+
+/* =========================
+   IMAGEM
+========================= */
+
 .galeria{
-    width:50px;
-    height:65px;
-    border:1px solid #999;
-    margin-left:5px;
+    position:absolute;
+    top:0;
+    right:0;
+
+    width:48px;
+    height:64px;
+
+    border:1px solid #ddd;
+    border-radius:4px;
+    overflow:hidden;
+    background:#fafafa;
 }
 
 .galeria img{
     width:100%;
     height:100%;
     object-fit:cover;
+}
+
+.localizacao{
+    line-height:1.2;
+    max-height:20px;
+    overflow:hidden;
 }
 
 </style>
@@ -1600,41 +1663,60 @@ ${obras.map(o => `
 
 <div class="card">
 
-<div class="topo">
-<div></div>
-<div class="codigo">${o.cd_obra ?? ''}</div>
+    <div class="topo">
+
+        <div class="carimbo">
+            ${o.carimbo ?? ''}
+        </div>
+
+        <div class="codigo">
+            ${o.cd_obra ?? ''}
+        </div>
+
+    </div>
+
+    <div class="titulo">
+        ${o.titulo ?? '(SEM TÍTULO)'}
+    </div>
+
+    <div class="autor">
+        ${o.autor ?? ''}
+    </div>
+
+    <div class="subtitulo">
+        ${o.subtitulo ?? ''}
+    </div>
+
+    <div class="dados">
+        DADOS DA OBRA
+    </div>
+
+    <div class="linha">
+
+        <div class="info">
+
+            <div><b>Tipo:</b> ${o.tipo ?? ''}</div>
+
+            <div><b>Subtipo:</b> ${o.subtipo ?? ''}</div>
+
+            <div><b>Assunto:</b> ${o.assunto ?? ''}</div>
+
+<div class="localizacao">
+    <b>Localização:</b> ${o.localizacao ?? ''}
 </div>
+            <div><b>Editora:</b> ${o.editora ?? ''}</div>
 
-<div class="carimbo">${o.carimbo ?? ''}</div>
+        </div>
 
-<div class="titulo">${o.titulo ?? '(SEM TÍTULO)'}</div>
+        <div class="galeria">
 
-<div class="subtitulo">${o.subtitulo ?? ''}</div>
+            ${o.imagem
+            ? `<img src="${o.imagem}"/>`
+            : ''}
 
-<div class="dados">DADOS DA OBRA</div>
+        </div>
 
-<div class="linha">
-
-<div class="info">
-
-<div><b>Tipo:</b> ${o.tipo ?? ''}</div>
-<div><b>Subtipo:</b> ${o.subtipo ?? ''}</div>
-<div><b>Assunto:</b> ${o.assunto ?? ''}</div>
-<div><b>Localização:</b> ${o.localizacao ?? ''}</div>
-<div><b>Editora:</b> ${o.editora ?? ''}</div>
-<div><b>Autor:</b> ${o.autor ?? ''}</div>
-
-</div>
-
-<div class="galeria">
-
-${o.imagem
-? `<img src="${o.imagem}"/>`
-: ''}
-
-</div>
-
-</div>
+    </div>
 
 </div>
 
@@ -1660,9 +1742,19 @@ ${o.imagem
   console.time("MONTAGEM FILTROS");
 
   if (filtros.titulo) {
-    valores.push(`%${filtros.titulo}%`);
-    where.push(`LOWER(o.titulo) LIKE LOWER($${valores.length})`);
-  }
+  valores.push(`%${filtros.titulo}%`);
+  const idx = valores.length;
+
+  where.push(`
+    (
+      unaccent(LOWER(o.titulo)) LIKE unaccent(LOWER($${idx}))
+      OR unaccent(LOWER(o.subtitulo)) LIKE unaccent(LOWER($${idx}))
+      OR unaccent(LOWER(au.ds_autor)) LIKE unaccent(LOWER($${idx}))
+      OR unaccent(LOWER(ed.ds_editora)) LIKE unaccent(LOWER($${idx}))
+      OR unaccent(LOWER(a.ds_assunto)) LIKE unaccent(LOWER($${idx}))
+    )
+  `);
+}
 
   if (filtros.autor) {
     valores.push(filtros.autor);
@@ -1766,7 +1858,7 @@ INNER JOIN ace_assunto a ON a.cd_assunto = o.cd_assunto
 INNER JOIN ace_idioma i ON i.cd_idioma = o.cd_idioma
 INNER JOIN ace_estado_conservacao ec ON ec.cd_estado_conservacao = o.cd_estado_conservacao
 INNER JOIN ace_autor au ON au.cd_autor = o.cd_autor
-INNER JOIN ace_editora ed ON ed.cd_editora = o.cd_editora
+LEFT JOIN ace_editora ed ON ed.cd_editora = o.cd_editora
 INNER JOIN ace_estante_prateleira ep ON ep.cd_estante_prateleira = o.cd_estante_prateleira
 INNER JOIN ace_estante e ON e.cd_estante = ep.cd_estante
 INNER JOIN ace_sala sal ON sal.cd_sala = e.cd_sala
@@ -1895,6 +1987,131 @@ router.post('/relatorio/lista-resumida', async (req, res) => {
 
 });
 
+function montarFiltrosObra(filtros) {
+  const valores = [];
+  const where = [];
+
+  if (filtros.titulo) {
+    valores.push(`%${filtros.titulo}%`);
+    const idx = valores.length;
+
+    where.push(`
+      (
+        unaccent(LOWER(o.titulo)) LIKE unaccent(LOWER($${idx}))
+        OR unaccent(LOWER(o.subtitulo)) LIKE unaccent(LOWER($${idx}))
+        OR unaccent(LOWER(au.ds_autor)) LIKE unaccent(LOWER($${idx}))
+        OR unaccent(LOWER(ed.ds_editora)) LIKE unaccent(LOWER($${idx}))
+        OR unaccent(LOWER(a.ds_assunto)) LIKE unaccent(LOWER($${idx}))
+      )
+    `);
+  }
+
+  if (filtros.autor) {
+    valores.push(filtros.autor);
+    where.push(`o.cd_autor = $${valores.length}`);
+  }
+
+  if (filtros.material) {
+    valores.push(filtros.material);
+    where.push(`o.cd_material = $${valores.length}`);
+  }
+
+  if (filtros.tipo) {
+    valores.push(filtros.tipo);
+    where.push(`o.cd_tipo_peca = $${valores.length}`);
+  }
+
+  if (filtros.subtipo) {
+    valores.push(filtros.subtipo);
+    where.push(`o.cd_subtipo_peca = $${valores.length}`);
+  }
+
+  if (filtros.editora) {
+    valores.push(filtros.editora);
+    where.push(`o.cd_editora = $${valores.length}`);
+  }
+
+  if (filtros.conservacao) {
+    valores.push(filtros.conservacao);
+    where.push(`o.cd_estado_conservacao = $${valores.length}`);
+  }
+
+  if (filtros.localizacao) {
+    valores.push(filtros.localizacao);
+    where.push(`o.cd_estante_prateleira = $${valores.length}`);
+  }
+
+  if (filtros.assunto) {
+    valores.push(filtros.assunto);
+    where.push(`o.cd_assunto = $${valores.length}`);
+  }
+
+  if (filtros.idioma) {
+    valores.push(filtros.idioma);
+    where.push(`o.cd_idioma = $${valores.length}`);
+  }
+
+  return { valores, where };
+}
+
+
+function getBaseQuery(whereClause) {
+  return `
+    SELECT
+      o.cd_obra,
+      o.titulo,
+      o.subtitulo,
+      au.ds_autor AS autor,
+      ed.ds_editora AS editora,
+      a.ds_assunto AS assunto,
+      tp.ds_tipo_peca AS tipo,
+      st.descricao AS subtipo,
+
+      gal.nome AS imagem_nome
+
+    FROM ace_obra o
+
+    INNER JOIN ace_tipo_peca tp ON tp.cd_tipo_peca = o.cd_tipo_peca
+    INNER JOIN ace_subtipo_peca st ON st.cd_subtipo_peca = o.cd_subtipo_peca
+    INNER JOIN ace_assunto a ON a.cd_assunto = o.cd_assunto
+    INNER JOIN ace_autor au ON au.cd_autor = o.cd_autor
+    LEFT JOIN ace_editora ed ON ed.cd_editora = o.cd_editora
+
+    LEFT JOIN LATERAL (
+      SELECT nome
+      FROM ace_obra_galeria
+      WHERE cd_obra = o.cd_obra
+      AND sts_principal = true
+      LIMIT 1
+    ) gal ON true
+
+    ${whereClause}
+  `;
+}
+
+router.post('/buscar', async (req, res) => {
+  try {
+    const { valores, where } = montarFiltrosObra(req.body);
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+    const query = getBaseQuery(whereSql) + ` ORDER BY o.titulo`;
+
+    const result = await pool.query(query, valores);
+
+    const lista = result.rows.map(o => ({
+      ...o,
+      capa_url: o.imagem_nome
+        ? `/uploads/obras/${o.cd_obra}/${o.imagem_nome}`
+        : null
+    }));
+
+    res.json(lista);
+
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
+  }
+});
 
 
 

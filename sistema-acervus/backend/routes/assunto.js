@@ -46,7 +46,7 @@ async function listarAssuntos(req, res) {
     SELECT
       cd_assunto,
       ds_assunto AS descricao,
-      sigla,
+      trim(sigla) sigla,
       sts_assunto
     FROM public.ace_assunto
     ${where}

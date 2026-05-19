@@ -284,53 +284,110 @@ class _AssuntosScreenState extends State<AssuntosScreen>
       itemCount: _assuntos.length,
       itemBuilder: (_, i) {
         final a = _assuntos[i];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 2,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              )
+            ],
+          ),
+          child: Row(
+            children: [
+              // SIGLA (tipo badge leve)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1976D2).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  a.sigla,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1976D2),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // CONTEÚDO
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        '${a.sigla} - ${a.descricao}',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 16),
+                    Text(
+                      a.descricao,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    PopupMenuButton<String>(
-                      onSelected: (v) => _menu(v, a),
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(
-                          value: 'editar',
-                          child: Text('Editar'),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        _statusDot(a.ativo),
+                        const SizedBox(width: 6),
+                        Text(
+                          a.ativo ? 'Ativo' : 'Inativo',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
                         ),
-                        PopupMenuItem(
-                          value: 'toggle',
-                          child: Text(a.ativo ? 'Desativar' : 'Ativar'),
+                        const SizedBox(width: 12),
+                        Text(
+                          'ID ${a.id}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _statusChip(a.ativo),
-                    const Spacer(),
-                    Text('ID: ${a.id}',
-                        style:
-                            TextStyle(color: Colors.grey[600], fontSize: 12)),
-                  ],
-                ),
-              ],
-            ),
+              ),
+
+              // MENU
+              PopupMenuButton<String>(
+                onSelected: (v) => _menu(v, a),
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: 'editar',
+                    child: Text('Editar'),
+                  ),
+                  PopupMenuItem(
+                    value: 'toggle',
+                    child: Text(a.ativo ? 'Desativar' : 'Ativar'),
+                  ),
+                ],
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _statusDot(bool ativo) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: ativo ? Colors.green : Colors.grey,
+        shape: BoxShape.circle,
+      ),
     );
   }
 

@@ -284,88 +284,116 @@ class _EditoraScreenState extends State<EditoraScreen> {
         final e = _editoras[i];
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withOpacity(0.02),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               )
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        e.descricao,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: e.ativo
-                                  ? Colors.green.withOpacity(0.12)
-                                  : Colors.red.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              e.ativo ? "ATIVO" : "INATIVO",
-                              style: TextStyle(
-                                color: e.ativo ? Colors.green : Colors.red,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            "ID: ${e.id}",
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
+          child: Row(
+            children: [
+              // Ícone padrão (igual sistema todo)
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.blue.withOpacity(0.1),
+                child: const Icon(
+                  Icons.menu_book,
+                  color: Colors.blue,
+                  size: 18,
                 ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
-                  onSelected: (v) => _menu(v, e),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'editar',
-                      child: Text('Editar'),
+              ),
+
+              const SizedBox(width: 12),
+
+              // CONTEÚDO
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // TÍTULO
+                    Text(
+                      e.descricao,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    PopupMenuItem(
-                      value: 'toggle',
-                      child: Text(e.ativo ? 'Desativar' : 'Ativar'),
-                    ),
+
+                    const SizedBox(height: 4),
+
+                    // META INFO
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 4,
+                      children: [
+                        _statusMeta(e.ativo),
+                        _metaText('ID ${e.id}'),
+                      ],
+                    )
                   ],
                 ),
-              ],
-            ),
+              ),
+
+              // MENU
+              PopupMenuButton<String>(
+                onSelected: (v) => _menu(v, e),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'editar',
+                    child: Text('Editar'),
+                  ),
+                  PopupMenuItem(
+                    value: 'toggle',
+                    child: Text(e.ativo ? 'Desativar' : 'Ativar'),
+                  ),
+                ],
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _statusMeta(bool ativo) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: ativo ? Colors.green : Colors.grey,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          ativo ? 'Ativo' : 'Inativo',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _metaText(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.grey[500],
+      ),
     );
   }
 

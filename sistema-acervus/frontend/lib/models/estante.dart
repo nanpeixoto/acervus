@@ -65,11 +65,7 @@ class Estante {
       'cidade_id': cidadeId,
       'cd_sala': cdSala,
       'descricao': descricao,
-      'prateleiras': prateleiras
-          .map((p) => {
-                'descricao_prateleira': p.descricao,
-              })
-          .toList(),
+      'prateleiras': prateleiras.map((p) => p.toJson()).toList(),
     };
   }
 }

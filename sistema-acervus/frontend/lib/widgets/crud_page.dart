@@ -35,13 +35,15 @@ class CrudPage extends StatelessWidget {
       ),
       body: LoadingOverlay(
         isLoading: isLoading,
-        child: Column(
-          children: [
-            header,
-            if (form != null) form!,
-            Expanded(child: list),
-            pagination,
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              header,
+              if (form != null) form!,
+              list,
+              pagination,
+            ],
+          ),
         ),
       ),
     );

@@ -19,7 +19,10 @@ const PORT = process.env.PORT || 3000;
 
 
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.use('/uploads', cors({
+  origin: '*'
+}), express.static(path.join(__dirname, 'uploads')));
 
 
 

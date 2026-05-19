@@ -119,7 +119,7 @@ class EstanteService {
 
       if (response.statusCode != 200) {
         final data = jsonDecode(response.body);
-        throw Exception(data['erro'] ?? 'Erro ao atualizar estante');
+        throw Exception(data['erro'] ?? 'Erro ao atualizar estante.');
       }
 
       return true;

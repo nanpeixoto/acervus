@@ -31,6 +31,7 @@ class Obra {
   final String? dsTipoPeca;
   final String? dsSubtipoPeca;
   final String? dsAutor;
+  final String? dsEditora;
 
   Obra(
       {required this.id,
@@ -49,6 +50,7 @@ class Obra {
       this.medida,
       this.cdAutor,
       this.cdEditora,
+      this.dsEditora,
       this.conjunto,
       this.numeroEdicao,
       this.qtdPaginas,
@@ -87,6 +89,7 @@ class Obra {
       cdEstantePrateleira: json['cd_estante_prateleira'] as int?,
       cdAutor: json['cd_autor'] as int?,
       cdEditora: json['cd_editora'] as int?,
+      dsEditora: json['ds_editora'] as String?,
       origem: json['origem'] as String?,
       medida: json['medida'] as String?,
       conjunto: json['conjunto'] as String?,

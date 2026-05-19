@@ -32,6 +32,46 @@ class ObraService {
     };
   }
 
+  static Future<List<Map<String, dynamic>>> buscarListaVisual({
+    String? titulo,
+    int? autor,
+    int? material,
+    int? tipo,
+    int? subtipo,
+    int? editora,
+    int? conservacao,
+    int? localizacao,
+    int? assunto,
+    int? idioma,
+  }) async {
+    final body = {
+      if (titulo != null && titulo.trim().isNotEmpty) 'titulo': titulo.trim(),
+      if (autor != null) 'autor': autor,
+      if (material != null) 'material': material,
+      if (tipo != null) 'tipo': tipo,
+      if (subtipo != null) 'subtipo': subtipo,
+      if (editora != null) 'editora': editora,
+      if (conservacao != null) 'conservacao': conservacao,
+      if (localizacao != null) 'localizacao': localizacao,
+      if (assunto != null) 'assunto': assunto,
+      if (idioma != null) 'idioma': idioma,
+    };
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/obra/buscar'),
+      headers: await _getHeaders(),
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Erro ao buscar obras: ${response.body}');
+    }
+
+    final data = jsonDecode(response.body);
+
+    return List<Map<String, dynamic>>.from(data);
+  }
+
   static Future<Uint8List> listaResumida({
     String? titulo,
     int? autor,
