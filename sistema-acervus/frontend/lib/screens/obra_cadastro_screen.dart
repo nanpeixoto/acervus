@@ -160,6 +160,8 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
   bool _loadingMovimentacoes = false;
   bool _loadingGaleria = false;
 
+  final _localizacaoController = TextEditingController();
+
   DateTime? _dataCompra;
   DateTime? _dataCompraInfCompl;
   // esse aqui vira só ano
@@ -234,12 +236,16 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
 
     _loadAutores();
 
-    _loadLocalizacoes();
+    _inicializarTela();
     _loadPaises();
+  }
+
+  Future<void> _inicializarTela() async {
+    await _loadLocalizacoes();
 
     if (_isEdicao) {
-      _carregarObra();
-      _carregarGaleria();
+      await _carregarObra();
+      await _carregarGaleria();
     }
   }
 
@@ -664,6 +670,22 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       cdIdioma = obra.cdIdioma;
       cdEstadoConservacao = obra.cdEstadoConservacao;
       cdEstantePrateleira = obra.cdEstantePrateleira;
+
+      print('LOCALIZAÇÃO DA OBRA: $cdEstantePrateleira');
+
+      print('PRATELEIRAS CARREGADAS: ${_prateleiras.length}');
+      print('TEXTO LOCALIZACAO: ${_localizacaoController.text}');
+
+      final prateleiraSelecionada =
+          _prateleiras.where((p) => p.id == cdEstantePrateleira).toList();
+
+      if (prateleiraSelecionada.isNotEmpty) {
+        final p = prateleiraSelecionada.first;
+
+        _localizacaoController.text =
+            '${p.sala} - ${p.estante} - ${p.descricao}';
+      }
+
       cdAutor = obra.cdAutor;
       cdEditora = obra.cdEditora;
       _autorController.text = obra.autorNome ?? '';
@@ -1814,11 +1836,13 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       onSelected: (Prateleira p) {
         setState(() {
           cdEstantePrateleira = p.id;
+          _localizacaoController.text =
+              '${p.sala} - ${p.estante} - ${p.descricao}';
         });
       },
       fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
         return TextFormField(
-          controller: controller,
+          controller: _localizacaoController,
           focusNode: focusNode,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
@@ -2724,7 +2748,6 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
       decoration: const InputDecoration(
         border: OutlineInputBorder(),
         isDense: true,
-        hintText: '1988',
         counterText: '',
         contentPadding: EdgeInsets.symmetric(
           horizontal: 12,
@@ -2806,6 +2829,7 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
     _numeroApoliceController.dispose();
     _valorController.dispose();
     super.dispose();
+    _localizacaoController.dispose();
   }
 
   Widget dropdownComAcao({

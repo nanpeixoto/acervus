@@ -1,0 +1,57 @@
+-- FUNCTION: public.trg_gerar_carimbo()
+
+-- DROP FUNCTION IF EXISTS public.trg_gerar_carimbo();
+
+CREATE OR REPLACE FUNCTION public.trg_gerar_carimbo()
+    RETURNS trigger
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE NOT LEAKPROOF
+AS $BODY$
+DECLARE
+    VAR_SIGLA VARCHAR(150);
+    VAR_CARIMBO VARCHAR(150);
+    CONTADOR_ASSUNTO INTEGER;
+    CONTADOR_POSICAO INTEGER;
+BEGIN
+
+    -- 🔢 posição por prateleira
+    SELECT COALESCE(MAX(posicao_obra) + 1, 1)
+    INTO CONTADOR_POSICAO
+    FROM ace_obra
+    WHERE cd_estante_prateleira = NEW.cd_estante_prateleira;
+
+    -- 🔢 carimbo por assunto
+    SELECT COALESCE(MAX(nr_carimbo) + 1, 1)
+    INTO CONTADOR_ASSUNTO
+    FROM ace_obra
+    WHERE cd_assunto = NEW.cd_assunto;
+
+    -- 🔤 sigla
+    SELECT sigla
+    INTO VAR_SIGLA
+    FROM ace_assunto
+    WHERE cd_assunto = NEW.cd_assunto;
+
+    IF VAR_SIGLA IS NULL THEN
+        VAR_SIGLA := 'SEM';
+    END IF;
+
+    -- 🏷️ carimbo
+    VAR_CARIMBO :=
+        NEW.cd_tipo_peca || '.' ||
+        NEW.cd_subtipo_peca || '.' ||
+        VAR_SIGLA || '.' ||
+        LPAD(CONTADOR_ASSUNTO::TEXT, 4, '0');
+
+    -- ✅ atribuições
+    NEW.posicao_obra := CONTADOR_POSICAO;
+    NEW.nr_carimbo := CONTADOR_ASSUNTO;
+    NEW.carimbo := VAR_CARIMBO;
+
+    RETURN NEW;
+END;
+$BODY$;
+
+ALTER FUNCTION public.trg_gerar_carimbo()
+    OWNER TO postgres;

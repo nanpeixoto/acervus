@@ -287,7 +287,7 @@ class _ObrasListScreenState extends State<ObrasListScreen>
         } else if (v == 'movimentacoes') {
           context.push('/admin/obras/movimentacoes/${obra.id}');
         } else if (v == 'ficha-obra') {
-          _gerarFichaPdf(obra);
+          ObraService.baixarFichaPdf(obra.id!);
         }
       },
       itemBuilder: (context) => const [

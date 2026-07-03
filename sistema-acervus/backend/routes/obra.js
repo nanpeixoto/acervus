@@ -808,6 +808,37 @@ router.put('/alterar/:id', verificarToken, async (req, res) => {
     RETURNING *
   `;
 
+  const precisaVerificarPosicao =
+    body.cd_estante_prateleira !== undefined || body.posicao_obra !== undefined;
+
+  if (precisaVerificarPosicao) {
+    const obraAtual = await pool.query(
+      'SELECT cd_estante_prateleira, posicao_obra FROM ace_obra WHERE cd_obra = $1',
+      [id]
+    );
+
+    if (obraAtual.rowCount === 0) {
+      return res.status(404).json({ erro: 'Obra não encontrada.' });
+    }
+
+    const prateleira = body.cd_estante_prateleira ?? obraAtual.rows[0].cd_estante_prateleira;
+    const posicao = body.posicao_obra ?? obraAtual.rows[0].posicao_obra;
+
+   /* if (prateleira && posicao !== undefined && posicao !== null) {
+      const conflito = await pool.query(
+        'SELECT cd_obra FROM ace_obra WHERE cd_estante_prateleira = $1 AND posicao_obra = $2 AND cd_obra <> $3',
+        [prateleira, posicao, id]
+      );
+
+      if (conflito.rowCount > 0) {
+        return res.status(409).json({
+          erro: 'Posição já ocupada.',
+          motivo: `A posição ${posicao} na prateleira selecionada já está sendo usada pela obra ${conflito.rows[0].cd_obra}.`
+        });
+      }
+    }*/
+  }
+
   try {
     const result = await pool.query(query, values);
 
@@ -821,7 +852,7 @@ router.put('/alterar/:id', verificarToken, async (req, res) => {
     });
   } catch (err) {
     logger.error('Erro ao alterar obra: ' + err.stack, 'obras');
-    res.status(500).json({ erro: 'Erro ao alterar obra.', motivo    : err.message });
+    res.status(500).json({ erro: 'Erro ao alterar obra.', motivo: err.message });
   }
 });
 
@@ -1063,6 +1094,7 @@ router.get('/relatorio/ficha/:id/pdf', async (req, res) => {
     o.observacao ,
 
     o.data_compra,
+    o.data_historica,
     o.numero_apolice,
     o.valor,
 
