@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sistema_estagio/models/material.dart';
 import 'package:sistema_estagio/services/material_service.dart';
+import 'package:sistema_estagio/theme/acervus_colors.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
+import 'package:sistema_estagio/widgets/crud_pagination.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
@@ -77,27 +79,12 @@ class _MateriaisScreenState extends State<MateriaisScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Materiais'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFiltrosDialog,
-          ),
-          IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: _exportar,
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _novo,
-          ),
-        ],
-      ),
+      backgroundColor: AcervusColors.background,
       body: LoadingOverlay(
         isLoading: _isLoading,
         child: Column(
           children: [
+            _buildPageHeader(),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -116,12 +103,49 @@ class _MateriaisScreenState extends State<MateriaisScreen>
     );
   }
 
+  Widget _buildPageHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Materiais',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: AcervusColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          OutlinedButton.icon(
+            onPressed: _exportar,
+            icon: const Icon(Icons.download, size: 18),
+            label: const Text('Exportar'),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: _novo,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Novo material'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ================= HEADER =================
 
   Widget _buildHeader() {
     return Container(
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: AcervusColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AcervusColors.border),
+      ),
       child: Column(
         children: [
           Row(
@@ -130,8 +154,8 @@ class _MateriaisScreenState extends State<MateriaisScreen>
                 child: _buildStatCard(
                   'Total de Materiais',
                   (_pagination?['totalItems'] ?? _materiais.length).toString(),
-                  Icons.inventory,
-                  const Color(0xFF2E7D32),
+                  Icons.inventory_2_outlined,
+                  AcervusColors.primary,
                 ),
               ),
               const SizedBox(width: 16),
@@ -139,8 +163,8 @@ class _MateriaisScreenState extends State<MateriaisScreen>
                 child: _buildStatCard(
                   'Ativos',
                   _materiais.where((m) => m.ativo).length.toString(),
-                  Icons.check_circle,
-                  const Color(0xFF1976D2),
+                  Icons.check_circle_outline,
+                  AcervusColors.success,
                 ),
               ),
             ],
@@ -208,12 +232,12 @@ class _MateriaisScreenState extends State<MateriaisScreen>
 
   Widget _buildFormulario() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        color: AcervusColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AcervusColors.border),
       ),
       child: Form(
         key: _formKey,
@@ -227,8 +251,8 @@ class _MateriaisScreenState extends State<MateriaisScreen>
                   _editando == null ? 'Novo Material' : 'Editar Material',
                   style: const TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E7D32),
+                    fontWeight: FontWeight.w600,
+                    color: AcervusColors.textPrimary,
                   ),
                 ),
                 IconButton(
@@ -253,11 +277,8 @@ class _MateriaisScreenState extends State<MateriaisScreen>
             const SizedBox(height: 16),
             Row(
               children: [
-                ElevatedButton(
+                OutlinedButton(
                   onPressed: _cancelar,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[600],
-                  ),
                   child: const Text('Cancelar'),
                 ),
                 const SizedBox(width: 16),
@@ -285,7 +306,7 @@ class _MateriaisScreenState extends State<MateriaisScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _materiais.length,
@@ -296,7 +317,6 @@ class _MateriaisScreenState extends State<MateriaisScreen>
   Widget _buildMaterialCard(Materiais material) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -333,26 +353,26 @@ class _MateriaisScreenState extends State<MateriaisScreen>
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: material.ativo
-                        ? Colors.green.withOpacity(0.1)
-                        : Colors.grey.withOpacity(0.1),
+                        ? AcervusColors.success.withOpacity(0.1)
+                        : AcervusColors.textMuted.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: material.ativo ? Colors.green : Colors.grey,
-                    ),
                   ),
                   child: Text(
                     material.ativo ? 'ATIVO' : 'INATIVO',
                     style: TextStyle(
                       fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: material.ativo ? Colors.green : Colors.grey,
+                      fontWeight: FontWeight.w700,
+                      color: material.ativo
+                          ? AcervusColors.success
+                          : AcervusColors.textSecondary,
                     ),
                   ),
                 ),
                 const Spacer(),
                 Text(
                   'ID: ${material.id}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  style: const TextStyle(
+                      fontSize: 12, color: AcervusColors.textSecondary),
                 ),
               ],
             ),
@@ -367,26 +387,10 @@ class _MateriaisScreenState extends State<MateriaisScreen>
   Widget _buildPaginationControls() {
     if (_pagination == null) return const SizedBox.shrink();
 
-    final totalPages = _pagination!['totalPages'];
-    final currentPage = _pagination!['currentPage'];
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: currentPage > 1 ? () => _go(currentPage - 1) : null,
-          ),
-          Text('Página $currentPage de $totalPages'),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed:
-                currentPage < totalPages ? () => _go(currentPage + 1) : null,
-          ),
-        ],
-      ),
+    return CrudPagination(
+      currentPage: _pagination!['currentPage'] ?? 1,
+      totalPages: _pagination!['totalPages'] ?? 1,
+      onPageChange: _go,
     );
   }
 
@@ -452,8 +456,6 @@ class _MateriaisScreenState extends State<MateriaisScreen>
     _currentPage = p;
     _load(showLoading: false);
   }
-
-  void _showFiltrosDialog() {}
 
   void _exportar() {
     MateriaisService.exportarCSV();

@@ -477,40 +477,34 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Lista Resumida de Obras'),
-      ),
       body: _loadingFiltros
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-              padding: const EdgeInsets.all(20),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Card(
-                    elevation: 2,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Lista Resumida de Obras',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Relatório com filtros do acervo',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: Card(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: SingleChildScrollView(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // 🔹 TÍTULO
-                            const Row(
-                              children: [
-                                Icon(Icons.picture_as_pdf, size: 28),
-                                SizedBox(width: 10),
-                                Text(
-                                  "Lista Resumida de Obras",
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 20),
 
                             // 🔹 BUSCA
                             TextField(
@@ -656,8 +650,9 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
                         ),
                       ),
                     ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
     );

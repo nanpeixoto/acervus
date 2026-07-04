@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:sistema_estagio/models/tipo_obra.dart';
 import 'package:sistema_estagio/services/tipo_obra_service.dart';
+import 'package:sistema_estagio/theme/acervus_colors.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';
+import 'package:sistema_estagio/widgets/crud_pagination.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
 
@@ -78,15 +80,7 @@ class _TipoObraScreenState extends State<TipoObraScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tipo de Obra'),
-        actions: [
-          IconButton(
-            onPressed: _novo,
-            icon: const Icon(Icons.add),
-          ),
-        ],
-      ),
+      backgroundColor: AcervusColors.background,
       body: LoadingOverlay(
         isLoading: _isLoading,
         child: TabBarView(
@@ -101,6 +95,7 @@ class _TipoObraScreenState extends State<TipoObraScreen>
   Widget _buildListaTab() {
     return Column(
       children: [
+        _buildPageHeader(),
         _buildHeader(),
         if (_showForm) _buildFormulario(),
         Expanded(child: _buildList()),
@@ -109,11 +104,42 @@ class _TipoObraScreenState extends State<TipoObraScreen>
     );
   }
 
+  Widget _buildPageHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Tipos de Obra',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: AcervusColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton.icon(
+            onPressed: _novo,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Novo tipo'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ================= HEADER =================
   Widget _buildHeader() {
     return Container(
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: AcervusColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AcervusColors.border),
+      ),
       child: Column(
         children: [
           Row(
@@ -122,8 +148,8 @@ class _TipoObraScreenState extends State<TipoObraScreen>
                 child: _statCard(
                   'Total de Tipos',
                   (_pagination?['totalItems'] ?? _tipos.length).toString(),
-                  Icons.apartment,
-                  const Color(0xFF2E7D32),
+                  Icons.collections_bookmark_outlined,
+                  AcervusColors.primary,
                 ),
               ),
               const SizedBox(width: 16),
@@ -131,8 +157,8 @@ class _TipoObraScreenState extends State<TipoObraScreen>
                 child: _statCard(
                   'Total de Páginas',
                   (_pagination?['totalPages'] ?? 0).toString(),
-                  Icons.layers,
-                  const Color(0xFF1976D2),
+                  Icons.layers_outlined,
+                  AcervusColors.success,
                 ),
               ),
             ],
@@ -169,12 +195,12 @@ class _TipoObraScreenState extends State<TipoObraScreen>
   // ================= FORM =================
   Widget _buildFormulario() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        color: AcervusColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AcervusColors.border),
       ),
       child: Form(
         key: _formKey,
@@ -190,8 +216,8 @@ class _TipoObraScreenState extends State<TipoObraScreen>
                       : 'Editar Tipo de Obra',
                   style: const TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1976D2),
+                    fontWeight: FontWeight.w600,
+                    color: AcervusColors.textPrimary,
                   ),
                 ),
                 IconButton(
@@ -216,11 +242,8 @@ class _TipoObraScreenState extends State<TipoObraScreen>
             const SizedBox(height: 16),
             Row(
               children: [
-                ElevatedButton(
+                OutlinedButton(
                   onPressed: _cancelar,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[600],
-                  ),
                   child: const Text('Cancelar'),
                 ),
                 const SizedBox(width: 16),
@@ -243,13 +266,12 @@ class _TipoObraScreenState extends State<TipoObraScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       itemCount: _tipos.length,
       itemBuilder: (_, i) {
         final t = _tipos[i];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          elevation: 2,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -303,17 +325,16 @@ class _TipoObraScreenState extends State<TipoObraScreen>
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: ativo
-            ? Colors.green.withOpacity(0.1)
-            : Colors.grey.withOpacity(0.1),
+            ? AcervusColors.success.withOpacity(0.1)
+            : AcervusColors.textMuted.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ativo ? Colors.green : Colors.grey),
       ),
       child: Text(
         ativo ? 'ATIVO' : 'INATIVO',
         style: TextStyle(
           fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: ativo ? Colors.green : Colors.grey,
+          fontWeight: FontWeight.w700,
+          color: ativo ? AcervusColors.success : AcervusColors.textSecondary,
         ),
       ),
     );
@@ -343,21 +364,10 @@ class _TipoObraScreenState extends State<TipoObraScreen>
 
   Widget _buildPaginationControls() {
     if (_pagination == null) return const SizedBox.shrink();
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.chevron_left),
-          onPressed: _currentPage > 1 ? () => _go(_currentPage - 1) : null,
-        ),
-        Text('Página $_currentPage de ${_pagination!['totalPages']}'),
-        IconButton(
-          icon: const Icon(Icons.chevron_right),
-          onPressed: _currentPage < _pagination!['totalPages']
-              ? () => _go(_currentPage + 1)
-              : null,
-        ),
-      ],
+    return CrudPagination(
+      currentPage: _currentPage,
+      totalPages: _pagination!['totalPages'] ?? 1,
+      onPageChange: _go,
     );
   }
 

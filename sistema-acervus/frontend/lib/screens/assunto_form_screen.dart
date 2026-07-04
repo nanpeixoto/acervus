@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:sistema_estagio/models/assunto.dart';
 import 'package:sistema_estagio/services/assunto_service.dart';
+import 'package:sistema_estagio/theme/acervus_colors.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';
+import 'package:sistema_estagio/widgets/crud_pagination.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
 
@@ -79,19 +81,7 @@ class _AssuntosScreenState extends State<AssuntosScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Assuntos'),
-        actions: [
-          IconButton(
-            onPressed: _showFiltrosDialog,
-            icon: const Icon(Icons.filter_list),
-          ),
-          IconButton(
-            onPressed: _novo,
-            icon: const Icon(Icons.add),
-          ),
-        ],
-      ),
+      backgroundColor: AcervusColors.background,
       body: LoadingOverlay(
         isLoading: _isLoading,
         child: TabBarView(
@@ -105,6 +95,7 @@ class _AssuntosScreenState extends State<AssuntosScreen>
   Widget _buildListaTab() {
     return Column(
       children: [
+        _buildPageHeader(),
         _buildHeader(),
         if (_showForm) _buildFormulario(),
         Expanded(child: _buildList()),
@@ -113,11 +104,49 @@ class _AssuntosScreenState extends State<AssuntosScreen>
     );
   }
 
+  Widget _buildPageHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Assuntos',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: AcervusColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          IconButton(
+            onPressed: _showFiltrosDialog,
+            tooltip: 'Filtros',
+            icon: const Icon(Icons.filter_list,
+                color: AcervusColors.textSecondary),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: _novo,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Novo assunto'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ================= HEADER CLONE =================
   Widget _buildHeader() {
     return Container(
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: AcervusColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AcervusColors.border),
+      ),
       child: Column(
         children: [
           Row(
@@ -126,8 +155,8 @@ class _AssuntosScreenState extends State<AssuntosScreen>
                 child: _statCard(
                   'Total de Assuntos',
                   (_pagination?['totalItems'] ?? _assuntos.length).toString(),
-                  Icons.book,
-                  const Color(0xFF2E7D32),
+                  Icons.label_outline,
+                  AcervusColors.primary,
                 ),
               ),
               const SizedBox(width: 16),
@@ -135,8 +164,8 @@ class _AssuntosScreenState extends State<AssuntosScreen>
                 child: _statCard(
                   'Total de Páginas',
                   (_pagination?['totalPages'] ?? 0).toString(),
-                  Icons.check_circle,
-                  const Color(0xFF1976D2),
+                  Icons.check_circle_outline,
+                  AcervusColors.success,
                 ),
               ),
             ],
@@ -202,12 +231,12 @@ class _AssuntosScreenState extends State<AssuntosScreen>
   // ================= FORM CLONE =================
   Widget _buildFormulario() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        color: AcervusColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AcervusColors.border),
       ),
       child: Form(
         key: _formKey,
@@ -221,8 +250,8 @@ class _AssuntosScreenState extends State<AssuntosScreen>
                   _editando == null ? 'Novo Assunto' : 'Editar Assunto',
                   style: const TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1976D2),
+                    fontWeight: FontWeight.w600,
+                    color: AcervusColors.textPrimary,
                   ),
                 ),
                 IconButton(
@@ -253,11 +282,8 @@ class _AssuntosScreenState extends State<AssuntosScreen>
             const SizedBox(height: 16),
             Row(
               children: [
-                ElevatedButton(
+                OutlinedButton(
                   onPressed: _cancelar,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[600],
-                  ),
                   child: const Text('Cancelar'),
                 ),
                 const SizedBox(width: 16),
@@ -280,7 +306,7 @@ class _AssuntosScreenState extends State<AssuntosScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       itemCount: _assuntos.length,
       itemBuilder: (_, i) {
         final a = _assuntos[i];
@@ -289,16 +315,9 @@ class _AssuntosScreenState extends State<AssuntosScreen>
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AcervusColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              )
-            ],
+            border: Border.all(color: AcervusColors.border),
           ),
           child: Row(
             children: [
@@ -307,14 +326,14 @@ class _AssuntosScreenState extends State<AssuntosScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1976D2).withOpacity(0.08),
+                  color: AcervusColors.primarySoft,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   a.sigla,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1976D2),
+                    color: AcervusColors.primary,
                   ),
                 ),
               ),
@@ -385,29 +404,8 @@ class _AssuntosScreenState extends State<AssuntosScreen>
       width: 8,
       height: 8,
       decoration: BoxDecoration(
-        color: ativo ? Colors.green : Colors.grey,
+        color: ativo ? AcervusColors.success : AcervusColors.textMuted,
         shape: BoxShape.circle,
-      ),
-    );
-  }
-
-  Widget _statusChip(bool ativo) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: ativo
-            ? Colors.green.withOpacity(0.1)
-            : Colors.grey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ativo ? Colors.green : Colors.grey),
-      ),
-      child: Text(
-        ativo ? 'ATIVO' : 'INATIVO',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: ativo ? Colors.green : Colors.grey,
-        ),
       ),
     );
   }
@@ -436,21 +434,10 @@ class _AssuntosScreenState extends State<AssuntosScreen>
 
   Widget _buildPaginationControls() {
     if (_pagination == null) return const SizedBox.shrink();
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.chevron_left),
-          onPressed: _currentPage > 1 ? () => _go(_currentPage - 1) : null,
-        ),
-        Text('Página $_currentPage de ${_pagination!['totalPages']}'),
-        IconButton(
-          icon: const Icon(Icons.chevron_right),
-          onPressed: _currentPage < _pagination!['totalPages']
-              ? () => _go(_currentPage + 1)
-              : null,
-        ),
-      ],
+    return CrudPagination(
+      currentPage: _currentPage,
+      totalPages: _pagination!['totalPages'] ?? 1,
+      onPageChange: _go,
     );
   }
 

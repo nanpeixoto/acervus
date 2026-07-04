@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../theme/acervus_colors.dart';
 import '../utils/validators.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/loading_overlay.dart';
-
-/// 🎨 Paleta ACERVUS (baseada no logo)
-const Color _primaryColor = Color(0xFF1F3A5F); // Azul institucional
-const Color _primaryAccent = Color(0xFF2E6DA4); // Azul secundário
-const Color _highlightColor = Color(0xFFF28C28); // Laranja marcador
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -67,13 +62,13 @@ class _LoginScreenState extends State<LoginScreen>
     return Scaffold(
       body: Stack(
         children: [
-          /// 🌈 Fundo institucional
+          /// 🌈 Fundo institucional (gradiente índigo → roxo)
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [_primaryColor, _primaryAccent],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                colors: [AcervusColors.gradientStart, AcervusColors.gradientEnd],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
             ),
           ),
@@ -99,144 +94,172 @@ class _LoginScreenState extends State<LoginScreen>
                   opacity: _fadeAnimation,
                   child: SlideTransition(
                     position: _slideAnimation,
-                    child: Container(
-                      constraints: const BoxConstraints(maxWidth: 460),
-                      padding: EdgeInsets.all(isSmallScreen ? 24 : 40),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.25),
-                            blurRadius: 28,
-                            offset: const Offset(0, 12),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          /// 🏛️ Marca acima do card
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Image.asset(
+                              'assets/images/logo_acervus.png',
+                              height: 56,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'ACERVUS',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 3,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Sistema de Controle de Obras,\nLivros e Acervo Pessoal',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              height: 1.4,
+                              color: Colors.white.withOpacity(0.85),
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+
+                          /// Card de login
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.all(isSmallScreen ? 24 : 32),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.20),
+                                  blurRadius: 32,
+                                  offset: const Offset(0, 16),
+                                ),
+                              ],
+                            ),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    'Bem-vindo de volta! 👋',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      color: AcervusColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Faça login para acessar sua conta',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: AcervusColors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+
+                                  /// Mensagem de erro
+                                  if (_errorMessage != null) _errorBox(),
+
+                                  /// Login
+                                  CustomTextField(
+                                    controller: _loginController,
+                                    label: 'Email ou login',
+                                    prefixIcon:
+                                        const Icon(Icons.person_outline),
+                                    validator: (v) =>
+                                        Validators.validateRequired(
+                                            v, 'Login'),
+                                    onChanged: (_) =>
+                                        setState(() => _errorMessage = null),
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  /// Senha
+                                  CustomTextField(
+                                    controller: _senhaController,
+                                    label: 'Senha',
+                                    obscureText: _obscurePassword,
+                                    validator: Validators.validatePassword,
+                                    prefixIcon: const Icon(Icons.lock_outline),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword
+                                            ? Icons.visibility_outlined
+                                            : Icons.visibility_off_outlined,
+                                      ),
+                                      onPressed: () => setState(() =>
+                                          _obscurePassword =
+                                              !_obscurePassword),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  /// Esqueci senha
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton(
+                                      onPressed: _isLoading
+                                          ? null
+                                          : () => _showForgotPasswordDialog(
+                                              context),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                      ),
+                                      child: const Text(
+                                        'Esqueci minha senha',
+                                        style: TextStyle(fontSize: 13),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  /// Botão Entrar
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 48,
+                                    child: ElevatedButton(
+                                      onPressed: _isLoading ? null : _login,
+                                      child: _isLoading
+                                          ? const SizedBox(
+                                              width: 22,
+                                              height: 22,
+                                              child:
+                                                  CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : const Text(
+                                              'Entrar',
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            /// 🏛️ Logo Acervus
-                            Container(
-                              padding: const EdgeInsets.all(18),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: _primaryAccent.withOpacity(0.08),
-                              ),
-                              child: Image.asset(
-                                'assets/images/logo_acervus.png',
-                                height: 80,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            /// Título
-                            const Text(
-                              'Acessar o Acervus',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: _primaryColor,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-
-                            /// Subtítulo
-                            Text(
-                              'Sistema de Controle de Obras, Livros e Acervo Pessoal',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            /// Mensagem de erro
-                            if (_errorMessage != null) _errorBox(),
-
-                            /// Login
-                            CustomTextField(
-                              controller: _loginController,
-                              label: 'Login',
-                              prefixIcon: const Icon(Icons.person_outline),
-                              validator: (v) =>
-                                  Validators.validateRequired(v, 'Login'),
-                              onChanged: (_) =>
-                                  setState(() => _errorMessage = null),
-                            ),
-                            const SizedBox(height: 16),
-
-                            /// Senha
-                            CustomTextField(
-                              controller: _senhaController,
-                              label: 'Senha',
-                              obscureText: _obscurePassword,
-                              validator: Validators.validatePassword,
-                              prefixIcon: const Icon(Icons.lock_outline),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                ),
-                                onPressed: () => setState(
-                                    () => _obscurePassword = !_obscurePassword),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            /// Botão Entrar
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _login,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _primaryColor,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        width: 22,
-                                        height: 22,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: _highlightColor,
-                                        ),
-                                      )
-                                    : const Text(
-                                        'Entrar',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
-                            /// Esqueci senha
-                            TextButton(
-                              onPressed: _isLoading
-                                  ? null
-                                  : () => _showForgotPasswordDialog(context),
-                              child: const Text(
-                                'Esqueci minha senha',
-                                style: TextStyle(
-                                  color: _primaryAccent,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
                     ),
                   ),
@@ -311,24 +334,22 @@ class _LoginScreenState extends State<LoginScreen>
                   'Redefinir senha',
                   style: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: _primaryColor,
+                    fontWeight: FontWeight.w600,
+                    color: AcervusColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: emailController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'E-mail cadastrado',
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    prefixIcon: Icon(Icons.email_outlined),
                   ),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
+                  height: 48,
                   child: ElevatedButton(
                     onPressed: () async {
                       if (emailController.text.trim().isEmpty) return;
@@ -336,9 +357,6 @@ class _LoginScreenState extends State<LoginScreen>
                       await auth.requestReset(emailController.text.trim());
                       if (mounted) Navigator.pop(context);
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _primaryColor,
-                    ),
                     child: const Text('Enviar código'),
                   ),
                 ),
@@ -356,18 +374,20 @@ class _LoginScreenState extends State<LoginScreen>
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.red[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red[200]!),
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFECACA)),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+          const Icon(Icons.error_outline,
+              color: AcervusColors.danger, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               _errorMessage!,
-              style: TextStyle(color: Colors.red[700], fontSize: 13),
+              style:
+                  const TextStyle(color: AcervusColors.danger, fontSize: 13),
             ),
           ),
         ],

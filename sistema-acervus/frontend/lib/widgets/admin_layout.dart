@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
+import '../theme/acervus_colors.dart';
 
 class AdminLayout extends StatefulWidget {
   final Widget child;
@@ -27,14 +28,13 @@ class _AdminLayoutState extends State<AdminLayout> {
   final double _sidebarCollapsedW = 64.0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // 🎨 Paleta Acervus
-  static const Color primary = Color(0xFF1F3B5B);
-  static const Color primarySoft = Color(0xFFE8EEF5);
-  static const Color accent = Color(0xFFF28C28);
-  static const Color textPrimary = Color(0xFF263238);
-  static const Color textSecondary = Color(0xFF546E7A);
-  static const Color divider = Color(0xFFE0E0E0);
-  static const Color background = Color(0xFFF9FAF9);
+  // 🎨 Paleta Acervus (design system)
+  static const Color primary = AcervusColors.primary;
+  static const Color primarySoft = AcervusColors.primarySoft;
+  static const Color textPrimary = AcervusColors.textPrimary;
+  static const Color textSecondary = AcervusColors.textSecondary;
+  static const Color divider = AcervusColors.border;
+  static const Color background = AcervusColors.background;
 
   @override
   void initState() {
@@ -183,17 +183,31 @@ class _AdminLayoutState extends State<AdminLayout> {
       ),
       child: Row(
         children: [
-          if (!collapsed)
+          if (!collapsed) ...[
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: primarySoft,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.account_balance_outlined,
+                color: primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 10),
             const Text(
               'ACERVUS',
               style: TextStyle(
-                color: primary,
+                color: textPrimary,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
-                fontSize: 18,
+                fontSize: 17,
               ),
             ),
-          if (!collapsed) const Spacer(),
+            const Spacer(),
+          ],
           IconButton(
             onPressed: _toggleCollapse,
             icon: Icon(
@@ -285,29 +299,24 @@ class _AdminLayoutState extends State<AdminLayout> {
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: EdgeInsets.symmetric(
-              horizontal: collapsed ? 10 : 16, vertical: 12),
+              horizontal: collapsed ? 10 : 14, vertical: 11),
           decoration: BoxDecoration(
             color: isActive ? primarySoft : null,
-            borderRadius: BorderRadius.circular(8),
-            border: isActive
-                ? const Border(
-                    left: BorderSide(color: accent, width: 3),
-                  )
-                : null,
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
             children: [
-              Icon(icon, size: 20, color: isActive ? accent : textSecondary),
+              Icon(icon, size: 20, color: isActive ? primary : textSecondary),
               if (!collapsed) ...[
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     title,
                     style: TextStyle(
-                      color: isActive ? accent : textPrimary,
+                      color: isActive ? primary : textPrimary,
                       fontSize: 14,
                       fontWeight:
-                          isActive ? FontWeight.w600 : FontWeight.normal,
+                          isActive ? FontWeight.w600 : FontWeight.w400,
                     ),
                   ),
                 ),
@@ -334,23 +343,44 @@ class _AdminLayoutState extends State<AdminLayout> {
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundColor: accent,
+                backgroundColor: primarySoft,
                 child: Text(
                   user?.nome?.substring(0, 1).toUpperCase() ?? 'A',
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(
+                    color: primary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               if (!collapsed) ...[
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    user?.nome ?? 'Administrador',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.nome ?? 'Administrador',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: textPrimary,
+                        ),
+                      ),
+                      const Text(
+                        'Administrador',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.logout),
+                  icon: const Icon(Icons.logout, size: 20, color: textSecondary),
+                  tooltip: 'Sair',
                   onPressed: _logout,
                 )
               ],

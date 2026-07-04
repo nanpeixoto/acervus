@@ -1,16 +1,9 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sistema_estagio/models/obra.dart';
 import 'package:sistema_estagio/services/obra_service.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:pdf/pdf.dart';
-import 'package:printing/printing.dart';
 
+import 'package:sistema_estagio/theme/acervus_colors.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
@@ -31,9 +24,7 @@ class _ObrasListScreenState extends State<ObrasListScreen>
   List<Obra> _obras = [];
   bool _isLoading = true;
   bool _isLoadingPage = false;
-  bool _gerandoFicha = false;
-
-  Uint8List? _logoBytes;
+  final bool _gerandoFicha = false;
 
   int _currentPage = 1;
   int _pageSize = 10;
@@ -41,29 +32,12 @@ class _ObrasListScreenState extends State<ObrasListScreen>
   String _currentSearch = '';
 
   final List<int> _pageSizeOptions = [5, 10, 20, 50];
-  late final double _idPillWidth;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _idPillWidth = _calcIdPillWidth();
     _loadObras();
-  }
-
-  double _calcIdPillWidth() {
-    const style = TextStyle(
-      fontSize: 12,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.2,
-    );
-
-    final tp = TextPainter(
-      text: const TextSpan(text: 'ID 0000000000', style: style),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    return tp.width + 20;
   }
 
   Future<void> _loadObras({bool showLoading = true}) async {
@@ -114,20 +88,12 @@ class _ObrasListScreenState extends State<ObrasListScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gerenciar Obras'),
-        actions: [
-          IconButton(
-            onPressed: () => context.go('/admin/obras/nova'),
-            icon: const Icon(Icons.add),
-            tooltip: 'Nova Obra',
-          ),
-        ],
-      ),
+      backgroundColor: AcervusColors.background,
       body: LoadingOverlay(
         isLoading: _isLoading || _gerandoFicha,
         child: Column(
           children: [
+            _buildPageHeader(),
             _buildHeader(),
             Expanded(child: _buildObrasList()),
             _buildPaginationControls(),
@@ -139,10 +105,54 @@ class _ObrasListScreenState extends State<ObrasListScreen>
 
   // ================= HEADER =================
 
+  Widget _buildPageHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Gerenciar Obras',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: AcervusColors.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Livros e obras do seu acervo',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AcervusColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton.icon(
+            onPressed: () => context.go('/admin/obras/nova'),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Nova obra'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeader() {
     return Container(
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: AcervusColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AcervusColors.border),
+      ),
       child: Column(
         children: [
           Row(
@@ -163,21 +173,21 @@ class _ObrasListScreenState extends State<ObrasListScreen>
               const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: _performSearch,
-                icon: const Icon(Icons.search),
+                icon: const Icon(Icons.search, size: 18),
                 label: const Text('Buscar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Row(
             children: [
-              const Text('Itens por página:'),
+              const Text(
+                'Itens por página:',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AcervusColors.textSecondary,
+                ),
+              ),
               const SizedBox(width: 8),
               DropdownButton<int>(
                 value: _pageSize,
@@ -197,18 +207,16 @@ class _ObrasListScreenState extends State<ObrasListScreen>
                 isDense: true,
               ),
               const SizedBox(width: 16),
-              ElevatedButton.icon(
+              OutlinedButton.icon(
                 onPressed: () {
                   setState(() => _currentPage = 1);
                   _loadObras();
                 },
                 icon: const Icon(Icons.refresh, size: 16),
                 label: const Text('Atualizar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[600],
-                  foregroundColor: Colors.white,
+                style: OutlinedButton.styleFrom(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   textStyle: const TextStyle(fontSize: 12),
                 ),
               ),
@@ -231,23 +239,21 @@ class _ObrasListScreenState extends State<ObrasListScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.apartment, size: 64, color: Colors.grey[400]),
+            const Icon(Icons.menu_book_outlined,
+                size: 64, color: AcervusColors.textMuted),
             const SizedBox(height: 16),
-            Text(
-              _currentSearch.isNotEmpty
-                  ? 'Nenhuma obra encontrada'
-                  : 'Nenhuma obra cadastrada',
-              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+            const Text(
+              'Nenhuma obra encontrada',
+              style: TextStyle(
+                color: AcervusColors.textSecondary,
+                fontSize: 16,
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _currentSearch.isNotEmpty
                   ? _clearSearch
                   : () => context.go('/admin/obras/nova'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
-                foregroundColor: Colors.white,
-              ),
               child: Text(_currentSearch.isNotEmpty
                   ? 'Limpar Busca'
                   : 'Cadastrar Obra'),
@@ -258,7 +264,7 @@ class _ObrasListScreenState extends State<ObrasListScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       itemCount: _obras.length,
       itemBuilder: (context, index) {
         return _buildObraCard(_obras[index]);
@@ -340,9 +346,9 @@ class _ObrasListScreenState extends State<ObrasListScreen>
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F7F2),
+        color: AcervusColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E6DE)),
+        border: Border.all(color: AcervusColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,16 +359,15 @@ class _ObrasListScreenState extends State<ObrasListScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2E7D32).withOpacity(0.08),
+                  color: AcervusColors.primarySoft,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF2E7D32)),
                 ),
                 child: Text(
                   'ID ${obra.id}',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF2E7D32),
+                    color: AcervusColors.primary,
                   ),
                 ),
               ),
@@ -404,33 +409,26 @@ class _ObrasListScreenState extends State<ObrasListScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AcervusColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          )
-        ],
+        border: Border.all(color: AcervusColors.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ID (menos chamativo)
+          // ID (pill do design system)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: AcervusColors.primarySoft,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               'ID ${obra.id}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
+                color: AcervusColors.primary,
               ),
             ),
           ),
@@ -474,9 +472,9 @@ class _ObrasListScreenState extends State<ObrasListScreen>
                   spacing: 12,
                   runSpacing: 4,
                   children: [
-                    _meta('👤', obra.dsAutor),
-                    _meta('📚', obra.dsTipoPeca),
-                    _meta('🏷️', obra.dsAssunto),
+                    _meta(Icons.person_outline, obra.dsAutor),
+                    _meta(Icons.menu_book_outlined, obra.dsTipoPeca),
+                    _meta(Icons.label_outline, obra.dsAssunto),
                   ],
                 ),
               ],
@@ -488,536 +486,6 @@ class _ObrasListScreenState extends State<ObrasListScreen>
         ],
       ),
     );
-  }
-
-  Widget _vDivider() {
-    return Container(
-      width: 1,
-      height: 28,
-      margin: const EdgeInsets.symmetric(horizontal: 10),
-      color: const Color(0xFFE3E7E1),
-    );
-  }
-
-  Widget _infoItem({
-    required IconData? icon,
-    required String text,
-    required int flex,
-    bool bold = false,
-  }) {
-    return Expanded(
-      flex: flex,
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: Colors.grey[700]),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Tooltip(
-              message: text,
-              child: Text(
-                text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<Uint8List?> _loadLogoBytes() async {
-    if (_logoBytes != null) return _logoBytes;
-    try {
-      final data = await rootBundle.load('assets/images/logo_acervus.png');
-      _logoBytes = data.buffer.asUint8List();
-      return _logoBytes;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _imprimirFichaObra(int obraId) async {
-    try {
-      final dados = await ObraService.buscarFichaRelatorio(obraId);
-
-      if (dados == null) {
-        throw Exception('Dados da obra não encontrados');
-      }
-
-      final html = _gerarHtmlFicha(dados!);
-
-      await Printing.layoutPdf(
-        onLayout: (format) async {
-          final doc = pw.Document();
-
-          final pdf = await Printing.convertHtml(
-            format: format,
-            html: html,
-          );
-
-          return pdf;
-        },
-      );
-    } catch (e) {
-      AppUtils.showErrorSnackBar(context, 'Erro ao gerar ficha: $e');
-    }
-  }
-
-  String _gerarHtmlFicha(Map<String, dynamic> dados) {
-    return """
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-
-<style>
-
-body{
- font-family: Arial;
- font-size:12px;
-}
-
-.titulo{
- text-align:center;
- font-size:22px;
- font-weight:bold;
-}
-
-.carimbo{
- text-align:center;
- color:red;
- font-weight:bold;
- font-size:16px;
-}
-
-.section{
- background:#dcdcdc;
- padding:4px;
- font-weight:bold;
- margin-top:12px;
-}
-
-.row{
- display:flex;
- justify-content:space-between;
-}
-
-.col{
- width:48%;
-}
-
-img{
- max-width:120px;
- border:1px solid #aaa;
-}
-
-</style>
-</head>
-
-<body>
-
-<div class="titulo">
-FICHA DA OBRA
-</div>
-
-<div class="carimbo">
-${dados['carimbo']}
-</div>
-
-<h3 style="text-align:center">
-${dados['titulo']}
-</h3>
-
-<div style="text-align:center">
-${dados['subtitulo'] ?? ''}
-</div>
-
-
-<div class="section">DADOS DA OBRA</div>
-
-<div class="row">
-
-<div class="col">
-
-<p><b>Tipo de Obra:</b> ${dados['tipo_obra']}</p>
-<p><b>Assunto:</b> ${dados['assunto']}</p>
-<p><b>Localização:</b> ${dados['localizacao']}</p>
-<p><b>Material:</b> ${dados['material']}</p>
-<p><b>Origem:</b> ${dados['origem']}</p>
-
-</div>
-
-<div class="col">
-
-<p><b>Subtipo:</b> ${dados['subtipo_obra']}</p>
-<p><b>Idioma:</b> ${dados['idioma']}</p>
-<p><b>Conservação:</b> ${dados['conservacao']}</p>
-<p><b>Data:</b> ${dados['data']}</p>
-<p><b>Qtd Páginas:</b> ${dados['qtd_paginas']}</p>
-
-</div>
-
-</div>
-
-
-<div class="section">AUTOR</div>
-
-<p><b>Autor:</b> ${dados['autor']}</p>
-
-
-<div class="section">RESUMO</div>
-
-<p>
-${dados['resumo'] ?? ''}
-</p>
-
-
-<div class="section">INFORMAÇÕES COMPLEMENTARES</div>
-
-<p><b>Data da Compra:</b> ${dados['data_compra']}</p>
-<p><b>Nº Apólice:</b> ${dados['numero_apolice']}</p>
-<p><b>Valor:</b> ${dados['valor']}</p>
-
-
-</body>
-</html>
-""";
-  }
-
-  Future<Uint8List?> _buscarPrimeiraImagem(int obraId) async {
-    try {
-      final galeria = await ObraService.listarGaleria(obraId);
-      if (galeria.isEmpty) return null;
-      final first = galeria.first;
-      final base = first['imagem_base64'] ?? first['imagem'];
-      if (base is String && base.isNotEmpty) {
-        try {
-          return base64Decode(base);
-        } catch (_) {
-          return null;
-        }
-      }
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _gerarFichaPdf(Obra obra) async {
-    if (_gerandoFicha) return;
-    setState(() => _gerandoFicha = true);
-
-    try {
-      final obraDetalhada = await ObraService.buscarObraPorId(obra.id) ?? obra;
-      final logoBytes = await _loadLogoBytes();
-      final capaBytes = await _buscarPrimeiraImagem(obra.id);
-
-      final pdf = pw.Document();
-      final now = DateTime.now();
-      final dateStr =
-          '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
-
-      final logo = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
-      final capa = capaBytes != null ? pw.MemoryImage(capaBytes) : null;
-
-      // Helper para criar seção com fundo cinza
-      pw.Widget sectionHeader(String title) {
-        return pw.Container(
-          width: double.infinity,
-          padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          color: PdfColors.grey400,
-          child: pw.Text(
-            title,
-            style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
-          ),
-        );
-      }
-
-      // Helper para informação em linha
-      pw.Widget infoItem(String label, String value) {
-        return pw.RichText(
-          text: pw.TextSpan(
-            children: [
-              pw.TextSpan(
-                text: '$label: ',
-                style:
-                    pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.TextSpan(
-                text: value,
-                style: const pw.TextStyle(fontSize: 9),
-              ),
-            ],
-          ),
-        );
-      }
-
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(24),
-          build: (ctx) {
-            return pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                // Cabeçalho
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    if (logo != null)
-                      pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.SizedBox(
-                              height: 50, child: pw.Image(logo, height: 50)),
-                        ],
-                      )
-                    else
-                      pw.SizedBox(width: 100),
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.end,
-                      children: [
-                        pw.Text('Página: 1 de 1',
-                            style: const pw.TextStyle(fontSize: 10)),
-                        pw.SizedBox(height: 4),
-                        pw.Text('Impressão: $dateStr',
-                            style: const pw.TextStyle(fontSize: 9)),
-                      ],
-                    ),
-                  ],
-                ),
-
-                pw.SizedBox(height: 20),
-
-                // Título Principal
-                pw.Center(
-                  child: pw.Text(
-                    'FICHA DA OBRA',
-                    style: pw.TextStyle(
-                        fontSize: 20, fontWeight: pw.FontWeight.bold),
-                  ),
-                ),
-
-                pw.SizedBox(height: 16),
-
-                // ID da Obra (em destaque)
-                pw.Center(
-                  child: pw.Text(
-                    obraDetalhada.id.toString(),
-                    style: pw.TextStyle(
-                      fontSize: 14,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.red700,
-                    ),
-                  ),
-                ),
-
-                pw.SizedBox(height: 12),
-
-                // Título e Subtítulo da Obra
-                pw.Center(
-                  child: pw.Column(
-                    children: [
-                      pw.Text(
-                        obraDetalhada.titulo?.toUpperCase() ?? '',
-                        style: pw.TextStyle(
-                            fontSize: 13, fontWeight: pw.FontWeight.bold),
-                        textAlign: pw.TextAlign.center,
-                      ),
-                      if ((obraDetalhada.subtitulo ?? '').isNotEmpty) ...[
-                        pw.SizedBox(height: 4),
-                        pw.Text(
-                          obraDetalhada.subtitulo?.toUpperCase() ?? '',
-                          style: const pw.TextStyle(fontSize: 10),
-                          textAlign: pw.TextAlign.center,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                pw.SizedBox(height: 16),
-
-                // DADOS DA OBRA
-                sectionHeader('DADOS DA OBRA'),
-                pw.SizedBox(height: 8),
-
-                // Conteúdo com imagem
-                pw.Row(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    // Coluna de dados
-                    pw.Expanded(
-                      flex: 3,
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          infoItem('Tipo de Obra',
-                              obraDetalhada.cdTipoPeca?.toString() ?? '-'),
-                          pw.SizedBox(height: 3),
-                          infoItem('Assunto',
-                              obraDetalhada.cdAssunto?.toString() ?? '-'),
-                          pw.SizedBox(height: 3),
-                          infoItem('Localização', '-'),
-                          pw.SizedBox(height: 3),
-                          infoItem('Material',
-                              obraDetalhada.cdMaterial?.toString() ?? '-'),
-                          pw.SizedBox(height: 3),
-                          infoItem('Dimensões', obraDetalhada.medida ?? '-'),
-                          pw.SizedBox(height: 3),
-                          infoItem('Origem', obraDetalhada.origem ?? '-'),
-                          pw.SizedBox(height: 3),
-                          infoItem(
-                              'Nº Edição', obraDetalhada.numeroEdicao ?? '-'),
-                          pw.SizedBox(height: 3),
-                          infoItem('Volume', obraDetalhada.volume ?? '-'),
-                          pw.SizedBox(height: 3),
-                          infoItem('Conjunto', obraDetalhada.conjunto ?? '-'),
-                        ],
-                      ),
-                    ),
-
-                    pw.SizedBox(width: 8),
-
-                    // Coluna intermediária
-                    pw.Expanded(
-                      flex: 2,
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          infoItem('Subtipo de Obra',
-                              obraDetalhada.cdSubtipoPeca?.toString() ?? '-'),
-                          pw.SizedBox(height: 3),
-                          infoItem('Idioma',
-                              obraDetalhada.cdIdioma?.toString() ?? '-'),
-                          pw.SizedBox(height: 18),
-                          infoItem(
-                              'Conservação',
-                              obraDetalhada.cdEstadoConservacao?.toString() ??
-                                  '-'),
-                          pw.SizedBox(height: 3),
-                          infoItem('Data', obraDetalhada.dataCompra ?? '-'),
-                          pw.SizedBox(height: 3),
-                          infoItem('Qtd. Páginas',
-                              obraDetalhada.qtdPaginas?.toString() ?? '-'),
-                        ],
-                      ),
-                    ),
-
-                    pw.SizedBox(width: 8),
-
-                    // Imagem
-                    if (capa != null)
-                      pw.Container(
-                        width: 110,
-                        height: 140,
-                        decoration: pw.BoxDecoration(
-                          border: pw.Border.all(
-                              color: PdfColors.grey600, width: 0.5),
-                        ),
-                        child: pw.Image(capa, fit: pw.BoxFit.cover),
-                      )
-                    else
-                      pw.Container(
-                        width: 110,
-                        height: 140,
-                        decoration: pw.BoxDecoration(
-                          border: pw.Border.all(
-                              color: PdfColors.grey600, width: 0.5),
-                        ),
-                      ),
-                  ],
-                ),
-
-                pw.SizedBox(height: 16),
-
-                // AUTOR
-                sectionHeader('AUTOR'),
-                pw.SizedBox(height: 8),
-                pw.Row(
-                  children: [
-                    pw.Expanded(
-                      child: infoItem('Autor', '-'),
-                    ),
-                  ],
-                ),
-                pw.SizedBox(height: 3),
-                pw.Row(
-                  children: [
-                    pw.Expanded(
-                      flex: 2,
-                      child: infoItem('Data de Nascimento', '-'),
-                    ),
-                    pw.SizedBox(width: 16),
-                    pw.Expanded(
-                      flex: 2,
-                      child: infoItem('Data de Falecimento', '-'),
-                    ),
-                  ],
-                ),
-
-                pw.SizedBox(height: 16),
-
-                // RESUMO
-                sectionHeader('RESUMO'),
-                pw.SizedBox(height: 8),
-                if ((obraDetalhada.resumoObra ?? '').isNotEmpty)
-                  pw.Text(
-                    obraDetalhada.resumoObra ?? '',
-                    style: const pw.TextStyle(fontSize: 9),
-                  ),
-
-                pw.SizedBox(height: 16),
-
-                // INFORMAÇÕES COMPLEMENTARES
-                sectionHeader('INFORMAÇÕES COMPLEMENTARES'),
-                pw.SizedBox(height: 8),
-                pw.Row(
-                  children: [
-                    pw.Expanded(
-                      flex: 2,
-                      child: infoItem(
-                          'Data da Compra', obraDetalhada.dataCompra ?? '-'),
-                    ),
-                    pw.SizedBox(width: 16),
-                    pw.Expanded(
-                      flex: 2,
-                      child: infoItem('Nº Apólice', '-'),
-                    ),
-                    pw.SizedBox(width: 16),
-                    pw.Expanded(
-                      flex: 2,
-                      child: infoItem(
-                        'Valor',
-                        obraDetalhada.valor != null
-                            ? 'R\$ ${obraDetalhada.valor!.toStringAsFixed(2)}'
-                            : '-',
-                      ),
-                    ),
-                  ],
-                ),
-                pw.SizedBox(height: 3),
-                infoItem('Observações', '-'),
-              ],
-            );
-          },
-        ),
-      );
-
-      final bytes = await pdf.save();
-      await Printing.sharePdf(
-          bytes: bytes, filename: 'ficha_obra_${obra.id}.pdf');
-    } catch (e) {
-      AppUtils.showErrorSnackBar(context, 'Erro ao gerar ficha: $e');
-    } finally {
-      if (mounted) setState(() => _gerandoFicha = false);
-    }
   }
 
   // ================= PAGINATION =================
@@ -1034,45 +502,132 @@ ${dados['resumo'] ?? ''}
         (current * _pageSize) > total ? total : (current * _pageSize);
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey[300]!)),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      decoration: const BoxDecoration(
+        color: AcervusColors.surface,
+        border: Border(top: BorderSide(color: AcervusColors.border)),
       ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+
+          final info = Text(
+            'Mostrando $startItem-$endItem de $total registros',
+            style: const TextStyle(
+              fontSize: 13,
+              color: AcervusColors.textSecondary,
+            ),
+          );
+
+          final pager = Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Mostrando $startItem-$endItem de $total registros'),
-              Text('Página $current de $totalPages'),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: current > 1
+              _pagerArrow(
+                Icons.chevron_left,
+                current > 1
                     ? () {
                         setState(() => _currentPage--);
                         _loadObras(showLoading: false);
                       }
                     : null,
-                icon: const Icon(Icons.chevron_left),
               ),
-              IconButton(
-                onPressed: current < totalPages
+              ..._pageNumbers(current, totalPages).map(
+                (p) => p == null
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          '…',
+                          style:
+                              TextStyle(color: AcervusColors.textSecondary),
+                        ),
+                      )
+                    : _pagePill(p, p == current),
+              ),
+              _pagerArrow(
+                Icons.chevron_right,
+                current < totalPages
                     ? () {
                         setState(() => _currentPage++);
                         _loadObras(showLoading: false);
                       }
                     : null,
-                icon: const Icon(Icons.chevron_right),
               ),
             ],
+          );
+
+          if (isMobile) {
+            return Column(
+              children: [info, const SizedBox(height: 8), pager],
+            );
+          }
+
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [info, pager],
+          );
+        },
+      ),
+    );
+  }
+
+  /// Números de página com reticências: 1 … (c-1) c (c+1) … total
+  List<int?> _pageNumbers(int current, int totalPages) {
+    if (totalPages <= 7) {
+      return List<int?>.generate(totalPages, (i) => i + 1);
+    }
+    final pages = <int?>[1];
+    if (current > 3) pages.add(null);
+    for (var p = current - 1; p <= current + 1; p++) {
+      if (p > 1 && p < totalPages) pages.add(p);
+    }
+    if (current < totalPages - 2) pages.add(null);
+    pages.add(totalPages);
+    return pages;
+  }
+
+  Widget _pagePill(int page, bool isActive) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: InkWell(
+        onTap: isActive
+            ? null
+            : () {
+                setState(() => _currentPage = page);
+                _loadObras(showLoading: false);
+              },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 32,
+          height: 32,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isActive ? AcervusColors.primary : null,
+            borderRadius: BorderRadius.circular(8),
+            border: isActive ? null : Border.all(color: AcervusColors.border),
           ),
-        ],
+          child: Text(
+            '$page',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+              color: isActive ? Colors.white : AcervusColors.textPrimary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pagerArrow(IconData icon, VoidCallback? onTap) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: IconButton(
+        onPressed: onTap,
+        icon: Icon(icon, size: 20),
+        style: IconButton.styleFrom(
+          minimumSize: const Size(32, 32),
+          foregroundColor: AcervusColors.textSecondary,
+        ),
       ),
     );
   }
@@ -1084,19 +639,19 @@ ${dados['resumo'] ?? ''}
     super.dispose();
   }
 
-  Widget _meta(String icon, String? text) {
+  Widget _meta(IconData icon, String? text) {
     if (text == null || text.isEmpty) return const SizedBox();
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(icon, style: const TextStyle(fontSize: 12)),
+        Icon(icon, size: 14, color: AcervusColors.textSecondary),
         const SizedBox(width: 4),
         Text(
           text,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
-            color: Colors.grey[600],
+            color: AcervusColors.textSecondary,
           ),
         ),
       ],

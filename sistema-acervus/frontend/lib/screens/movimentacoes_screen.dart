@@ -589,27 +589,48 @@ class _MovimentacoesScreenState extends State<MovimentacoesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin/obras/'),
-        ),
-        title: Text(widget.obraTitulo ?? 'Movimentações da Obra'),
-      ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Movimentações',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  tooltip: 'Voltar',
+                  onPressed: () => context.go('/admin/obras/'),
                 ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Movimentações da Obra',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (widget.obraTitulo != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.obraTitulo!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.add),
+                  icon: const Icon(Icons.add, size: 18),
                   label: const Text('Nova movimentação'),
                   onPressed: () => _abrirMovimentacaoDialog(),
                 ),

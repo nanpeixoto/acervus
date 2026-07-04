@@ -29,6 +29,7 @@ import 'package:sistema_estagio/services/subtipo_obra_service.dart';
 import 'package:sistema_estagio/services/idioma_service.dart';
 import 'package:sistema_estagio/services/obra_service.dart';
 import 'package:sistema_estagio/models/obra.dart';
+import 'package:sistema_estagio/theme/acervus_colors.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/widgets/app_form_field.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
@@ -799,38 +800,90 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin/obras/'),
-        ),
-        title: Text(_isEdicao ? 'Editar Obra' : 'Cadastrar Obra'),
-        actions: [
-          IconButton(
-            tooltip: _isEdicao ? 'Atualizar obra' : 'Cadastrar obra',
-            icon: Icon(_isEdicao ? Icons.save : Icons.add),
-            onPressed: _salvar,
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Cadastro'),
-            Tab(text: 'Resumo'),
-            Tab(text: 'Inf Complementares'),
-          ],
-        ),
-      ),
+      backgroundColor: AcervusColors.background,
       body: LoadingOverlay(
         isLoading: _isLoading,
         child: Form(
           key: _formKey,
-          child: TabBarView(
-            controller: _tabController,
+          child: Column(
             children: [
-              _buildAbaCadastro(),
-              _buildAbaResumo(),
-              _buildAbaInfComplementares(),
+              // Cabeçalho da página (voltar + título + salvar)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back,
+                          color: AcervusColors.textPrimary),
+                      tooltip: 'Voltar',
+                      onPressed: () => context.go('/admin/obras/'),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _isEdicao ? 'Editar Obra' : 'Cadastrar Obra',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                          color: AcervusColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      onPressed: _salvar,
+                      icon: Icon(_isEdicao ? Icons.save_outlined : Icons.add,
+                          size: 18),
+                      label: Text(
+                          _isEdicao ? 'Salvar alterações' : 'Cadastrar obra'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Abas no padrão do design system
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: AcervusColors.border),
+                  ),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  labelColor: AcervusColors.primary,
+                  unselectedLabelColor: AcervusColors.textSecondary,
+                  indicatorColor: AcervusColors.primary,
+                  indicatorWeight: 2.5,
+                  dividerColor: Colors.transparent,
+                  labelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  tabs: const [
+                    Tab(text: 'Cadastro'),
+                    Tab(text: 'Resumo'),
+                    Tab(text: 'Inf. Complementares'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildAbaCadastro(),
+                    _buildAbaResumo(),
+                    _buildAbaInfComplementares(),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -872,17 +925,14 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
+                                color: AcervusColors.primarySoft,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Colors.grey.shade300,
-                                ),
                               ),
                               child: Text(
                                 _carimbo!,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: Colors.grey.shade700,
+                                  color: AcervusColors.primary,
                                   fontSize: isMobile ? 18 : 24,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 1,
@@ -1460,22 +1510,22 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
         Container(
           height: 140,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400, width: 2),
-            borderRadius: BorderRadius.circular(4),
-            color: Colors.grey.shade100,
+            border: Border.all(color: AcervusColors.border),
+            borderRadius: BorderRadius.circular(12),
+            color: AcervusColors.background,
           ),
           child: _loadingGaleria
               ? const Center(child: CircularProgressIndicator())
               : (img.bytes != null || img.url != null)
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(11),
                       child: _buildImagemPreview(img, BoxFit.contain),
                     )
-                  : Center(
+                  : const Center(
                       child: Icon(
                         Icons.image_outlined,
                         size: 40,
-                        color: Colors.grey.shade400,
+                        color: AcervusColors.textMuted,
                       ),
                     ),
         ),
@@ -1514,31 +1564,32 @@ class _ObraCadastroScreenState extends State<ObraCadastroScreen>
         Container(
           height: 400,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400, width: 2),
-            borderRadius: BorderRadius.circular(4),
-            color: Colors.grey.shade100,
+            border: Border.all(color: AcervusColors.border),
+            borderRadius: BorderRadius.circular(12),
+            color: AcervusColors.background,
           ),
           child: _loadingGaleria
               ? const Center(child: CircularProgressIndicator())
               : (imagemPrincipal.bytes != null || imagemPrincipal.url != null)
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(11),
                       child:
                           _buildImagemPreview(imagemPrincipal, BoxFit.contain),
                     )
-                  : Center(
+                  : const Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.image_outlined,
                             size: 64,
-                            color: Colors.grey.shade400,
+                            color: AcervusColors.textMuted,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'Nenhuma imagem',
-                            style: TextStyle(color: Colors.grey.shade600),
+                            style: TextStyle(
+                                color: AcervusColors.textSecondary),
                           ),
                         ],
                       ),

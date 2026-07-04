@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/dashboard_service.dart';
+import '../theme/acervus_colors.dart';
 
 class GraficoObrasPorAssunto extends StatelessWidget {
   const GraficoObrasPorAssunto({super.key});
@@ -32,9 +33,11 @@ class GraficoObrasPorAssunto extends StatelessWidget {
         final topDados = dados.take(10).toList();
 
         return Card(
-          elevation: 2,
+          elevation: 0,
+          color: AcervusColors.surface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AcervusColors.border),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -190,12 +193,6 @@ class GraficoObrasPorAssunto extends StatelessWidget {
     return (max / 5).ceilToDouble();
   }
 
-  // 🎨 Paleta institucional Acervus
-  static const List<Color> _cores = [
-    Color(0xFF1F3B5B), // azul escuro
-    Color(0xFF2E6FA3), // azul médio
-    Color(0xFF4A90E2), // azul claro
-    Color(0xFFF28C28), // laranja destaque
-    Color(0xFF9B9B9B), // cinza
-  ];
+  // 🎨 Paleta do design system Acervus
+  static const List<Color> _cores = AcervusColors.chart;
 }

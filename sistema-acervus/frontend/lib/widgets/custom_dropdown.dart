@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/acervus_colors.dart';
+
 class CustomDropdown<T> extends StatelessWidget {
   final T? value;
   final String label;
@@ -11,8 +13,6 @@ class CustomDropdown<T> extends StatelessWidget {
   final bool isExpanded;
   final List<Widget> Function(BuildContext)? selectedItemBuilder;
 
-
-
   const CustomDropdown({
     super.key,
     required this.value,
@@ -21,7 +21,7 @@ class CustomDropdown<T> extends StatelessWidget {
     required this.onChanged,
     this.validator,
     this.hintText,
-    this.isExpanded = true, 
+    this.isExpanded = true,
     this.selectedItemBuilder,
   });
 
@@ -37,18 +37,23 @@ class CustomDropdown<T> extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
+        labelStyle: const TextStyle(color: AcervusColors.textSecondary),
+        floatingLabelStyle: const TextStyle(color: AcervusColors.primary),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AcervusColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade400),
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AcervusColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF2E7D9A), width: 2),
+          borderRadius: BorderRadius.circular(10),
+          borderSide:
+              const BorderSide(color: AcervusColors.primary, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }

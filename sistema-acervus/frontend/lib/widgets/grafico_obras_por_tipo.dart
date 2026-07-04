@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/dashboard_service.dart';
+import '../theme/acervus_colors.dart';
 import 'dashboard_card_header.dart';
 
 class GraficoObrasPorTipo extends StatefulWidget {
@@ -33,9 +34,11 @@ class _GraficoObrasPorTipoState extends State<GraficoObrasPorTipo> {
         );
 
         return Card(
-          elevation: 2,
+          elevation: 0,
+          color: AcervusColors.surface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AcervusColors.border),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -155,11 +158,5 @@ class _GraficoObrasPorTipoState extends State<GraficoObrasPorTipo> {
     );
   }
 
-  static const List<Color> _cores = [
-    Color(0xFF1F3B5B),
-    Color(0xFF2E6FA3),
-    Color(0xFF4A90E2),
-    Color(0xFFF28C28),
-    Color(0xFF9B9B9B),
-  ];
+  static const List<Color> _cores = AcervusColors.chart;
 }

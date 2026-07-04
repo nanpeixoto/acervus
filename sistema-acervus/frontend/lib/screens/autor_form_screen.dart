@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sistema_estagio/models/autor.dart';
 import 'package:sistema_estagio/services/autor_service.dart';
+import 'package:sistema_estagio/theme/acervus_colors.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
+import 'package:sistema_estagio/widgets/crud_pagination.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
@@ -91,21 +93,7 @@ class _AutoresScreenState extends State<AutoresScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Autores'),
-        actions: [
-          IconButton(
-            onPressed: _showFiltrosDialog,
-            icon: const Icon(Icons.filter_list),
-            tooltip: 'Filtros',
-          ),
-          IconButton(
-            onPressed: _showNovoAutorForm,
-            icon: const Icon(Icons.add),
-            tooltip: 'Adicionar Autor',
-          ),
-        ],
-      ),
+      backgroundColor: AcervusColors.background,
       body: LoadingOverlay(
         isLoading: _isLoading,
         child: TabBarView(
@@ -121,6 +109,7 @@ class _AutoresScreenState extends State<AutoresScreen>
   Widget _buildListaTab() {
     return Column(
       children: [
+        _buildPageHeader(),
         _buildHeader(),
         if (_showForm) _buildFormulario(),
         Expanded(child: _buildAutoresList()),
@@ -129,13 +118,51 @@ class _AutoresScreenState extends State<AutoresScreen>
     );
   }
 
+  Widget _buildPageHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Autores',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: AcervusColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          IconButton(
+            onPressed: _showFiltrosDialog,
+            tooltip: 'Filtros',
+            icon: const Icon(Icons.filter_list,
+                color: AcervusColors.textSecondary),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: _showNovoAutorForm,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Novo autor'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ===============================
   // HEADER (IGUAL AO DE IDIOMAS)
   // ===============================
   Widget _buildHeader() {
     return Container(
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: AcervusColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AcervusColors.border),
+      ),
       child: Column(
         children: [
           // Cards de estatística
@@ -145,8 +172,8 @@ class _AutoresScreenState extends State<AutoresScreen>
                 child: _buildStatCard(
                   'Total de Autores',
                   (_pagination?['totalItems'] ?? _autores.length).toString(),
-                  Icons.person,
-                  const Color(0xFF2E7D32),
+                  Icons.person_outline,
+                  AcervusColors.primary,
                 ),
               ),
               const SizedBox(width: 16),
@@ -154,8 +181,8 @@ class _AutoresScreenState extends State<AutoresScreen>
                 child: _buildStatCard(
                   'Total de Paginas',
                   (_pagination?['totalPages'] ?? _autores.length).toString(),
-                  Icons.check_circle,
-                  const Color(0xFF1976D2),
+                  Icons.check_circle_outline,
+                  AcervusColors.success,
                 ),
               ),
             ],
@@ -181,12 +208,8 @@ class _AutoresScreenState extends State<AutoresScreen>
               const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: _performSearch,
-                icon: const Icon(Icons.search),
+                icon: const Icon(Icons.search, size: 18),
                 label: const Text('Buscar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
-                  foregroundColor: Colors.white,
-                ),
               ),
             ],
           ),
@@ -213,17 +236,13 @@ class _AutoresScreenState extends State<AutoresScreen>
                 },
               ),
               const SizedBox(width: 16),
-              ElevatedButton.icon(
+              OutlinedButton.icon(
                 onPressed: () {
                   setState(() => _currentPage = 1);
                   _loadAutores();
                 },
                 icon: const Icon(Icons.refresh, size: 16),
                 label: const Text('Atualizar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[600],
-                  foregroundColor: Colors.white,
-                ),
               ),
             ],
           ),
@@ -261,8 +280,8 @@ class _AutoresScreenState extends State<AutoresScreen>
                   _autorEditando == null ? 'Novo Autor' : 'Editar Autor',
                   style: const TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E7D32),
+                    fontWeight: FontWeight.w600,
+                    color: AcervusColors.textPrimary,
                   ),
                 ),
                 IconButton(
@@ -305,21 +324,13 @@ class _AutoresScreenState extends State<AutoresScreen>
             const SizedBox(height: 16),
             Row(
               children: [
-                ElevatedButton(
+                OutlinedButton(
                   onPressed: _cancelarForm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[600],
-                    foregroundColor: Colors.white,
-                  ),
                   child: const Text('Cancelar'),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: _salvarAutor,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    foregroundColor: Colors.white,
-                  ),
                   child: Text(_autorEditando == null ? 'Criar' : 'Atualizar'),
                 ),
               ],
@@ -350,7 +361,7 @@ class _AutoresScreenState extends State<AutoresScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       itemCount: _autores.length,
       itemBuilder: (_, i) => _buildAutorCard(_autores[i]),
     );
@@ -361,28 +372,21 @@ class _AutoresScreenState extends State<AutoresScreen>
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AcervusColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          )
-        ],
+        border: Border.all(color: AcervusColors.border),
       ),
       child: Row(
         children: [
-          // Avatar fake (fica MUITO melhor visualmente)
+          // Avatar com inicial do autor
           CircleAvatar(
             radius: 18,
-            backgroundColor: const Color(0xFF2E7D32).withOpacity(0.1),
+            backgroundColor: AcervusColors.primarySoft,
             child: Text(
               autor.nome.isNotEmpty ? autor.nome[0].toUpperCase() : '?',
               style: const TextStyle(
-                color: Color(0xFF2E7D32),
-                fontWeight: FontWeight.bold,
+                color: AcervusColors.primary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -451,31 +455,8 @@ class _AutoresScreenState extends State<AutoresScreen>
       width: 8,
       height: 8,
       decoration: BoxDecoration(
-        color: ativo ? Colors.green : Colors.grey,
+        color: ativo ? AcervusColors.success : AcervusColors.textMuted,
         shape: BoxShape.circle,
-      ),
-    );
-  }
-
-  Widget _statusChip(bool ativo) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: ativo
-            ? Colors.green.withOpacity(0.1)
-            : Colors.grey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: ativo ? Colors.green : Colors.grey,
-        ),
-      ),
-      child: Text(
-        ativo ? 'ATIVO' : 'INATIVO',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: ativo ? Colors.green : Colors.grey,
-        ),
       ),
     );
   }
@@ -486,24 +467,10 @@ class _AutoresScreenState extends State<AutoresScreen>
   Widget _buildPaginationControls() {
     if (_pagination == null) return const SizedBox.shrink();
 
-    final totalPages = _pagination!['totalPages'];
-    final currentPage = _pagination!['currentPage'];
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          onPressed: currentPage > 1 ? () => _goToPage(currentPage - 1) : null,
-          icon: const Icon(Icons.chevron_left),
-        ),
-        Text('Página $currentPage de $totalPages'),
-        IconButton(
-          onPressed: currentPage < totalPages
-              ? () => _goToPage(currentPage + 1)
-              : null,
-          icon: const Icon(Icons.chevron_right),
-        ),
-      ],
+    return CrudPagination(
+      currentPage: _pagination!['currentPage'] ?? 1,
+      totalPages: _pagination!['totalPages'] ?? 1,
+      onPageChange: _goToPage,
     );
   }
 
@@ -690,7 +657,7 @@ class _AutoresScreenState extends State<AutoresScreen>
       label: Text(label),
       deleteIcon: const Icon(Icons.close),
       onDeleted: onRemove,
-      backgroundColor: const Color(0xFF2E7D32).withOpacity(0.1),
+      backgroundColor: AcervusColors.primarySoft,
     );
   }
 

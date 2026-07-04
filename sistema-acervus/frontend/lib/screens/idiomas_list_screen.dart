@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:sistema_estagio/theme/acervus_colors.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/widgets/custom_app_bar.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
@@ -206,33 +207,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Idiomas'),
-        actions: [
-          IconButton(
-            onPressed: _showFiltrosDialog,
-            icon: const Icon(Icons.filter_list),
-            tooltip: 'Filtros',
-          ),
-          IconButton(
-            onPressed: _exportarDados,
-            icon: const Icon(Icons.download),
-            tooltip: 'Exportar',
-          ),
-          IconButton(
-            onPressed: _showNovoStatusForm,
-            icon: const Icon(Icons.add),
-            tooltip: 'Adicionar Nível de Idioma',
-          ),
-        ],
-        // bottom: TabBar(
-        //   controller: _tabController,
-        //   tabs: const [
-        //     Tab(text: 'Lista', icon: Icon(Icons.list)),
-        //     Tab(text: 'Estatísticas', icon: Icon(Icons.analytics)),
-        //   ],
-        // ),
-      ),
+      backgroundColor: AcervusColors.background,
       body: LoadingOverlay(
         isLoading: _isLoading,
         child: TabBarView(
@@ -246,9 +221,49 @@ class _IdiomasScreenState extends State<IdiomasScreen>
     );
   }
 
+  Widget _buildPageHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Idiomas',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: AcervusColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          IconButton(
+            onPressed: _showFiltrosDialog,
+            tooltip: 'Filtros',
+            icon: const Icon(Icons.filter_list,
+                color: AcervusColors.textSecondary),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton.icon(
+            onPressed: _exportarDados,
+            icon: const Icon(Icons.download, size: 18),
+            label: const Text('Exportar'),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: _showNovoStatusForm,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Novo idioma'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildListaTab() {
     return Column(
       children: [
+        _buildPageHeader(),
         _buildHeader(),
         if (_showForm) _buildFormulario(),
         Expanded(child: buscarIdiomasList()),
@@ -272,8 +287,13 @@ class _IdiomasScreenState extends State<IdiomasScreen>
 
   Widget _buildHeader() {
     return Container(
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: AcervusColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AcervusColors.border),
+      ),
       child: Column(
         children: [
           // Estatísticas rápidas
@@ -287,21 +307,21 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                       'Total de Status',
                       (_pagination?['total'] ?? _idiomas.length).toString(),
                       Icons.description,
-                      const Color(0xFF2E7D32),
+                      AcervusColors.primary,
                     ),
                     const SizedBox(height: 8),
                     _buildStatCard(
                       'Ativos',
                       (_idiomas.where((s) => s.ativo).length).toString(),
                       Icons.check_circle,
-                      const Color(0xFF1976D2),
+                      AcervusColors.success,
                     ),
                     const SizedBox(height: 8),
                     _buildStatCard(
                       'Padrão',
                       (_idiomas.where((s) => s.isDefault).length).toString(),
                       Icons.star,
-                      const Color(0xFFED6C02),
+                      AcervusColors.warning,
                     ),
                   ],
                 );
@@ -313,7 +333,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                       'Total de Status',
                       (_pagination?['total'] ?? _idiomas.length).toString(),
                       Icons.description,
-                      const Color(0xFF2E7D32),
+                      AcervusColors.primary,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -322,7 +342,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                       'Ativos',
                       (_idiomas.where((s) => s.ativo).length).toString(),
                       Icons.check_circle,
-                      const Color(0xFF1976D2),
+                      AcervusColors.success,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -331,7 +351,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                       'Padrão',
                       (_idiomas.where((s) => s.isDefault).length).toString(),
                       Icons.star,
-                      const Color(0xFFED6C02),
+                      AcervusColors.warning,
                     ),
                   ),
                 ],
@@ -362,7 +382,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                 icon: const Icon(Icons.search),
                 label: const Text('Buscar'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
+                  backgroundColor: AcervusColors.primary,
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -447,7 +467,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E7D32),
+                    color: AcervusColors.primary,
                   ),
                 ),
                 IconButton(
@@ -486,7 +506,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                 ElevatedButton(
                   onPressed: _salvarStatus,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: AcervusColors.primary,
                     foregroundColor: Colors.white,
                   ),
                   child: Text(_statusEditando == null ? 'Criar' : 'Atualizar'),
@@ -590,7 +610,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
               ElevatedButton(
                 onPressed: _showNovoStatusForm,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
+                  backgroundColor: AcervusColors.primary,
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Adicionar Primeiro Ítem'),
@@ -633,7 +653,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withOpacity(0.1),
+                color: AcervusColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Center(
@@ -642,7 +662,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E7D32),
+                    color: AcervusColors.primary,
                   ),
                 ),
               ),
@@ -706,16 +726,18 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                         ),
                         decoration: BoxDecoration(
                           color: idioma.ativo
-                              ? Colors.green.withOpacity(0.12)
-                              : Colors.grey.withOpacity(0.12),
+                              ? AcervusColors.success.withOpacity(0.12)
+                              : AcervusColors.textMuted.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           idioma.ativo ? "ATIVO" : "INATIVO",
                           style: TextStyle(
-                            color: idioma.ativo ? Colors.green : Colors.grey,
+                            color: idioma.ativo
+                                ? AcervusColors.success
+                                : AcervusColors.textSecondary,
                             fontSize: 11,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -845,7 +867,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                 tooltip: 'Primeira página',
                 style: IconButton.styleFrom(
                   backgroundColor: currentPage > 1
-                      ? const Color(0xFF2E7D32).withOpacity(0.1)
+                      ? AcervusColors.primary.withOpacity(0.1)
                       : Colors.grey[200],
                 ),
               ),
@@ -856,7 +878,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                 tooltip: 'Página anterior',
                 style: IconButton.styleFrom(
                   backgroundColor: hasPrevPage
-                      ? const Color(0xFF2E7D32).withOpacity(0.1)
+                      ? AcervusColors.primary.withOpacity(0.1)
                       : Colors.grey[200],
                 ),
               ),
@@ -870,7 +892,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                 tooltip: 'Próxima página',
                 style: IconButton.styleFrom(
                   backgroundColor: hasNextPage
-                      ? const Color(0xFF2E7D32).withOpacity(0.1)
+                      ? AcervusColors.primary.withOpacity(0.1)
                       : Colors.grey[200],
                 ),
               ),
@@ -882,7 +904,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
                 tooltip: 'Última página',
                 style: IconButton.styleFrom(
                   backgroundColor: currentPage < totalPages
-                      ? const Color(0xFF2E7D32).withOpacity(0.1)
+                      ? AcervusColors.primary.withOpacity(0.1)
                       : Colors.grey[200],
                 ),
               ),
@@ -943,10 +965,10 @@ class _IdiomasScreenState extends State<IdiomasScreen>
             onPressed: i == currentPage ? null : () => _goToPage(i),
             style: ElevatedButton.styleFrom(
               backgroundColor:
-                  i == currentPage ? const Color(0xFF2E7D32) : Colors.white,
+                  i == currentPage ? AcervusColors.primary : Colors.white,
               foregroundColor:
-                  i == currentPage ? Colors.white : const Color(0xFF2E7D32),
-              side: const BorderSide(color: Color(0xFF2E7D32)),
+                  i == currentPage ? Colors.white : AcervusColors.primary,
+              side: const BorderSide(color: AcervusColors.primary),
               minimumSize: const Size(40, 40),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -992,25 +1014,25 @@ class _IdiomasScreenState extends State<IdiomasScreen>
               'Total de Status',
               (_estatisticas['total'] ?? 0).toString(),
               Icons.flag,
-              const Color(0xFF2E7D32),
+              AcervusColors.primary,
             ),
             _buildStatCard(
               'Status Ativos',
               (_estatisticas['ativos'] ?? 0).toString(),
               Icons.check_circle,
-              const Color(0xFF1976D2),
+              AcervusColors.success,
             ),
             _buildStatCard(
               'Status Padrão',
               (_estatisticas['padrao'] ?? 0).toString(),
               Icons.star,
-              const Color(0xFFED6C02),
+              AcervusColors.warning,
             ),
             _buildStatCard(
               'Criados Este Mês',
               (_estatisticas['criadosEsteMes'] ?? 0).toString(),
               Icons.trending_up,
-              const Color(0xFF9C27B0),
+              AcervusColors.purple,
             ),
           ],
         ),
@@ -1280,7 +1302,7 @@ class _IdiomasScreenState extends State<IdiomasScreen>
       label: Text(label, style: const TextStyle(fontSize: 12)),
       deleteIcon: const Icon(Icons.close, size: 16),
       onDeleted: onRemove,
-      backgroundColor: const Color(0xFF2E7D32).withOpacity(0.1),
+      backgroundColor: AcervusColors.primary.withOpacity(0.1),
     );
   }
 

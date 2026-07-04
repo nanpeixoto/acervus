@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../theme/acervus_colors.dart';
+
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
   final String? label;
@@ -58,37 +60,40 @@ class CustomTextField extends StatelessWidget {
           prefixIcon: prefixIcon,
           floatingLabelBehavior: FloatingLabelBehavior.auto,
           labelStyle: const TextStyle(
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: FontWeight.normal,
+            color: AcervusColors.textSecondary,
           ),
           floatingLabelStyle: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.normal,
-            color: Color(0xFF2E7D9A),
+            color: AcervusColors.primary,
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 20, // Aumentei ainda mais: de 16 para 20
+            vertical: 16,
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.shade400),
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AcervusColors.border),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.shade400),
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AcervusColors.border),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFF2E7D9A), width: 2),
+            borderRadius: BorderRadius.circular(10),
+            borderSide:
+                const BorderSide(color: AcervusColors.primary, width: 1.5),
           ),
           errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.red),
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AcervusColors.danger),
           ),
           focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.red, width: 2),
+            borderRadius: BorderRadius.circular(10),
+            borderSide:
+                const BorderSide(color: AcervusColors.danger, width: 1.5),
           ),
         ),
       ),

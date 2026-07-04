@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sistema_estagio/services/obra_service.dart';
+import 'package:sistema_estagio/theme/acervus_colors.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 
@@ -177,8 +178,9 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
       width: cardWidth,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
+        color: AcervusColors.surface,
+        border: Border.all(color: AcervusColors.border),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,7 +230,9 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
                     item.isPrincipal ? 'Remover como capa' : 'Marcar como capa',
                 icon: Icon(
                   item.isPrincipal ? Icons.star : Icons.star_border,
-                  color: item.isPrincipal ? Colors.amber : Colors.grey,
+                  color: item.isPrincipal
+                      ? AcervusColors.warning
+                      : AcervusColors.textMuted,
                 ),
                 onPressed: () {
                   setState(() {
@@ -264,7 +268,8 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
               IconButton(
                 iconSize: 20,
                 tooltip: 'Remover',
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                icon: const Icon(Icons.delete_outline,
+                    color: AcervusColors.danger),
                 onPressed: () => setState(() => _imagens.removeAt(index)),
               ),
             ],
@@ -548,33 +553,57 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
   Widget build(BuildContext context) {
     final titulo = widget.obraTitulo;
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(titulo != null ? 'Galeria - $titulo' : 'Galeria da Obra'),
-        actions: [
-          IconButton(
-            tooltip: 'Recarregar',
-            icon: const Icon(Icons.refresh),
-            onPressed: _carregarGaleria,
-          ),
-        ],
-      ),
+      backgroundColor: AcervusColors.background,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Imagens da Obra',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                IconButton(
+                  icon: const Icon(Icons.arrow_back,
+                      color: AcervusColors.textPrimary),
+                  tooltip: 'Voltar',
+                  onPressed: () => context.pop(),
                 ),
-                OutlinedButton.icon(
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Galeria da Obra',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                          color: AcervusColors.textPrimary,
+                        ),
+                      ),
+                      if (titulo != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          titulo,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AcervusColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  tooltip: 'Recarregar',
+                  icon: const Icon(Icons.refresh,
+                      color: AcervusColors.textSecondary),
+                  onPressed: _carregarGaleria,
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
                   onPressed: widget.obraId == null || _uploading
                       ? null
                       : () => adicionarArquivo(widget.obraId!),
@@ -584,9 +613,10 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
+                            color: Colors.white,
                           ),
                         )
-                      : const Icon(Icons.upload),
+                      : const Icon(Icons.add, size: 18),
                   label: Text(
                     _uploading ? 'Enviando...' : 'Adicionar arquivo',
                   ),
@@ -597,11 +627,27 @@ class _GaleriaScreenState extends State<GaleriaScreen> {
               const SizedBox(height: 12),
               const LinearProgressIndicator(minHeight: 3),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             if (_imagens.isEmpty)
-              const Text(
-                'Nenhuma imagem adicionada.',
-                style: TextStyle(color: Colors.grey),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(40),
+                decoration: BoxDecoration(
+                  color: AcervusColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AcervusColors.border),
+                ),
+                child: const Column(
+                  children: [
+                    Icon(Icons.photo_library_outlined,
+                        size: 48, color: AcervusColors.textMuted),
+                    SizedBox(height: 12),
+                    Text(
+                      'Nenhuma imagem adicionada.',
+                      style: TextStyle(color: AcervusColors.textSecondary),
+                    ),
+                  ],
+                ),
               )
             else
               LayoutBuilder(

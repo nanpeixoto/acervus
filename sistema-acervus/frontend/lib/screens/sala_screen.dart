@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:sistema_estagio/models/sala_obra.dart';
 import 'package:sistema_estagio/services/sala_service.dar.dart';
 
+import 'package:sistema_estagio/theme/acervus_colors.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/utils/app_utils.dart';
 import 'package:sistema_estagio/utils/validators.dart';
+import 'package:sistema_estagio/widgets/crud_pagination.dart';
 import 'package:sistema_estagio/widgets/custom_text_field.dart';
 import 'package:sistema_estagio/widgets/loading_overlay.dart';
 
@@ -81,15 +83,7 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sala'),
-        actions: [
-          IconButton(
-            onPressed: _novo,
-            icon: const Icon(Icons.add),
-          ),
-        ],
-      ),
+      backgroundColor: AcervusColors.background,
       body: LoadingOverlay(
         isLoading: _isLoading,
         child: TabBarView(
@@ -103,6 +97,7 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
   Widget _buildListaTab() {
     return Column(
       children: [
+        _buildPageHeader(),
         _buildHeader(),
         if (_showForm) _buildFormulario(),
         Expanded(child: _buildList()),
@@ -111,10 +106,41 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildPageHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Salas',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: AcervusColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton.icon(
+            onPressed: _novo,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Nova sala'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeader() {
     return Container(
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: AcervusColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AcervusColors.border),
+      ),
       child: Column(
         children: [
           Row(
@@ -123,8 +149,8 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
                 child: _statCard(
                   'Total de Salas',
                   (_pagination?['totalItems'] ?? _salas.length).toString(),
-                  Icons.meeting_room,
-                  const Color(0xFF2E7D32),
+                  Icons.meeting_room_outlined,
+                  AcervusColors.primary,
                 ),
               ),
               const SizedBox(width: 16),
@@ -132,8 +158,8 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
                 child: _statCard(
                   'Total de Páginas',
                   (_pagination?['totalPages'] ?? 0).toString(),
-                  Icons.layers,
-                  const Color(0xFF1976D2),
+                  Icons.layers_outlined,
+                  AcervusColors.success,
                 ),
               ),
             ],
@@ -163,12 +189,12 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
 
   Widget _buildFormulario() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AcervusColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: AcervusColors.border),
       ),
       child: Form(
         key: _formKey,
@@ -207,11 +233,8 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
           ),
           Row(
             children: [
-              ElevatedButton(
+              OutlinedButton(
                 onPressed: _cancelar,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey,
-                ),
                 child: const Text("Cancelar"),
               ),
               const SizedBox(width: 16),
@@ -232,7 +255,7 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       itemCount: _salas.length,
       itemBuilder: (_, i) {
         final s = _salas[i];
@@ -240,15 +263,9 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AcervusColors.surface,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              )
-            ],
+            border: Border.all(color: AcervusColors.border),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -271,24 +288,27 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
                                   horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
                                 color: s.ativo
-                                    ? Colors.green.withOpacity(0.12)
-                                    : Colors.grey.withOpacity(0.12),
+                                    ? AcervusColors.success.withOpacity(0.12)
+                                    : AcervusColors.textMuted
+                                        .withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
                                 s.ativo ? "ATIVO" : "INATIVO",
                                 style: TextStyle(
-                                  color: s.ativo ? Colors.green : Colors.grey,
+                                  color: s.ativo
+                                      ? AcervusColors.success
+                                      : AcervusColors.textSecondary,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
                             const Spacer(),
                             Text(
                               "ID: ${s.id}",
-                              style: TextStyle(
-                                color: Colors.grey[500],
+                              style: const TextStyle(
+                                color: AcervusColors.textSecondary,
                                 fontSize: 12,
                               ),
                             )
@@ -340,11 +360,13 @@ class _SalaScreenState extends State<SalaScreen> with TickerProviderStateMixin {
 
   Widget _buildPaginationControls() {
     if (_pagination == null) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Text(
-        'Página $_currentPage de ${_pagination!['totalPages']}',
-      ),
+    return CrudPagination(
+      currentPage: _currentPage,
+      totalPages: _pagination!['totalPages'] ?? 1,
+      onPageChange: (p) {
+        _currentPage = p;
+        _loadSalas(showLoading: false);
+      },
     );
   }
 

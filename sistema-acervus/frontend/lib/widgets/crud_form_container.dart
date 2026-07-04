@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/acervus_colors.dart';
+
 class CrudFormContainer extends StatelessWidget {
   final Widget child;
 
@@ -8,12 +10,12 @@ class CrudFormContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        color: AcervusColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AcervusColors.border),
       ),
       child: child,
     );

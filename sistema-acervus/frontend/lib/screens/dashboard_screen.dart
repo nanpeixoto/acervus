@@ -1,11 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sistema_estagio/services/dashboard_service.dart';
-import 'package:sistema_estagio/utils/app_colors.dart';
+import 'package:sistema_estagio/theme/acervus_colors.dart';
 import 'package:sistema_estagio/utils/app_config.dart';
 import 'package:sistema_estagio/widgets/dashboard_card.dart';
-import 'package:sistema_estagio/services/storage_service.dart';
 import 'package:sistema_estagio/widgets/grafico_obras_por_assunto.dart';
 import 'package:sistema_estagio/widgets/grafico_obras_por_tipo.dart';
 
@@ -22,34 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-
-      // ===============================
-      // 🔹 APP BAR
-      // ===============================
-      appBar: AppBar(
-        elevation: 2,
-        backgroundColor: Colors.transparent,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [
-                Color(0xFF1F3B5B),
-                Color(0xFF2E6FA3),
-              ],
-            ),
-          ),
-        ),
-        title: const Text(
-          'Dashboard do Acervo',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-      ),
+      backgroundColor: AcervusColors.background,
 
       // ===============================
       // 🔹 BODY
@@ -76,8 +47,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
             thumbVisibility: true,
             child: ListView(
               controller: _scrollController,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               children: [
+                // ===============================
+                // 🔹 CABEÇALHO DA PÁGINA
+                // ===============================
+                const Text(
+                  'Dashboard do Acervo',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: AcervusColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Visão geral do seu acervo',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AcervusColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
                 // ===============================
                 // 🔹 CARDS DE TOTAIS
                 // ===============================
@@ -95,49 +87,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           titulo: 'Obras',
                           valor: totais['obras'].toString(),
                           icone: Icons.book_outlined,
-                          cor: AppColors.cardBlue,
+                          cor: AcervusColors.primary,
                           width: cardWidth,
                         ),
                         DashboardCard(
                           titulo: 'Assuntos',
                           valor: totais['assuntos'].toString(),
                           icone: Icons.label_outline,
-                          cor: AppColors.cardGreen,
+                          cor: AcervusColors.success,
                           width: cardWidth,
                         ),
                         DashboardCard(
                           titulo: 'Autores',
                           valor: totais['autores'].toString(),
                           icone: Icons.person_outline,
-                          cor: AppColors.cardPurple,
+                          cor: AcervusColors.purple,
                           width: cardWidth,
                         ),
                         DashboardCard(
                           titulo: 'Salas',
                           valor: totais['salas'].toString(),
                           icone: Icons.meeting_room_outlined,
-                          cor: AppColors.cardGray,
+                          cor: AcervusColors.warning,
                           width: cardWidth,
                         ),
                         DashboardCard(
                           titulo: 'Estantes',
                           valor: totais['estantes'].toString(),
                           icone: Icons.inventory_2_outlined,
-                          cor: AppColors.cardBlue,
+                          cor: const Color(0xFF3B82F6),
                           width: cardWidth,
                         ),
                         DashboardCard(
                           titulo: 'Tipos',
                           valor: totais['tipos'].toString(),
                           icone: Icons.category_outlined,
-                          cor: AppColors.cardGreen,
+                          cor: AcervusColors.danger,
                           width: cardWidth,
                         ),
                         DashboardCard(
                           titulo: 'Subtipos',
                           valor: totais['subtipos'].toString(),
                           icone: Icons.layers_outlined,
-                          cor: AppColors.cardPurple,
+                          cor: const Color(0xFF14B8A6),
                           width: cardWidth,
                         ),
                       ],
