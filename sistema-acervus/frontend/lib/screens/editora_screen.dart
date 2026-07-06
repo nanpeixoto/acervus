@@ -278,6 +278,8 @@ class _EditoraScreenState extends State<EditoraScreen> {
     }
 
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       itemCount: _editoras.length,
       itemBuilder: (_, i) {
