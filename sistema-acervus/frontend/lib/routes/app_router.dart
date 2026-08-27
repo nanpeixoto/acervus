@@ -17,6 +17,7 @@ import 'package:sistema_estagio/screens/obras_list_screen.dart';
 import 'package:sistema_estagio/screens/obra_cadastro_screen.dart';
 import 'package:sistema_estagio/screens/movimentacoes_screen.dart';
 import 'package:sistema_estagio/screens/galeria_screen.dart';
+import 'package:sistema_estagio/screens/ficha_obra_screen.dart';
 
 import '../providers/auth_provider.dart';
 import '../screens/login_screen.dart';
@@ -137,6 +138,13 @@ class AppRouter {
                 builder: (context, state) {
                   final id = int.parse(state.pathParameters['id']!);
                   return GaleriaScreen(obraId: id);
+                },
+              ),
+              GoRoute(
+                path: '/admin/obras/ficha/:id',
+                builder: (context, state) {
+                  final id = int.parse(state.pathParameters['id']!);
+                  return FichaObraScreen(obraId: id);
                 },
               ),
               GoRoute(

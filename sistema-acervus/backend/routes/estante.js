@@ -154,6 +154,7 @@ router.get('/prateleira/listar', tokenOpcional, async (req, res) => {
       `SELECT
         p.cd_estante_prateleira,
         p.descricao_prateleira,
+        p.cd_estante,
         TRIM(e.descricao) as estante_descricao,
          TRIM(e.descricao) as estante,
           s.ds_sala AS sala,

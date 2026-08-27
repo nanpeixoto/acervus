@@ -7,6 +7,7 @@ const { paginarConsulta } = require('../helpers/paginador');
 const path = require('path');
 const fs = require('fs');
 const puppeteer = require('puppeteer');
+const sharp = require('sharp');
  
  
  
@@ -53,6 +54,241 @@ const mapMovimentoRow = (row) => ({
   laudo_inicial: row.laudo_inicial,
   laudo_final: row.laudo_final,
 });
+
+// =====================
+// FICHA DA OBRA - CSS e template compartilhados
+// (usados tanto na ficha individual quanto na geração em lote por filtro)
+// =====================
+const FICHA_CSS = `
+body{
+  font-family: Arial, Helvetica, sans-serif;
+  margin:40px;
+  font-size:12px;
+}
+
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+}
+.logo img{
+  height:60px;
+}
+
+.top-right{
+  text-align:right;
+  font-size:11px;
+}
+
+.ficha-top-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:10px;
+}
+
+.codigo{
+  color:#6B7280;
+  font-weight:500;
+  font-size:12px;
+}
+
+.idobra{
+  color:#6B7280;
+  font-weight:500;
+  font-size:12px;
+}
+
+.titulo{
+  text-align:center;
+  margin-top:4px;
+}
+
+.titulo h1{
+  margin:0;
+  font-size:20px;
+}
+
+.subtitulo{
+  font-size:16px;
+  font-weight:bold;
+}
+
+.subtitulo2{
+  font-size:11px;
+}
+
+.autor-destaque{
+  font-size:14px;
+  font-weight:600;
+  color:#4F46E5;
+  margin-top:4px;
+}
+
+.section-title{
+  margin-top:15px;
+  background:#EEF2FF;
+  color:#4F46E5;
+  text-align:center;
+  font-weight:bold;
+  padding:6px;
+  border-radius:4px;
+   page-break-after:avoid;
+
+}
+
+b{
+  color:#4F46E5;
+}
+
+.dados{
+  display:flex;
+  margin-top:10px;
+}
+
+.col1{
+  width:40%;
+}
+
+.col2{
+  width:30%;
+}
+
+.img{
+  width:30%;
+  text-align:right;
+}
+
+.img img{
+  width:150px;
+  height:auto;
+  object-fit:contain;
+  border:1px solid #999;
+}
+
+.linha{
+  margin:3px 0;
+}
+
+.autor-box{
+  border:1px solid #999;
+  padding:6px;
+}
+
+.autor-row{
+  display:flex;
+  justify-content:space-between;
+}
+
+.resumo-box{
+   border:1px solid #999;
+  padding:6px;
+  text-align:justify;
+  line-height:1.4;
+  page-break-inside:avoid;
+}
+
+.info-box{
+  border:1px solid #999;
+  padding:6px;
+}
+
+.info-row{
+  display:flex;
+  justify-content:space-between;
+}
+
+.ficha-page{
+  page-break-after: always;
+}
+
+.ficha-page:last-child{
+  page-break-after: auto;
+}
+`;
+
+function renderFichaBody(obra, logoBase64, capaBase64) {
+  return `
+<div class="header">
+<div class="logo">
+<img src="data:image/png;base64,${logoBase64}">
+</div>
+<div class="top-right">
+Página: 1 de 1<br>
+Impressão: ${new Date().toLocaleString()}
+</div>
+</div>
+
+<div class="ficha-top-row">
+<div class="codigo">${obra.carimbo || ''}</div>
+<div class="idobra">${obra.cd_obra}</div>
+</div>
+
+<div class="titulo">
+<h1>FICHA DA OBRA</h1>
+<div class="subtitulo">${obra.titulo || ''}</div>
+<div class="subtitulo2">${obra.subtitulo || ''}</div>
+<div class="autor-destaque">${obra.autor || ''}</div>
+</div>
+
+<div class="section-title">DADOS DA OBRA</div>
+
+<div class="dados">
+
+<div class="col1">
+<div class="linha"><b>Tipo de Obra:</b> ${obra.tipo || ''}</div>
+<div class="linha"><b>Assunto:</b> ${obra.assunto || ''}</div>
+<div class="linha"><b>Localização:</b> ${obra.localizacao || ''}</div>
+<div class="linha"><b>Material:</b> ${obra.material || ''}</div>
+<div class="linha"><b>Dimensões:</b> ${obra.medida || ''}</div>
+<div class="linha"><b>Origem:</b> ${obra.origem || ''}</div>
+<div class="linha"><b>Nº Edição:</b> ${obra.numero_edicao || ''}</div>
+<div class="linha"><b>Volume:</b> ${obra.volume || ''}</div>
+<div class="linha"><b>Conjunto:</b> ${obra.conjunto || ''}</div>
+</div>
+
+<div class="col2">
+<div class="linha"><b>Subtipo de Obra:</b> ${obra.subtipo || ''}</div>
+<div class="linha"><b>Idioma:</b> ${obra.idioma || ''}</div>
+<div class="linha"><b>Conservação:</b> ${obra.conservacao || ''}</div>
+<div class="linha"><b>Data:</b> ${obra.data_historica || ''}</div>
+<div class="linha"><b>Qtd Páginas:</b> ${obra.qtd_paginas || ''}</div>
+</div>
+
+<div class="img">
+<img src="${capaBase64 || ''}">
+</div>
+
+</div>
+
+<div class="section-title">AUTOR</div>
+
+<div class="autor-box">
+<b>Autor:</b> ${obra.autor || ''}
+<div class="autor-row">
+<div><b>Data de Nascimento:</b> ${obra.data_nascimento || ''}</div>
+<div><b>Data de Falecimento:</b> ${obra.data_falecimento || ''}</div>
+</div>
+</div>
+
+<div class="section-title">RESUMO</div>
+
+<div class="resumo-box">${obra.resumo || ''}</div>
+
+<div class="section-title">INFORMAÇÕES COMPLEMENTARES</div>
+
+<div class="info-box">
+<div class="info-row">
+<div><b>Data da Compra:</b> ${obra.data_compra || ''}</div>
+<div><b>Nº Apólice:</b> ${obra.numero_apolice || ''}</div>
+<div><b>Valor:</b> ${obra.valor || ''}</div>
+</div>
+<div style="margin-top:6px;">
+<b>Observações:</b> ${obra.observacao || ''}
+</div>
+</div>
+`;
+}
 
 // =====================
 // GET /obra/listar
@@ -1181,6 +1417,51 @@ let capaBase64 = '';
   const html = `<html>
 <head>
 <meta charset="UTF-8">
+<style>${FICHA_CSS}</style>
+</head>
+<body>
+${renderFichaBody(obra, logoBase64, capaBase64)}
+</body>
+</html>`;
+
+   const browser = await puppeteer.launch({
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
+
+  const page = await browser.newPage();
+
+  await page.setContent(html, { waitUntil: 'networkidle0' });
+
+ const pdf = await page.pdf({
+  format: 'A4',
+  printBackground: true,
+  margin: {
+    top: '20px',
+    bottom: '20px',
+    left: '20px',
+    right: '20px'
+  }
+});
+
+  await browser.close();
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'attachment; filename=ficha_obra.pdf');
+
+  res.send(pdf);
+});
+
+router.get('/relatorio/ficha-em-branco/pdf', async (req, res) => {
+
+  const logo = fs.readFileSync('/var/www/sistema-acervus/img/logo_acervus.png');
+  const logoBase64 = logo.toString('base64');
+
+  const linha = (largura = '100%') =>
+    `<span style="display:inline-block; border-bottom:1px solid #333; width:${largura}; height:14px;">&nbsp;</span>`;
+
+  const html = `<html>
+<head>
+<meta charset="UTF-8">
 
 <style>
 
@@ -1228,15 +1509,6 @@ body{
   font-weight:bold;
 }
 
-.subtitulo{
-  font-size:16px;
-  font-weight:bold;
-}
-
-.subtitulo2{
-  font-size:11px;
-}
-
 .section-title{
   margin-top:15px;
   background:#cfcfcf;
@@ -1244,8 +1516,7 @@ body{
   font-weight:bold;
   padding:4px;
   border:1px solid #999;
-   page-break-after:avoid;
-  
+  page-break-after:avoid;
 }
 
 .dados{
@@ -1266,15 +1537,21 @@ body{
   text-align:right;
 }
 
-.img img{
+.img .placeholder{
   width:150px;
-  height:auto;
-  object-fit:contain;
-  border:1px solid #999;
+  height:180px;
+  border:1px dashed #999;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  color:#999;
+  font-size:11px;
+  text-align:center;
+  margin-left:auto;
 }
 
 .linha{
-  margin:3px 0;
+  margin:8px 0;
 }
 
 .autor-box{
@@ -1285,14 +1562,13 @@ body{
 .autor-row{
   display:flex;
   justify-content:space-between;
+  margin-top:8px;
 }
 
 .resumo-box{
-   border:1px solid #999;
+  border:1px solid #999;
   padding:6px;
-  text-align:justify;
-  line-height:1.4;
-  page-break-inside:avoid;
+  height:90px;
 }
 
 .info-box{
@@ -1303,6 +1579,7 @@ body{
 .info-row{
   display:flex;
   justify-content:space-between;
+  margin-top:8px;
 }
 
 </style>
@@ -1325,23 +1602,15 @@ Impressão: ${new Date().toLocaleString()}
 
 <div class="titulo">
 
-<h1>FICHA DA OBRA</h1>
+<h1>FICHA INDIVIDUAL EM BRANCO</h1>
 
-<div class="codigo">
-${obra.carimbo}
-</div>
+<div class="codigo">${linha('200px')}</div>
 
-<div class="idobra">
-${obra.cd_obra}
-</div>
+<div class="idobra">Nº: ${linha('80px')}</div>
 
-<div class="subtitulo">
-${obra.titulo}
-</div>
+<div class="subtitulo" style="margin-top:10px;">${linha('90%')}</div>
 
-<div class="subtitulo2">
-${obra.subtitulo || ''}
-</div>
+<div class="subtitulo2" style="margin-top:6px;">${linha('70%')}</div>
 
 </div>
 
@@ -1351,32 +1620,30 @@ ${obra.subtitulo || ''}
 
 <div class="col1">
 
-<div class="linha"><b>Tipo de Obra:</b> ${obra.tipo}</div>
-<div class="linha"><b>Assunto:</b> ${obra.assunto}</div>
-<div class="linha"><b>Localização:</b> ${obra.localizacao}</div>
-<div class="linha"><b>Material:</b> ${obra.material || ''}</div>
-<div class="linha"><b>Dimensões:</b> ${obra.medida || ''}</div>
-<div class="linha"><b>Origem:</b> ${obra.origem || ''}</div>
-<div class="linha"><b>Nº Edição:</b> ${obra.numero_edicao || ''}</div>
-<div class="linha"><b>Volume:</b> ${obra.volume || ''}</div>
-<div class="linha"><b>Conjunto:</b> ${obra.conjunto || ''}</div>
+<div class="linha"><b>Tipo de Obra:</b> ${linha('70%')}</div>
+<div class="linha"><b>Assunto:</b> ${linha('70%')}</div>
+<div class="linha"><b>Localização:</b> ${linha('70%')}</div>
+<div class="linha"><b>Material:</b> ${linha('70%')}</div>
+<div class="linha"><b>Dimensões:</b> ${linha('70%')}</div>
+<div class="linha"><b>Origem:</b> ${linha('70%')}</div>
+<div class="linha"><b>Nº Edição:</b> ${linha('70%')}</div>
+<div class="linha"><b>Volume:</b> ${linha('70%')}</div>
+<div class="linha"><b>Conjunto:</b> ${linha('70%')}</div>
 
 </div>
 
 <div class="col2">
 
-<div class="linha"><b>Subtipo de Obra:</b> ${obra.subtipo || ''}</div>
-<div class="linha"><b>Idioma:</b> ${obra.idioma || ''}</div>
-<div class="linha"><b>Conservação:</b> ${obra.conservacao || ''}</div>
-<div class="linha"><b>Data:</b> ${obra.data_historica || ''}</div>
-<div class="linha"><b>Qtd Páginas:</b> ${obra.qtd_paginas || ''}</div>
+<div class="linha"><b>Subtipo de Obra:</b> ${linha('80%')}</div>
+<div class="linha"><b>Idioma:</b> ${linha('80%')}</div>
+<div class="linha"><b>Conservação:</b> ${linha('80%')}</div>
+<div class="linha"><b>Data:</b> ${linha('80%')}</div>
+<div class="linha"><b>Qtd Páginas:</b> ${linha('80%')}</div>
 
 </div>
 
 <div class="img">
-
-<img src="${capaBase64}">
-
+<div class="placeholder">COLAR<br>FOTO</div>
 </div>
 
 </div>
@@ -1385,16 +1652,16 @@ ${obra.subtitulo || ''}
 
 <div class="autor-box">
 
-<b>Autor:</b> ${obra.autor || ''}
+<b>Autor:</b> ${linha('80%')}
 
 <div class="autor-row">
 
 <div>
-<b>Data de Nascimento:</b> ${obra.data_nascimento || ''}
+<b>Data de Nascimento:</b> ${linha('150px')}
 </div>
 
 <div>
-<b>Data de Falecimento:</b> ${obra.data_falecimento || ''}
+<b>Data de Falecimento:</b> ${linha('150px')}
 </div>
 
 </div>
@@ -1403,9 +1670,7 @@ ${obra.subtitulo || ''}
 
 <div class="section-title">RESUMO</div>
 
-<div class="resumo-box">
-${obra.resumo || ''}
-</div>
+<div class="resumo-box"></div>
 
 <div class="section-title">INFORMAÇÕES COMPLEMENTARES</div>
 
@@ -1414,21 +1679,22 @@ ${obra.resumo || ''}
 <div class="info-row">
 
 <div>
-<b>Data da Compra:</b> ${obra.data_compra || ''}
+<b>Data da Compra:</b> ${linha('120px')}
 </div>
 
 <div>
-<b>Nº Apólice:</b> ${obra.numero_apolice || ''}
+<b>Nº Apólice:</b> ${linha('120px')}
 </div>
 
 <div>
-<b>Valor:</b> ${obra.valor || ''}
+<b>Valor:</b> ${linha('120px')}
 </div>
 
 </div>
 
-<div style="margin-top:6px;">
-<b>Observações:</b> ${obra.observacao || ''}
+<div style="margin-top:10px;">
+<b>Observações:</b>
+<div style="border:1px solid #999; height:60px; margin-top:4px;"></div>
 </div>
 
 </div>
@@ -1436,33 +1702,148 @@ ${obra.resumo || ''}
 </body>
 </html>`;
 
-   const browser = await puppeteer.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
+  try {
 
-  const page = await browser.newPage();
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
 
-  await page.setContent(html, { waitUntil: 'networkidle0' });
+    const page = await browser.newPage();
 
- const pdf = await page.pdf({
-  format: 'A4',
-  printBackground: true,
-  margin: {
-    top: '20px',
-    bottom: '20px',
-    left: '20px',
-    right: '20px'
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20px',
+        bottom: '20px',
+        left: '20px',
+        right: '20px'
+      }
+    });
+
+    await browser.close();
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=ficha_em_branco.pdf');
+
+    res.send(pdf);
+
+  } catch (err) {
+    logger.error('Erro ao gerar ficha em branco: ' + err.stack, 'obras');
+    res.status(500).json({
+      erro: 'Erro ao gerar ficha em branco',
+      motivo: err.message
+    });
+  }
+
+});
+
+
+// =====================
+// Assuntos existentes numa localização (sala/estante/prateleira),
+// usado para restringir o dropdown de Assunto na Lista Resumida
+// conforme a localização selecionada. Quanto mais específico
+// (prateleira > estante > sala), mais restrito o filtro.
+// =====================
+router.get('/filtros/assuntos-por-localizacao', tokenOpcional, async (req, res) => {
+  try {
+    const { sala, estante, prateleira } = req.query;
+
+    const valores = [];
+    let condicao = '';
+
+    if (prateleira) {
+      valores.push(prateleira);
+      condicao = `o.cd_estante_prateleira = $${valores.length}`;
+    } else if (estante) {
+      valores.push(estante);
+      condicao = `ep.cd_estante = $${valores.length}`;
+    } else if (sala) {
+      valores.push(sala);
+      condicao = `e.cd_sala = $${valores.length}`;
+    } else {
+      return res.json({ assuntos: [] });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT DISTINCT a.cd_assunto id, a.ds_assunto descricao
+      FROM ace_obra o
+      INNER JOIN ace_assunto a ON a.cd_assunto = o.cd_assunto
+      INNER JOIN ace_estante_prateleira ep ON ep.cd_estante_prateleira = o.cd_estante_prateleira
+      INNER JOIN ace_estante e ON e.cd_estante = ep.cd_estante
+      WHERE ${condicao}
+      ORDER BY a.ds_assunto
+      `,
+      valores
+    );
+
+    res.json({ assuntos: result.rows });
+
+  } catch (err) {
+    logger.error('Erro ao buscar assuntos por localização: ' + err.stack, 'obras');
+    res.status(500).json({ erro: 'Erro ao buscar assuntos por localização' });
   }
 });
 
-  await browser.close();
+// =====================
+// DIAGNÓSTICO TEMPORÁRIO — remover depois de confirmar o filtro de localização.
+// Roda pela conexão do próprio backend (evita precisar de acesso direto ao Postgres).
+// =====================
+router.get('/debug/estante/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', 'attachment; filename=ficha_obra.pdf');
+    const estante = await pool.query(
+      `SELECT e.cd_estante, e.descricao AS estante, e.cd_sala, s.ds_sala AS sala
+       FROM ace_estante e
+       JOIN ace_sala s ON s.cd_sala = e.cd_sala
+       WHERE e.cd_estante = $1`,
+      [id]
+    );
 
-  res.send(pdf);
+    const totalObras = await pool.query(
+      `SELECT COUNT(*) AS total_obras
+       FROM ace_obra o
+       JOIN ace_estante_prateleira ep ON ep.cd_estante_prateleira = o.cd_estante_prateleira
+       WHERE ep.cd_estante = $1`,
+      [id]
+    );
+
+    const porAssunto = await pool.query(
+      `SELECT a.ds_assunto AS assunto, COUNT(*) AS qtd
+       FROM ace_obra o
+       JOIN ace_estante_prateleira ep ON ep.cd_estante_prateleira = o.cd_estante_prateleira
+       JOIN ace_assunto a ON a.cd_assunto = o.cd_assunto
+       WHERE ep.cd_estante = $1
+       GROUP BY a.ds_assunto
+       ORDER BY qtd DESC`,
+      [id]
+    );
+
+    const nomesDuplicados = await pool.query(
+      `SELECT descricao, COUNT(*) AS qtd_estantes,
+              array_agg(cd_estante) AS ids,
+              array_agg(cd_sala) AS salas
+       FROM ace_estante
+       GROUP BY descricao
+       HAVING COUNT(*) > 1`
+    );
+
+    res.json({
+      estante: estante.rows[0] || null,
+      total_obras: totalObras.rows[0]?.total_obras,
+      por_assunto: porAssunto.rows,
+      nomes_duplicados: nomesDuplicados.rows
+    });
+
+  } catch (err) {
+    logger.error('Erro no diagnóstico de estante: ' + err.stack, 'obras');
+    res.status(500).json({ erro: 'Erro no diagnóstico', motivo: err.message });
+  }
 });
-
 
 router.get('/filtros', async (req, res) => {
   try {
@@ -1473,7 +1854,9 @@ router.get('/filtros', async (req, res) => {
       assuntos,
       idiomas,
       materiais,
-      localizacoes,
+      salas,
+      estantes,
+      prateleiras,
       estados,
       editoras
     ] = await Promise.all([
@@ -1482,35 +1865,9 @@ router.get('/filtros', async (req, res) => {
       pool.query('SELECT  cd_assunto id, ds_assunto descricao FROM ace_assunto ORDER BY ds_assunto'),
       pool.query('SELECT cd_idioma id, ds_idioma descricao FROM ace_idioma ORDER BY descricao'),
       pool.query('SELECT  cd_material id,  descricao FROM ace_material ORDER BY descricao'),
-      pool.query(`
-              SELECT 
-                  cd_estante_prateleira id,
-                  CONCAT_WS(
-                      ' - ',
-                      UPPER(est.nome),
-                      UPPER(cid.nome),
-                      sal.ds_sala,
-                      e.descricao,
-                      ep.descricao_prateleira
-                  ) AS descricao
-              FROM ace_estante_prateleira ep
-              INNER JOIN ace_estante e 
-                  ON e.cd_estante = ep.cd_estante
-              INNER JOIN ace_sala sal 
-                  ON sal.cd_sala = e.cd_sala
-              INNER JOIN ger_estado est 
-                  ON est.id = e.estado_id
-              INNER JOIN ger_cidade cid 
-                  ON cid.id = e.cidade_id
-              ORDER BY  CONCAT_WS(
-                      ' - ',
-                      UPPER(est.nome),
-                      UPPER(cid.nome),
-                      sal.ds_sala,
-                      e.descricao,
-                      ep.descricao_prateleira
-                  )
-              `),
+      pool.query("SELECT cd_sala id, ds_sala descricao FROM ace_sala WHERE sts_sala = 'A' ORDER BY ds_sala"),
+      pool.query('SELECT cd_estante id, TRIM(descricao) descricao, cd_sala FROM ace_estante ORDER BY descricao'),
+      pool.query('SELECT cd_estante_prateleira id, descricao_prateleira descricao, cd_estante FROM ace_estante_prateleira ORDER BY descricao_prateleira'),
       pool.query('SELECT cd_estado_conservacao id, ds_estado_conservacao descricao FROM ace_estado_conservacao ORDER BY descricao'),
       pool.query('SELECT cd_editora id, ds_editora descricao FROM ace_editora ORDER BY descricao')
     ]);
@@ -1521,7 +1878,9 @@ router.get('/filtros', async (req, res) => {
       assuntos: assuntos.rows,
       idiomas: idiomas.rows,
       materiais: materiais.rows,
-      localizacoes: localizacoes.rows,
+      salas: salas.rows,
+      estantes: estantes.rows,
+      prateleiras: prateleiras.rows,
       estados: estados.rows,
       editoras: editoras.rows
     });
@@ -1771,6 +2130,8 @@ ${obras.map(o => `
   const valores = [];
   const where = [];
 
+  console.log('📄 [buscarObras] filtros recebidos:', filtros);
+
   console.time("MONTAGEM FILTROS");
 
   if (filtros.titulo) {
@@ -1821,6 +2182,12 @@ ${obras.map(o => `
   if (filtros.localizacao) {
     valores.push(filtros.localizacao);
     where.push(`o.cd_estante_prateleira = $${valores.length}`);
+  } else if (filtros.estante) {
+    valores.push(filtros.estante);
+    where.push(`e.cd_estante = $${valores.length}`);
+  } else if (filtros.sala) {
+    valores.push(filtros.sala);
+    where.push(`e.cd_sala = $${valores.length}`);
   }
 
   if (filtros.assunto) {
@@ -1866,6 +2233,7 @@ SELECT
     o.observacao,
 
     o.data_compra,
+    o.data_historica,
     o.numero_apolice,
     o.valor,
 
@@ -1936,31 +2304,36 @@ LEFT JOIN LATERAL (
 
   let contadorImagens = 0;
 
-  for (const obra of obras) {
+  // Redimensiona e comprime as capas antes de embutir em base64 — sem isso,
+  // um PDF com muitas obras (ex: gerar por assunto) fica gigante e trava.
+  await Promise.all(obras.map(async (obra) => {
 
-    if (obra.imagem_nome) {
+    if (!obra.imagem_nome) return;
 
-      const caminho = path.join(
-        __dirname,
-        '..',
-        'uploads',
-        'obras',
-        obra.cd_obra.toString(),
-        obra.imagem_nome
-      );
+    const caminho = path.join(
+      __dirname,
+      '..',
+      'uploads',
+      'obras',
+      obra.cd_obra.toString(),
+      obra.imagem_nome
+    );
 
-      if (fs.existsSync(caminho)) {
+    if (!fs.existsSync(caminho)) return;
 
-        const buffer = fs.readFileSync(caminho);
+    try {
+      const buffer = await sharp(caminho)
+        .resize({ width: 180, withoutEnlargement: true })
+        .jpeg({ quality: 40 })
+        .toBuffer();
 
-        obra.imagem = `data:image/jpeg;base64,${buffer.toString('base64')}`;
-
-        contadorImagens++;
-      }
-
+      obra.imagem = `data:image/jpeg;base64,${buffer.toString('base64')}`;
+      contadorImagens++;
+    } catch (err) {
+      logger.error(`Erro ao processar imagem da obra ${obra.cd_obra}: ${err.stack}`, 'obras');
     }
 
-  }
+  }));
 
   console.timeEnd("CARREGAMENTO IMAGENS");
 
@@ -1975,15 +2348,23 @@ LEFT JOIN LATERAL (
 
 async function gerarPDF(html) {
 
+  console.log('🖨️ [gerarPDF] tamanho do HTML (bytes):', Buffer.byteLength(html));
+  console.time('🖨️ [gerarPDF] TEMPO TOTAL');
+
+  console.time('🖨️ [gerarPDF] puppeteer.launch');
   const browser = await puppeteer.launch({
     headless: "new",
     args: ['--no-sandbox']
   });
+  console.timeEnd('🖨️ [gerarPDF] puppeteer.launch');
 
   const page = await browser.newPage();
 
+  console.time('🖨️ [gerarPDF] setContent');
   await page.setContent(html, { waitUntil: 'networkidle0' });
+  console.timeEnd('🖨️ [gerarPDF] setContent');
 
+  console.time('🖨️ [gerarPDF] page.pdf');
   const pdf = await page.pdf({
   format: 'A4',
   landscape: false,
@@ -1995,8 +2376,11 @@ async function gerarPDF(html) {
     left: '10mm'
   }
 });
+  console.timeEnd('🖨️ [gerarPDF] page.pdf');
 
   await browser.close();
+
+  console.timeEnd('🖨️ [gerarPDF] TEMPO TOTAL');
 
   return pdf;
 }
@@ -2016,6 +2400,58 @@ router.post('/relatorio/lista-resumida', async (req, res) => {
   res.setHeader('Content-Disposition','attachment; filename=lista_obras.pdf');
 
   res.send(pdf);
+
+});
+
+// =====================
+// Fichas individuais em lote, filtráveis do mesmo jeito que a Lista Resumida
+// (um PDF com uma ficha por obra encontrada, cada uma em sua própria página)
+// =====================
+router.post('/relatorio/ficha-individual/pdf', async (req, res) => {
+
+  try {
+
+    const obras = await buscarObras(req.body);
+
+    console.log('📚 [ficha-individual/pdf] obras encontradas:', obras.length);
+
+    if (!obras.length) {
+      return res.status(404).json({
+        erro: 'Nenhuma obra encontrada para os filtros informados.'
+      });
+    }
+
+    const logo = fs.readFileSync('/var/www/sistema-acervus/img/logo_acervus.png');
+    const logoBase64 = logo.toString('base64');
+
+    const paginas = obras
+      .map((obra) => `<div class="ficha-page">${renderFichaBody(obra, logoBase64, obra.imagem || '')}</div>`)
+      .join('\n');
+
+    const html = `<html>
+<head>
+<meta charset="UTF-8">
+<style>${FICHA_CSS}</style>
+</head>
+<body>
+${paginas}
+</body>
+</html>`;
+
+    const pdf = await gerarPDF(html);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=fichas_individuais.pdf');
+
+    res.send(pdf);
+
+  } catch (err) {
+    logger.error('Erro ao gerar fichas individuais em lote: ' + err.stack, 'obras');
+    res.status(500).json({
+      erro: 'Erro ao gerar fichas individuais',
+      motivo: err.message
+    });
+  }
 
 });
 
@@ -2071,6 +2507,12 @@ function montarFiltrosObra(filtros) {
   if (filtros.localizacao) {
     valores.push(filtros.localizacao);
     where.push(`o.cd_estante_prateleira = $${valores.length}`);
+  } else if (filtros.estante) {
+    valores.push(filtros.estante);
+    where.push(`e.cd_estante = $${valores.length}`);
+  } else if (filtros.sala) {
+    valores.push(filtros.sala);
+    where.push(`e.cd_sala = $${valores.length}`);
   }
 
   if (filtros.assunto) {
@@ -2108,6 +2550,8 @@ function getBaseQuery(whereClause) {
     INNER JOIN ace_assunto a ON a.cd_assunto = o.cd_assunto
     INNER JOIN ace_autor au ON au.cd_autor = o.cd_autor
     LEFT JOIN ace_editora ed ON ed.cd_editora = o.cd_editora
+    LEFT JOIN ace_estante_prateleira ep ON ep.cd_estante_prateleira = o.cd_estante_prateleira
+    LEFT JOIN ace_estante e ON e.cd_estante = ep.cd_estante
 
     LEFT JOIN LATERAL (
       SELECT nome
@@ -2123,13 +2567,19 @@ function getBaseQuery(whereClause) {
 
 router.post('/buscar', async (req, res) => {
   try {
+    console.log('🔍 [POST /obra/buscar] filtros recebidos:', req.body);
+
     const { valores, where } = montarFiltrosObra(req.body);
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
+    console.log('🔍 [POST /obra/buscar] WHERE montado:', whereSql, '| valores:', valores);
+
     const query = getBaseQuery(whereSql) + ` ORDER BY o.titulo`;
 
     const result = await pool.query(query, valores);
+
+    console.log('🔍 [POST /obra/buscar] registros encontrados:', result.rowCount);
 
     const lista = result.rows.map(o => ({
       ...o,

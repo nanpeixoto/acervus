@@ -16,12 +16,18 @@ class ListaResumidaObrasScreen extends StatefulWidget {
 class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
   final _tituloController = TextEditingController();
 
+  // 'resumida' = Lista Resumida (relatório único, um item por linha)
+  // 'individual' = uma Ficha Individual por obra encontrada, em um só PDF
+  String _tipoRelatorio = 'resumida';
+
   int? tipo;
   int? subtipo;
   int? assunto;
   int? idioma;
   int? material;
-  int? localizacao;
+  int? sala;
+  int? estante;
+  int? localizacao; // cd_estante_prateleira (prateleira selecionada)
   int? autor;
   int? estadoConservacao;
   int? editora;
@@ -34,9 +40,28 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
   List _assuntos = [];
   List _idiomas = [];
   List _materiais = [];
-  List _localizacoes = [];
   List _estados = [];
   List _editoras = [];
+
+  List _salas = [];
+  List _estantesTodas = [];
+  List _prateleirasTodas = [];
+
+  List get _estantesFiltradas => sala == null
+      ? []
+      : _estantesTodas.where((e) => e['cd_sala'] == sala).toList();
+
+  List get _prateleirasFiltradas => estante == null
+      ? []
+      : _prateleirasTodas.where((p) => p['cd_estante'] == estante).toList();
+
+  // Assuntos restritos à localização selecionada (Sala/Estante/Prateleira).
+  // Sem localização selecionada, volta a mostrar todos os assuntos.
+  List _assuntosLocalizacao = [];
+  bool _loadingAssuntosLocalizacao = false;
+
+  List get _assuntosDisponiveis =>
+      sala == null ? _assuntos : _assuntosLocalizacao;
 
   List obras = [];
 
@@ -44,6 +69,28 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
   void initState() {
     super.initState();
     Future.microtask(_loadFiltros);
+  }
+
+  Future<void> _atualizarAssuntosPorLocalizacao() async {
+    if (sala == null) {
+      setState(() => _assuntosLocalizacao = []);
+      return;
+    }
+
+    setState(() => _loadingAssuntosLocalizacao = true);
+
+    try {
+      final lista = await ObraService.listarAssuntosPorLocalizacao(
+        sala: sala,
+        estante: estante,
+        prateleira: localizacao,
+      );
+
+      if (!mounted) return;
+      setState(() => _assuntosLocalizacao = lista);
+    } finally {
+      if (mounted) setState(() => _loadingAssuntosLocalizacao = false);
+    }
   }
 
   // 🔥 ADICIONE ISSO DENTRO DA CLASSE
@@ -96,14 +143,17 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
       if (!mounted) return;
 
       setState(() {
-        _tipos = data['tipos'];
-        _subtipos = data['subtipos'];
-        _assuntos = data['assuntos'];
-        _idiomas = data['idiomas'];
-        _materiais = data['materiais'];
-        _localizacoes = data['localizacoes'];
-        _estados = data['estados'];
-        _editoras = data['editoras'];
+        _tipos = data['tipos'] ?? [];
+        _subtipos = data['subtipos'] ?? [];
+        _assuntos = data['assuntos'] ?? [];
+        _idiomas = data['idiomas'] ?? [];
+        _materiais = data['materiais'] ?? [];
+        _estados = data['estados'] ?? [];
+        _editoras = data['editoras'] ?? [];
+
+        _salas = data['salas'] ?? [];
+        _estantesTodas = data['estantes'] ?? [];
+        _prateleirasTodas = data['prateleiras'] ?? [];
       });
     } finally {
       if (mounted) setState(() => _loadingFiltros = false);
@@ -114,12 +164,16 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
     required String label,
     required List<T> items,
     required int? value,
-    required ValueChanged<int?> onChanged,
+    required ValueChanged<int?>? onChanged,
     required int Function(T item) getId,
     required String Function(T item) getLabel,
   }) {
+    // se o valor atual não existe mais na lista filtrada (ex: pai mudou), evita erro do DropdownButtonFormField
+    final valueValido =
+        value != null && items.any((item) => getId(item) == value);
+
     return DropdownButtonFormField<int>(
-      value: value,
+      value: valueValido ? value : null,
       isExpanded: true,
       decoration: InputDecoration(
         labelText: label,
@@ -146,6 +200,8 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
     if (assunto != null) count++;
     if (idioma != null) count++;
     if (material != null) count++;
+    if (sala != null) count++;
+    if (estante != null) count++;
     if (localizacao != null) count++;
     if (autor != null) count++;
     if (estadoConservacao != null) count++;
@@ -161,11 +217,14 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
       assunto = null;
       idioma = null;
       material = null;
+      sala = null;
+      estante = null;
       localizacao = null;
       autor = null;
       estadoConservacao = null;
       editora = null;
       obras = [];
+      _assuntosLocalizacao = [];
     });
   }
 
@@ -178,28 +237,53 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
       return;
     }*/
 
+    if (_tipoRelatorio == 'branco') {
+      await ObraService.baixarFichaEmBrancoPdf();
+      return;
+    }
+
     setState(() => _loadingLista = true);
 
     try {
-      final pdf = await ObraService.listaResumida(
-        titulo: _tituloController.text.trim(),
-        autor: autor,
-        material: material,
-        tipo: tipo,
-        subtipo: subtipo,
-        editora: editora,
-        conservacao: estadoConservacao,
-        localizacao: localizacao,
-        assunto: assunto,
-        idioma: idioma,
-      );
+      final pdf = _tipoRelatorio == 'individual'
+          ? await ObraService.fichaIndividualLote(
+              titulo: _tituloController.text.trim(),
+              autor: autor,
+              material: material,
+              tipo: tipo,
+              subtipo: subtipo,
+              editora: editora,
+              conservacao: estadoConservacao,
+              sala: sala,
+              estante: estante,
+              localizacao: localizacao,
+              assunto: assunto,
+              idioma: idioma,
+            )
+          : await ObraService.listaResumida(
+              titulo: _tituloController.text.trim(),
+              autor: autor,
+              material: material,
+              tipo: tipo,
+              subtipo: subtipo,
+              editora: editora,
+              conservacao: estadoConservacao,
+              sala: sala,
+              estante: estante,
+              localizacao: localizacao,
+              assunto: assunto,
+              idioma: idioma,
+            );
 
-      final blob = html.Blob([pdf]);
+      final blob = html.Blob([pdf], 'application/pdf');
       final url = html.Url.createObjectUrlFromBlob(blob);
 
-      html.AnchorElement(href: url)
-        ..setAttribute("download", "lista_obras.pdf")
-        ..click();
+      html.window.open(url, '_blank');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao gerar PDF: $e')),
+      );
     } finally {
       if (mounted) setState(() => _loadingLista = false);
     }
@@ -217,6 +301,8 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
         subtipo: subtipo,
         editora: editora,
         conservacao: estadoConservacao,
+        sala: sala,
+        estante: estante,
         localizacao: localizacao,
         assunto: assunto,
         idioma: idioma,
@@ -485,7 +571,7 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Lista Resumida de Obras',
+                    'Resumo de Obras',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w600,
@@ -505,6 +591,54 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+
+                            // 🔹 TIPO DE RELATÓRIO
+                            Text(
+                              'Tipo de Relatório',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              children: [
+                                ChoiceChip(
+                                  label: const Text('Lista Resumida'),
+                                  selected: _tipoRelatorio == 'resumida',
+                                  onSelected: (_) => setState(
+                                      () => _tipoRelatorio = 'resumida'),
+                                ),
+                                ChoiceChip(
+                                  label: const Text('Ficha Individual'),
+                                  selected: _tipoRelatorio == 'individual',
+                                  onSelected: (_) => setState(
+                                      () => _tipoRelatorio = 'individual'),
+                                ),
+                                ChoiceChip(
+                                  label:
+                                      const Text('Ficha Individual em Branco'),
+                                  selected: _tipoRelatorio == 'branco',
+                                  onSelected: (_) => setState(
+                                      () => _tipoRelatorio = 'branco'),
+                                ),
+                              ],
+                            ),
+                            if (_tipoRelatorio == 'branco') ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Gera uma ficha em branco para preenchimento manual — os filtros abaixo não se aplicam.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+
+                            const SizedBox(height: 20),
 
                             // 🔹 BUSCA
                             TextField(
@@ -546,11 +680,70 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
                                     isMobile),
                                 _box(
                                     _buildDropdown(
-                                      label: 'Assunto',
-                                      items: _assuntos,
+                                      label: 'Sala',
+                                      items: _salas,
+                                      value: sala,
+                                      onChanged: (v) {
+                                        setState(() {
+                                          sala = v;
+                                          estante = null;
+                                          localizacao = null;
+                                          assunto = null;
+                                        });
+                                        _atualizarAssuntosPorLocalizacao();
+                                      },
+                                      getId: (i) => i['id'],
+                                      getLabel: (i) => i['descricao'],
+                                    ),
+                                    isMobile),
+                                _box(
+                                    _buildDropdown(
+                                      label: 'Estante',
+                                      items: _estantesFiltradas,
+                                      value: estante,
+                                      onChanged: sala == null
+                                          ? null
+                                          : (v) {
+                                              setState(() {
+                                                estante = v;
+                                                localizacao = null;
+                                                assunto = null;
+                                              });
+                                              _atualizarAssuntosPorLocalizacao();
+                                            },
+                                      getId: (i) => i['id'],
+                                      getLabel: (i) => i['descricao'],
+                                    ),
+                                    isMobile),
+                                _box(
+                                    _buildDropdown(
+                                      label: 'Prateleira',
+                                      items: _prateleirasFiltradas,
+                                      value: localizacao,
+                                      onChanged: estante == null
+                                          ? null
+                                          : (v) {
+                                              setState(() {
+                                                localizacao = v;
+                                                assunto = null;
+                                              });
+                                              _atualizarAssuntosPorLocalizacao();
+                                            },
+                                      getId: (i) => i['id'],
+                                      getLabel: (i) => i['descricao'],
+                                    ),
+                                    isMobile),
+                                _box(
+                                    _buildDropdown(
+                                      label: sala == null
+                                          ? 'Assunto'
+                                          : 'Assunto (nesta localização)',
+                                      items: _assuntosDisponiveis,
                                       value: assunto,
-                                      onChanged: (v) =>
-                                          setState(() => assunto = v),
+                                      onChanged: _loadingAssuntosLocalizacao
+                                          ? null
+                                          : (v) =>
+                                              setState(() => assunto = v),
                                       getId: (i) => i['id'],
                                       getLabel: (i) => i['descricao'],
                                     ),
@@ -573,17 +766,6 @@ class _ListaResumidaObrasScreenState extends State<ListaResumidaObrasScreen> {
                                       value: material,
                                       onChanged: (v) =>
                                           setState(() => material = v),
-                                      getId: (i) => i['id'],
-                                      getLabel: (i) => i['descricao'],
-                                    ),
-                                    isMobile),
-                                _box(
-                                    _buildDropdown(
-                                      label: 'Localização',
-                                      items: _localizacoes,
-                                      value: localizacao,
-                                      onChanged: (v) =>
-                                          setState(() => localizacao = v),
                                       getId: (i) => i['id'],
                                       getLabel: (i) => i['descricao'],
                                     ),

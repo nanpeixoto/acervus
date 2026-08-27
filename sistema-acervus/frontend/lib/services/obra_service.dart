@@ -40,6 +40,8 @@ class ObraService {
     int? subtipo,
     int? editora,
     int? conservacao,
+    int? sala,
+    int? estante,
     int? localizacao,
     int? assunto,
     int? idioma,
@@ -52,6 +54,8 @@ class ObraService {
       if (subtipo != null) 'subtipo': subtipo,
       if (editora != null) 'editora': editora,
       if (conservacao != null) 'conservacao': conservacao,
+      if (sala != null) 'sala': sala,
+      if (estante != null) 'estante': estante,
       if (localizacao != null) 'localizacao': localizacao,
       if (assunto != null) 'assunto': assunto,
       if (idioma != null) 'idioma': idioma,
@@ -80,6 +84,8 @@ class ObraService {
     int? subtipo,
     int? editora,
     int? conservacao,
+    int? sala,
+    int? estante,
     int? localizacao,
     int? assunto,
     int? idioma,
@@ -92,6 +98,8 @@ class ObraService {
       if (subtipo != null) 'subtipo': subtipo,
       if (editora != null) 'editora': editora,
       if (conservacao != null) 'conservacao': conservacao,
+      if (sala != null) 'sala': sala,
+      if (estante != null) 'estante': estante,
       if (localizacao != null) 'localizacao': localizacao,
       if (assunto != null) 'assunto': assunto,
       if (idioma != null) 'idioma': idioma,
@@ -116,6 +124,52 @@ class ObraService {
     }
   }
 
+  static Future<Uint8List> fichaIndividualLote({
+    String? titulo,
+    int? autor,
+    int? material,
+    int? tipo,
+    int? subtipo,
+    int? editora,
+    int? conservacao,
+    int? sala,
+    int? estante,
+    int? localizacao,
+    int? assunto,
+    int? idioma,
+  }) async {
+    final body = {
+      if (titulo != null && titulo.isNotEmpty) 'titulo': titulo,
+      if (autor != null) 'autor': autor,
+      if (material != null) 'material': material,
+      if (tipo != null) 'tipo': tipo,
+      if (subtipo != null) 'subtipo': subtipo,
+      if (editora != null) 'editora': editora,
+      if (conservacao != null) 'conservacao': conservacao,
+      if (sala != null) 'sala': sala,
+      if (estante != null) 'estante': estante,
+      if (localizacao != null) 'localizacao': localizacao,
+      if (assunto != null) 'assunto': assunto,
+      if (idioma != null) 'idioma': idioma,
+    };
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/obra/relatorio/ficha-individual/pdf"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else if (response.statusCode == 404) {
+      throw Exception("Nenhuma obra encontrada para os filtros informados.");
+    } else {
+      throw Exception("Erro ao gerar fichas individuais: ${response.statusCode}");
+    }
+  }
+
   static Future<Map<String, String>> _getMultipartHeaders() async {
     final token = await StorageService.getToken();
     return {
@@ -125,10 +179,12 @@ class ObraService {
 
   static Future<void> baixarFichaPdf(int obraId) async {
     final url = '$baseUrl/obra/relatorio/ficha/$obraId/pdf';
+    html.window.open(url, '_blank');
+  }
 
-    html.AnchorElement(href: url)
-      ..setAttribute("download", "ficha_obra.pdf")
-      ..click();
+  static Future<void> baixarFichaEmBrancoPdf() async {
+    final url = '$baseUrl/obra/relatorio/ficha-em-branco/pdf';
+    html.window.open(url, '_blank');
   }
 
   static Future<Map<String, dynamic>?> buscarFichaRelatorio(int obraId) async {
@@ -700,6 +756,30 @@ class ObraService {
     );
 
     return result['Editoras'] ?? [];
+  }
+
+  static Future<List> listarAssuntosPorLocalizacao({
+    int? sala,
+    int? estante,
+    int? prateleira,
+  }) async {
+    final queryParams = <String, String>{
+      if (sala != null) 'sala': sala.toString(),
+      if (estante != null) 'estante': estante.toString(),
+      if (prateleira != null) 'prateleira': prateleira.toString(),
+    };
+
+    final uri = Uri.parse('$baseUrl/obra/filtros/assuntos-por-localizacao')
+        .replace(queryParameters: queryParams);
+
+    final response = await http.get(uri, headers: await _getHeaders());
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['assuntos'] ?? [];
+    }
+
+    throw Exception('Erro ao carregar assuntos da localização');
   }
 
   static Future<Map<String, dynamic>> carregarFiltros() async {

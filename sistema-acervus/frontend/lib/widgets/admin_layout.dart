@@ -260,7 +260,7 @@ class _AdminLayoutState extends State<AdminLayout> {
           _menuItem(Icons.view_column_outlined, 'Estante', '/admin/estantes',
               collapsed),
           _section('RELATÓRIOS', collapsed),
-          _menuItem(Icons.view_column_outlined, 'Lista Resumida',
+          _menuItem(Icons.view_column_outlined, 'Resumo de Obras',
               '/relatorios/lista/resumida', collapsed),
           // _menuItem(Icons.view_agenda_outlined, 'Prateleira',              '/admin/prateleiras', collapsed),
           // _section('CONFIGURAÇÕES', collapsed),          _menuItem(Icons.manage_accounts_outlined, 'Usuários',              '/admin/usuarios', collapsed),

@@ -134,6 +134,12 @@ class _ObrasListScreenState extends State<ObrasListScreen>
             ),
           ),
           const SizedBox(width: 16),
+          OutlinedButton.icon(
+            onPressed: () => ObraService.baixarFichaEmBrancoPdf(),
+            icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+            label: const Text('Ficha em Branco'),
+          ),
+          const SizedBox(width: 12),
           ElevatedButton.icon(
             onPressed: () => context.go('/admin/obras/nova'),
             icon: const Icon(Icons.add, size: 18),
@@ -292,6 +298,8 @@ class _ObrasListScreenState extends State<ObrasListScreen>
           context.push('/admin/obras/galeria/${obra.id}');
         } else if (v == 'movimentacoes') {
           context.push('/admin/obras/movimentacoes/${obra.id}');
+        } else if (v == 'ver-ficha') {
+          context.push('/admin/obras/ficha/${obra.id}');
         } else if (v == 'ficha-obra') {
           ObraService.baixarFichaPdf(obra.id!);
         }
@@ -328,12 +336,22 @@ class _ObrasListScreenState extends State<ObrasListScreen>
           ),
         ),
         PopupMenuItem(
+          value: 'ver-ficha',
+          child: Row(
+            children: [
+              Icon(Icons.visibility_outlined, size: 18),
+              SizedBox(width: 8),
+              Text('Visualizar Ficha'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
           value: 'ficha-obra',
           child: Row(
             children: [
               Icon(Icons.picture_as_pdf_outlined, size: 18),
               SizedBox(width: 8),
-              Text('Ficha da Obra'),
+              Text('Baixar PDF'),
             ],
           ),
         ),
